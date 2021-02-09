@@ -1128,6 +1128,8 @@
         "transport-type-mqtt-hint": "Enables advanced MQTT transport settings",
         "transport-type-lwm2m": "LWM2M",
         "transport-type-lwm2m-hint": "LWM2M transport type",
+        "transport-type-udp": "UDP",
+        "transport-type-udp-hint": "UDP transport type",
         "description": "Description",
         "default": "Default",
         "profile-configuration": "Profile configuration",

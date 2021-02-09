@@ -30,31 +30,6 @@
     OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 
 -->
-<div [formGroup]="deviceTransportConfigurationFormGroup">
-  <div [ngSwitch]="transportType">
-    <ng-template [ngSwitchCase]="deviceTransportType.DEFAULT">
-      <tb-default-device-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-default-device-transport-configuration>
-    </ng-template>
-    <ng-template [ngSwitchCase]="deviceTransportType.MQTT">
-      <tb-mqtt-device-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-mqtt-device-transport-configuration>
-    </ng-template>
-    <!--ng-template [ngSwitchCase]="deviceTransportType.LWM2M">
-      <tb-lwm2m-device-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-lwm2m-device-transport-configuration>
-    </ng-template-->
-    <ng-template [ngSwitchCase]="deviceTransportType.UDP">
-      <tb-udp-device-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-udp-device-transport-configuration>
-    </ng-template>
-  </div>
-</div>
+<form [formGroup]="udpDeviceProfileTransportConfigurationFormGroup" style="padding-bottom: 16px;">
+
+</form>
