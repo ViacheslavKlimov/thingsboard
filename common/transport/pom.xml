@@ -54,6 +54,7 @@
         <module>mqtt</module>
         <module>http</module>
         <module>coap</module>
+        <module>udp</module>
     </modules>
 
     <build>
