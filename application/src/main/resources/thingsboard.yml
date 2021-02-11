@@ -632,6 +632,16 @@ transport:
     bind_address: "${COAP_BIND_ADDRESS:0.0.0.0}"
     bind_port: "${COAP_BIND_PORT:5683}"
     timeout: "${COAP_TIMEOUT:10000}"
+  # Local UDP transport parameters
+  udp:
+    # Enable/disable udp transport protocol.
+    enabled: "${UDP_ENABLED:true}"
+    bind_address: "${UDP_BIND_ADDRESS:0.0.0.0}"
+    bind_port: "${UDP_BIND_PORT:10561}"
+    netty:
+      worker_group_thread_count: "${NETTY_WORKER_GROUP_THREADS:12}"
+      so_broadcast: "${NETTY_SO_BROADCAST:true}"
+      so_rcv_buf: "${NETTY_SO_RCV_BUFFER_SIZE:64}"
 
 swagger:
   api_path_regex: "${SWAGGER_API_PATH_REGEX:/api.*}"
