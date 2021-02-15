@@ -51,7 +51,8 @@ export enum DeviceTransportType {
   DEFAULT = 'DEFAULT',
   MQTT = 'MQTT',
   // LWM2M = 'LWM2M'
-  UDP = 'UDP'
+  UDP = 'UDP',
+  TCP = 'TCP'
 }
 
 export enum MqttTransportPayloadType {
@@ -94,6 +95,7 @@ export const deviceTransportTypeTranslationMap = new Map<DeviceTransportType, st
     [DeviceTransportType.MQTT, 'device-profile.transport-type-mqtt'],
     // [DeviceTransportType.LWM2M, 'device-profile.transport-type-lwm2m']
     [DeviceTransportType.UDP, 'device-profile.transport-type-udp'],
+    [DeviceTransportType.TCP, 'device-profile.transport-type-tcp'],
   ]
 );
 
@@ -112,6 +114,7 @@ export const deviceTransportTypeHintMap = new Map<DeviceTransportType, string>(
     [DeviceTransportType.MQTT, 'device-profile.transport-type-mqtt-hint'],
     // [DeviceTransportType.LWM2M, 'device-profile.transport-type-lwm2m-hint']
     [DeviceTransportType.UDP, 'device-profile.transport-type-udp-hint'],
+    [DeviceTransportType.TCP, 'device-profile.transport-type-tcp-hint'],
   ]
 );
 
@@ -152,6 +155,13 @@ export const deviceTransportTypeConfigurationInfoMap = new Map<DeviceTransportTy
         hasProfileConfiguration: true,
         hasDeviceConfiguration: false,
       }
+    ],
+    [
+      DeviceTransportType.TCP,
+      {
+        hasProfileConfiguration: true,
+        hasDeviceConfiguration: false,
+      }
     ]
   ]
 );
@@ -187,10 +197,15 @@ export interface UdpDeviceProfileTransportConfiguration {
   [key: string]: any;
 }
 
+export interface TcpDeviceProfileTransportConfiguration {
+  [key: string]: any;
+}
+
 export type DeviceProfileTransportConfigurations = DefaultDeviceProfileTransportConfiguration &
                                                    MqttDeviceProfileTransportConfiguration &
                                                    Lwm2mDeviceProfileTransportConfiguration &
-                                                   UdpDeviceProfileTransportConfiguration;
+                                                   UdpDeviceProfileTransportConfiguration &
+                                                   TcpDeviceProfileTransportConfiguration;
 
 export interface DeviceProfileTransportConfiguration extends DeviceProfileTransportConfigurations {
   type: DeviceTransportType;
@@ -252,6 +267,10 @@ export function createDeviceProfileTransportConfiguration(type: DeviceTransportT
         const udpTransportConfiguration: UdpDeviceProfileTransportConfiguration = {};
         transportConfiguration = {...udpTransportConfiguration, type: DeviceTransportType.UDP};
         break;
+      case DeviceTransportType.TCP:
+        const tcpTransportConfiguration: TcpDeviceProfileTransportConfiguration = {};
+        transportConfiguration = {...tcpTransportConfiguration, type: DeviceTransportType.TCP};
+        break;
     }
   }
   return transportConfiguration;
@@ -276,6 +295,10 @@ export function createDeviceTransportConfiguration(type: DeviceTransportType): D
       case DeviceTransportType.UDP:
         const udpTransportConfiguration: UdpDeviceTransportConfiguration = {};
         transportConfiguration = {...udpTransportConfiguration, type: DeviceTransportType.UDP};
+        break;
+      case DeviceTransportType.TCP:
+        const tcpTransportConfiguration: TcpDeviceTransportConfiguration = {};
+        transportConfiguration = {...tcpTransportConfiguration, type: DeviceTransportType.TCP};
         break;
     }
   }
@@ -445,10 +468,15 @@ export interface UdpDeviceTransportConfiguration {
   [key: string]: any;
 }
 
+export interface TcpDeviceTransportConfiguration {
+  [key: string]: any;
+}
+
 export type DeviceTransportConfigurations = DefaultDeviceTransportConfiguration &
   MqttDeviceTransportConfiguration &
   Lwm2mDeviceTransportConfiguration &
-  UdpDeviceTransportConfiguration;
+  UdpDeviceTransportConfiguration &
+  TcpDeviceTransportConfiguration;
 
 export interface DeviceTransportConfiguration extends DeviceTransportConfigurations {
   type: DeviceTransportType;

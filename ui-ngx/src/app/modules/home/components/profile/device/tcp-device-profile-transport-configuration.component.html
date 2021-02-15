@@ -30,37 +30,6 @@
     OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 
 -->
-<div [formGroup]="deviceProfileTransportConfigurationFormGroup">
-  <div [ngSwitch]="transportType">
-    <ng-template [ngSwitchCase]="deviceTransportType.DEFAULT">
-      <tb-default-device-profile-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-default-device-profile-transport-configuration>
-    </ng-template>
-    <ng-template [ngSwitchCase]="deviceTransportType.MQTT">
-      <tb-mqtt-device-profile-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-mqtt-device-profile-transport-configuration>
-    </ng-template>
-    <!--ng-template [ngSwitchCase]="deviceTransportType.LWM2M">
-      <tb-lwm2m-device-profile-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-lwm2m-device-profile-transport-configuration>
-    </ng-template-->
-    <ng-template [ngSwitchCase]="deviceTransportType.UDP">
-      <tb-udp-device-profile-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-udp-device-profile-transport-configuration>
-    </ng-template>
-    <ng-template [ngSwitchCase]="deviceTransportType.TCP">
-      <tb-tcp-device-profile-transport-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-tcp-device-profile-transport-configuration>
-    </ng-template>
-  </div>
-</div>
+<form [formGroup]="tcpDeviceProfileTransportConfigurationFormGroup" style="padding-bottom: 16px;">
+
+</form>

@@ -28,28 +28,16 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.device.data;
+package org.thingsboard.server.common.data.device.profile;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Data;
 import org.thingsboard.server.common.data.DeviceTransportType;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type")
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = DefaultDeviceTransportConfiguration.class, name = "DEFAULT"),
-        @JsonSubTypes.Type(value = MqttDeviceTransportConfiguration.class, name = "MQTT"),
-        @JsonSubTypes.Type(value = Lwm2mDeviceTransportConfiguration.class, name = "LWM2M"),
-        @JsonSubTypes.Type(value = UdpDeviceTransportConfiguration.class, name = "UDP"),
-        @JsonSubTypes.Type(value = TcpDeviceTransportConfiguration.class, name = "TCP")})
-public interface DeviceTransportConfiguration {
+@Data
+public class TcpDeviceProfileTransportConfiguration implements DeviceProfileTransportConfiguration {
 
-    @JsonIgnore
-    DeviceTransportType getType();
-
+    @Override
+    public DeviceTransportType getType() {
+        return DeviceTransportType.TCP;
+    }
 }

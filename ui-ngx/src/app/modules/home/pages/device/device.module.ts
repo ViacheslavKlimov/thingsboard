@@ -46,6 +46,7 @@ import { DeviceTransportConfigurationComponent } from './data/device-transport-c
 import { MqttDeviceTransportConfigurationComponent } from './data/mqtt-device-transport-configuration.component';
 import { Lwm2mDeviceTransportConfigurationComponent } from './data/lwm2m-device-transport-configuration.component';
 import { UdpDeviceTransportConfigurationComponent } from './data/udp-device-transport-configuration.component';
+import { TcpDeviceTransportConfigurationComponent } from './data/tcp-device-transport-configuration.component';
 
 @NgModule({
   declarations: [
@@ -55,6 +56,7 @@ import { UdpDeviceTransportConfigurationComponent } from './data/udp-device-tran
     MqttDeviceTransportConfigurationComponent,
     Lwm2mDeviceTransportConfigurationComponent,
     UdpDeviceTransportConfigurationComponent,
+    TcpDeviceTransportConfigurationComponent,
     DeviceTransportConfigurationComponent,
     DeviceDataComponent,
     DeviceComponent,
