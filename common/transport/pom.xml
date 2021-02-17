@@ -55,6 +55,7 @@
         <module>http</module>
         <module>coap</module>
         <module>udp</module>
+        <module>tcp</module>
     </modules>
 
     <build>

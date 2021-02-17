@@ -149,6 +149,10 @@
             <artifactId>udp</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.thingsboard.common.transport</groupId>
+            <artifactId>tcp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.thingsboard</groupId>
             <artifactId>dao</artifactId>
         </dependency>
