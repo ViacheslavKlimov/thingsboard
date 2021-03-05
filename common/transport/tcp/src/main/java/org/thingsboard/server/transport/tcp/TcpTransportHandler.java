@@ -63,7 +63,7 @@ public class TcpTransportHandler extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
         try {
             if (predicate.test(byteBuf)) {
-                log.debug("Message is ignored, because it's not supported by current integration. Message [{}]", byteBuf);
+                log.debug("Message is ignored, reason: empty frame! Message [{}]", byteBuf);
             } else {
                 byte[] bytes = new byte[byteBuf.readableBytes()];
                 byteBuf.readBytes(bytes);

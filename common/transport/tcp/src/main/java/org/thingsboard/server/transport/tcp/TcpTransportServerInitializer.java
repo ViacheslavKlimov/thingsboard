@@ -60,22 +60,25 @@ public class TcpTransportServerInitializer extends ChannelInitializer<SocketChan
 
     @Override
     protected void initChannel(SocketChannel socketChannel) {
-        ByteOrder byteOrder = LITTLE_ENDIAN_BYTE_ORDER.equals(ctx.getByteOrder()) ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN;
-        LengthFieldBasedFrameDecoder framer = new LengthFieldBasedFrameDecoder(
-                byteOrder,
-                ctx.getMaxFrameLength(),
-                ctx.getLengthFieldOffset(),
-                ctx.getLengthFieldLength(),
-                ctx.getLengthAdjustment(),
-                ctx.getInitialBytesToStrip(),
-                ctx.isFailFast()
-        );
-        ChannelPipeline channelPipeline = socketChannel.pipeline();
-        channelPipeline.addLast("tcpByteDecoder", framer);
+        try {
+            ByteOrder byteOrder = LITTLE_ENDIAN_BYTE_ORDER.equals(ctx.getByteOrder()) ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN;
+            LengthFieldBasedFrameDecoder framer = new LengthFieldBasedFrameDecoder(
+                    byteOrder,
+                    ctx.getMaxFrameLength(),
+                    ctx.getLengthFieldOffset(),
+                    ctx.getLengthFieldLength(),
+                    ctx.getLengthAdjustment(),
+                    ctx.getInitialBytesToStrip(),
+                    ctx.isFailFast()
+            );
+            ChannelPipeline channelPipeline = socketChannel.pipeline();
+            channelPipeline.addLast("tcpByteDecoder", framer);
 
-        TcpTransportHandler handler = new TcpTransportHandler(ctx);
-        channelPipeline.addLast(handler);
-//        socketChannel.closeFuture().addListener(handler);
-
+            TcpTransportHandler handler = new TcpTransportHandler(ctx);
+            channelPipeline.addLast(handler);
+        } catch (Exception e) {
+            log.error("Init Channel Exception: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 }
