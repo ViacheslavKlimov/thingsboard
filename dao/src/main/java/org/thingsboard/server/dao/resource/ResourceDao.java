@@ -28,35 +28,3 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.resource;
-
-import org.thingsboard.server.common.data.Resource;
-import org.thingsboard.server.common.data.ResourceType;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
-
-import java.util.List;
-
-public interface ResourceDao {
-
-    Resource saveResource(Resource resource);
-
-    Resource getResource(TenantId tenantId, ResourceType resourceType, String resourceId);
-
-    void deleteResource(TenantId tenantId, ResourceType resourceType, String resourceId);
-
-    PageData<Resource> findAllByTenantId(TenantId tenantId, PageLink pageLink);
-
-    PageData<Resource> findResourcesByTenantIdAndResourceType(TenantId tenantId,
-                                                              ResourceType resourceType,
-                                                              PageLink pageLink);
-
-    List<Resource> findAllByTenantIdAndResourceType(TenantId tenantId, ResourceType resourceType);
-
-    List<Resource> findResourcesByTenantIdAndResourceType(TenantId tenantId,
-                                                          ResourceType resourceType,
-                                                          String[] objectIds,
-                                                          String searchText);
-    void removeAllByTenantId(TenantId tenantId);
-}

@@ -54,6 +54,8 @@ import org.thingsboard.server.common.data.EntityView;
 import org.thingsboard.server.common.data.GroupEntity;
 import org.thingsboard.server.common.data.HasName;
 import org.thingsboard.server.common.data.HasTenantId;
+import org.thingsboard.server.common.data.TbResourceInfo;
+import org.thingsboard.server.common.data.TbResource;
 import org.thingsboard.server.common.data.SearchTextBased;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantEntity;
@@ -82,6 +84,7 @@ import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
 import org.thingsboard.server.common.data.id.EntityViewId;
+import org.thingsboard.server.common.data.id.TbResourceId;
 import org.thingsboard.server.common.data.id.GroupPermissionId;
 import org.thingsboard.server.common.data.id.IntegrationId;
 import org.thingsboard.server.common.data.id.RoleId;
@@ -145,6 +148,7 @@ import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.oauth2.OAuth2ConfigTemplateService;
 import org.thingsboard.server.dao.oauth2.OAuth2Service;
 import org.thingsboard.server.dao.relation.RelationService;
+import org.thingsboard.server.dao.resource.TbResourceService;
 import org.thingsboard.server.dao.role.RoleService;
 import org.thingsboard.server.dao.rule.RuleChainService;
 import org.thingsboard.server.dao.scheduler.SchedulerEventService;
@@ -316,6 +320,9 @@ public abstract class BaseController {
 
     @Autowired
     protected PartitionService partitionService;
+
+    @Autowired
+    protected TbResourceService resourceService;
 
     @Autowired
     protected TbServiceInfoProvider serviceInfoProvider;
@@ -684,6 +691,9 @@ public abstract class BaseController {
                 case WIDGET_TYPE:
                     checkWidgetTypeId(new WidgetTypeId(entityId.getId()), operation);
                     return;
+                case TB_RESOURCE:
+                    checkResourceId(new TbResourceId(entityId.getId()), operation);
+                    return;
                 case GROUP_PERMISSION:
                     checkGroupPermissionId(new GroupPermissionId(entityId.getId()), operation);
                     return;
@@ -976,6 +986,30 @@ public abstract class BaseController {
         checkNotNull(ruleNode);
         checkRuleChain(ruleNode.getRuleChainId(), operation);
         return ruleNode;
+    }
+
+    TbResource checkResourceId(TbResourceId resourceId, Operation operation) throws ThingsboardException {
+        try {
+            validateId(resourceId, "Incorrect resourceId " + resourceId);
+            TbResource resource = resourceService.findResourceById(getCurrentUser().getTenantId(), resourceId);
+            checkNotNull(resource);
+            accessControlService.checkPermission(getCurrentUser(), Resource.TB_RESOURCE, operation, resourceId, resource);
+            return resource;
+        } catch (Exception e) {
+            throw handleException(e, false);
+        }
+    }
+
+    TbResourceInfo checkResourceInfoId(TbResourceId resourceId, Operation operation) throws ThingsboardException {
+        try {
+            validateId(resourceId, "Incorrect resourceId " + resourceId);
+            TbResourceInfo resourceInfo = resourceService.findResourceInfoById(getCurrentUser().getTenantId(), resourceId);
+            checkNotNull(resourceInfo);
+            accessControlService.checkPermission(getCurrentUser(), Resource.TB_RESOURCE, operation, resourceId, resourceInfo);
+            return resourceInfo;
+        } catch (Exception e) {
+            throw handleException(e, false);
+        }
     }
 
     protected ThingsboardException permissionDenied() {
@@ -1280,8 +1314,8 @@ public abstract class BaseController {
 
     protected void processDashboardIdFromAdditionalInfo(ObjectNode additionalInfo, String requiredFields) throws ThingsboardException {
         String dashboardId = additionalInfo.has(requiredFields) ? additionalInfo.get(requiredFields).asText() : null;
-        if(dashboardId != null && !dashboardId.equals("null")) {
-            if(dashboardService.findDashboardById(getTenantId(), new DashboardId(UUID.fromString(dashboardId))) == null) {
+        if (dashboardId != null && !dashboardId.equals("null")) {
+            if (dashboardService.findDashboardById(getTenantId(), new DashboardId(UUID.fromString(dashboardId))) == null) {
                 additionalInfo.remove(requiredFields);
             }
         }

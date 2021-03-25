@@ -175,6 +175,13 @@ export class MenuService {
     const pages: Array<MenuSection> = [
       {
         id: guid(),
+        name: 'resource.resources-library',
+        type: 'link',
+        path: '/resources-library',
+        icon: 'folder'
+      },
+      {
+        id: guid(),
         name: 'admin.general',
         type: 'link',
         path: '/settings/general',
@@ -298,6 +305,16 @@ export class MenuService {
             icon: 'now_widgets',
             path: '/widgets-bundles',
             disabled: disabledItems.indexOf('widget_library') > -1
+          }
+        ]
+      },
+      {
+        name: 'resource.management',
+        places: [
+          {
+            name: 'resource.resources-library',
+            icon: 'folder',
+            path: '/resources-library'
           }
         ]
       },
@@ -500,6 +517,15 @@ export class MenuService {
     }
     if (this.userPermissionsService.hasReadGroupsPermission(EntityType.DASHBOARD) && disabledItems.indexOf('dashboard_groups') === -1) {
       sections.push(this.createEntityGroupSection(EntityType.DASHBOARD));
+    }
+    if (this.userPermissionsService.hasReadGenericPermission(Resource.TB_RESOURCE) && disabledItems.indexOf('resources_library') === -1) {
+      sections.push( {
+        id: guid(),
+        name: 'resource.resources-library',
+        type: 'link',
+        path: '/resources-library',
+        icon: 'folder'
+      },);
     }
     if (this.userPermissionsService.hasReadGenericPermission(Resource.SCHEDULER_EVENT)) {
       sections.push(
@@ -815,6 +841,20 @@ export class MenuService {
           }
         );
       }
+    }
+    if (this.userPermissionsService.hasReadGenericPermission(Resource.TB_RESOURCE)) {
+      homeSections.push(
+        {
+          name: 'resource.management',
+          places: [
+            {
+              name: 'resource.resources-library',
+              icon: 'folder',
+              path: '/resources-library'
+            }
+          ]
+        }
+      );
     }
     if (this.userPermissionsService.hasReadGenericPermission(Resource.SCHEDULER_EVENT)) {
       homeSections.push(

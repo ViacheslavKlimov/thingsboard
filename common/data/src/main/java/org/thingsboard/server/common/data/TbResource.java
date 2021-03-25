@@ -28,25 +28,61 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.resource;
+package org.thingsboard.server.common.data;
 
 import lombok.Data;
-import org.thingsboard.server.common.data.HasTenantId;
-import org.thingsboard.server.common.data.id.TenantId;
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
+import org.thingsboard.server.common.data.id.TbResourceId;
 
+@Slf4j
 @Data
-public class Resource implements HasTenantId {
-    private TenantId tenantId;
-    private ResourceType resourceType;
-    private String resourceId;
-    private String value;
+@EqualsAndHashCode(callSuper = true)
+public class TbResource extends TbResourceInfo {
+
+    private static final long serialVersionUID = 7379609705527272306L;
+
+    private String fileName;
+
+    private String data;
+
+    public TbResource() {
+        super();
+    }
+
+    public TbResource(TbResourceId id) {
+        super(id);
+    }
+
+    public TbResource(TbResourceInfo resourceInfo) {
+        super(resourceInfo);
+    }
+
+    public TbResource(TbResource resource) {
+        super(resource);
+        this.data = resource.getData();
+    }
 
     @Override
     public String toString() {
-        return "Resource{" +
-                "tenantId=" + tenantId +
-                ", resourceType=" + resourceType +
-                ", resourceId='" + resourceId + '\'' +
-                '}';
+        StringBuilder builder = new StringBuilder();
+        builder.append("Resource [tenantId=");
+        builder.append(getTenantId());
+        builder.append(", id=");
+        builder.append(getUuidId());
+        builder.append(", createdTime=");
+        builder.append(createdTime);
+        builder.append(", title=");
+        builder.append(getTitle());
+        builder.append(", resourceType=");
+        builder.append(getResourceType());
+        builder.append(", resourceKey=");
+        builder.append(getResourceKey());
+        builder.append(", fileName=");
+        builder.append(fileName);
+        builder.append(", data=");
+        builder.append(data);
+        builder.append("]");
+        return builder.toString();
     }
 }

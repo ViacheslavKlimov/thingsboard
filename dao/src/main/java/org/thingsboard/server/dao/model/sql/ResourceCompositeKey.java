@@ -28,32 +28,3 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.model.sql;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.thingsboard.server.common.data.Resource;
-
-import javax.persistence.Transient;
-import java.io.Serializable;
-import java.util.UUID;
-
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-public class ResourceCompositeKey implements Serializable {
-
-    @Transient
-    private static final long serialVersionUID = -3789469030818742769L;
-
-    private UUID tenantId;
-    private String resourceType;
-    private String resourceId;
-
-    public ResourceCompositeKey(Resource resource) {
-        this.tenantId = resource.getTenantId().getId();
-        this.resourceType = resource.getResourceType().name();
-        this.resourceId = resource.getResourceId();
-    }
-}

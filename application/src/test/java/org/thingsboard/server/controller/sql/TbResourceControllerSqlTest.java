@@ -28,39 +28,11 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.resource;
+package org.thingsboard.server.controller.sql;
 
-import org.thingsboard.server.common.data.Resource;
-import org.thingsboard.server.common.data.ResourceType;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.lwm2m.LwM2mObject;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
+import org.thingsboard.server.controller.BaseTbResourceControllerTest;
+import org.thingsboard.server.dao.service.DaoSqlTest;
 
-import java.util.List;
-
-
-public interface ResourceService {
-    Resource saveResource(Resource resource);
-
-    Resource getResource(TenantId tenantId, ResourceType resourceType, String resourceId);
-
-    PageData<Resource> findResourcesByTenantId(TenantId tenantId, PageLink pageLink);
-
-    List<LwM2mObject> findLwM2mObject(TenantId tenantId,
-                                      String sortOrder,
-                                      String sortProperty,
-                                      String[] objectIds,
-                                      String searchText);
-
-    List<LwM2mObject> findLwM2mObjectPage(TenantId tenantId,
-                                          String sortProperty,
-                                          String sortOrder,
-                                          PageLink pageLink);
-
-    List<Resource> findAllByTenantIdAndResourceType(TenantId tenantId, ResourceType resourceType);
-
-    void deleteResource(TenantId tenantId, ResourceType resourceType, String resourceId);
-
-    void deleteResourcesByTenantId(TenantId tenantId);
+@DaoSqlTest
+public class TbResourceControllerSqlTest extends BaseTbResourceControllerTest {
 }

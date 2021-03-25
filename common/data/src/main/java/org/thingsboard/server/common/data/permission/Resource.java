@@ -73,7 +73,8 @@ public enum Resource {
     GROUP_PERMISSION(EntityType.GROUP_PERMISSION),
     WHITE_LABELING(),
     AUDIT_LOG(),
-    API_USAGE_STATE(EntityType.API_USAGE_STATE);
+    API_USAGE_STATE(EntityType.API_USAGE_STATE),
+    TB_RESOURCE(EntityType.TB_RESOURCE);
 
     private static final Map<EntityType, Resource> groupResourceByGroupType = new HashMap<>();
     private static final Map<EntityType, Resource> resourceByEntityType = new HashMap<>();
