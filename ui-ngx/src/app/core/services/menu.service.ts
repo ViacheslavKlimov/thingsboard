@@ -169,6 +169,13 @@ export class MenuService {
         path: '/widgets-bundles',
         icon: 'now_widgets',
         disabled: disabledItems.indexOf('widget_library') > -1
+      },
+      {
+        id: guid(),
+        name: 'resource.resources-library',
+        type: 'link',
+        path: '/resources-library',
+        icon: 'folder'
       }
     );
 
