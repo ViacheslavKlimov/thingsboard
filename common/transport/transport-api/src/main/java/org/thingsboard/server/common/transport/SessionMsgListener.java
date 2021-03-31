@@ -32,6 +32,7 @@ package org.thingsboard.server.common.transport;
 
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.SessionInfoProto;
 import org.thingsboard.server.gen.transport.TransportProtos.AttributeUpdateNotificationMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeResponseMsg;
@@ -57,11 +58,14 @@ public interface SessionMsgListener {
 
     void onToServerRpcResponse(ToServerRpcResponseMsg toServerResponse);
 
-    default void onDeviceProfileUpdate(SessionInfoProto newSessionInfo, DeviceProfile deviceProfile) {
-    }
-
     default void onToTransportUpdateCredentials(ToTransportUpdateCredentialsProto toTransportUpdateCredentials){}
 
-    default void onDeviceUpdate(SessionInfoProto sessionInfo, Device device, Optional<DeviceProfile> deviceProfileOpt) {
-    }
+    default void onDeviceProfileUpdate(TransportProtos.SessionInfoProto newSessionInfo, DeviceProfile deviceProfile) {}
+
+    default void onDeviceUpdate(TransportProtos.SessionInfoProto sessionInfo, Device device,
+                                Optional<DeviceProfile> deviceProfileOpt) {}
+
+    default void onResourceUpdate(Optional<TransportProtos.ResourceUpdateMsg> resourceUpdateMsgOpt) {}
+
+    default void onResourceDelete(Optional<TransportProtos.ResourceDeleteMsg> resourceUpdateMsgOpt) {}
 }

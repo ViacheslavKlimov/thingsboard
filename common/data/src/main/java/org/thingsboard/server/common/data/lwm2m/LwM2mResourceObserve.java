@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 @Data
 @AllArgsConstructor
-public class LwM2mResource {
+public class LwM2mResourceObserve {
     int id;
     String name;
     boolean observe;
@@ -45,7 +45,7 @@ public class LwM2mResource {
     boolean telemetry;
     String keyName;
 
-    public LwM2mResource(int id, String name, boolean observe, boolean attribute, boolean telemetry) {
+    public LwM2mResourceObserve(int id, String name, boolean observe, boolean attribute, boolean telemetry) {
         this.id = id;
         this.name = name;
         this.observe = observe;
