@@ -34,7 +34,7 @@ public enum DeviceTransportType {
     DEFAULT,
     MQTT,
     LWM2M,
-    COAP
+    COAP,
     UDP,
     TCP
 }

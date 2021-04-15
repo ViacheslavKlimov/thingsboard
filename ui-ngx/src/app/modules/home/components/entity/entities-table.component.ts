@@ -71,9 +71,7 @@ import { DialogService } from '@core/services/dialog.service';
 import { AddEntityDialogComponent } from './add-entity-dialog.component';
 import { AddEntityDialogData, EntityAction } from '@home/models/entity/entity-component.models';
 import {
-  calculateIntervalEndTime,
-  calculateIntervalStartTime,
-  getCurrentTime,
+  calculateIntervalStartEndTime,
   HistoryWindowType,
   Timewindow
 } from '@shared/models/time/time.models';
@@ -92,6 +90,9 @@ export class EntitiesTableComponent extends PageComponent implements AfterViewIn
 
   @Input()
   entitiesTableConfig: EntityTableConfig<BaseData<HasId>>;
+
+  @Input()
+  edgeId: string = this.route.snapshot.params.edgeId;
 
   translations: EntityTypeTranslation;
 
@@ -160,6 +161,8 @@ export class EntitiesTableComponent extends PageComponent implements AfterViewIn
       if (!change.firstChange && change.currentValue !== change.previousValue) {
         if (propName === 'entitiesTableConfig' && change.currentValue) {
           this.init(change.currentValue);
+        } else if (propName === 'edgeId' && change.currentValue) {
+          this.init(this.entitiesTableConfig);
         }
       }
     }
@@ -288,6 +291,10 @@ export class EntitiesTableComponent extends PageComponent implements AfterViewIn
     return this.entitiesTableConfig.addEnabled;
   }
 
+  assignEnabled() {
+    return this.entitiesTableConfig.assignEnabled;
+  }
+
   clearSelection() {
     this.dataSource.selection.clear();
     this.cd.detectChanges();
@@ -318,9 +325,9 @@ export class EntitiesTableComponent extends PageComponent implements AfterViewIn
         timePageLink.startTime = currentTime - this.timewindow.history.timewindowMs;
         timePageLink.endTime = currentTime;
       } else if (this.timewindow.history.historyType === HistoryWindowType.INTERVAL) {
-        const currentDate = getCurrentTime();
-        timePageLink.startTime = calculateIntervalStartTime(this.timewindow.history.quickInterval, currentDate);
-        timePageLink.endTime = calculateIntervalEndTime(this.timewindow.history.quickInterval, currentDate);
+        const startEndTime = calculateIntervalStartEndTime(this.timewindow.history.quickInterval);
+        timePageLink.startTime = startEndTime[0];
+        timePageLink.endTime = startEndTime[1];
       } else {
         timePageLink.startTime = this.timewindow.history.fixedTimewindow.startTimeMs;
         timePageLink.endTime = this.timewindow.history.fixedTimewindow.endTimeMs;
@@ -596,6 +603,21 @@ export class EntitiesTableComponent extends PageComponent implements AfterViewIn
 
   trackByEntityId(index: number, entity: BaseData<HasId>) {
     return entity.id.id;
+  }
+
+  assignEntityGroupsToEdge($event: Event) {
+    let entity$: Observable<BaseData<HasId>>;
+    if (this.entitiesTableConfig.assignEntity) {
+      entity$ = this.entitiesTableConfig.assignEntity();
+    }
+    entity$.subscribe(
+      (entity) => {
+        if (entity) {
+          this.updateData();
+          this.entitiesTableConfig.entityAssigned(entity);
+        }
+      }
+    );
   }
 
 }

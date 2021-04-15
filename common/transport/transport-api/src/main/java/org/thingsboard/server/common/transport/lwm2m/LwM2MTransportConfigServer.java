@@ -107,12 +107,8 @@ public class LwM2MTransportConfigServer {
     private boolean recommendedSupportedGroups;
 
     @Getter
-    @Value("${transport.lwm2m.request_pool_size:}")
-    private int requestPoolSize;
-
-    @Getter
-    @Value("${transport.lwm2m.request_error_pool_size:}")
-    private int requestErrorPoolSize;
+    @Value("${transport.lwm2m.response_pool_size:}")
+    private int responsePoolSize;
 
     @Getter
     @Value("${transport.lwm2m.registered_pool_size:}")
@@ -226,6 +222,8 @@ public class LwM2MTransportConfigServer {
             FULL_FILE_PATH = Paths.get(BASE_DIR_PATH.replaceAll("bin$", ""));
         } else if (BASE_DIR_PATH.endsWith("conf")) {
             FULL_FILE_PATH = Paths.get(BASE_DIR_PATH.replaceAll("conf$", ""));
+        } else if (BASE_DIR_PATH.endsWith("application")) {
+            FULL_FILE_PATH = Paths.get(BASE_DIR_PATH.substring(0, BASE_DIR_PATH.length() - "application".length()));
         } else {
             FULL_FILE_PATH = Paths.get(BASE_DIR_PATH);
         }

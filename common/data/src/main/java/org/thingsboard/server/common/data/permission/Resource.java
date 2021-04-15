@@ -50,6 +50,7 @@ public enum Resource {
     CUSTOMER(EntityType.CUSTOMER),
     DASHBOARD(EntityType.DASHBOARD),
     ENTITY_VIEW(EntityType.ENTITY_VIEW),
+    EDGE(EntityType.EDGE),
     TENANT(EntityType.TENANT),
     RULE_CHAIN(EntityType.RULE_CHAIN),
     USER(EntityType.USER),
@@ -68,6 +69,7 @@ public enum Resource {
     ASSET_GROUP(EntityType.ENTITY_GROUP),
     USER_GROUP(EntityType.ENTITY_GROUP),
     ENTITY_VIEW_GROUP(EntityType.ENTITY_GROUP),
+    EDGE_GROUP(EntityType.ENTITY_GROUP),
     DASHBOARD_GROUP(EntityType.ENTITY_GROUP),
     ROLE(EntityType.ROLE),
     GROUP_PERMISSION(EntityType.GROUP_PERMISSION),
@@ -87,6 +89,7 @@ public enum Resource {
         groupResourceByGroupType.put(EntityType.ASSET, ASSET_GROUP);
         groupResourceByGroupType.put(EntityType.USER, USER_GROUP);
         groupResourceByGroupType.put(EntityType.ENTITY_VIEW, ENTITY_VIEW_GROUP);
+        groupResourceByGroupType.put(EntityType.EDGE, EDGE_GROUP);
         groupResourceByGroupType.put(EntityType.DASHBOARD, DASHBOARD_GROUP);
 
         for (EntityType entityType : EntityType.values()) {
@@ -114,6 +117,7 @@ public enum Resource {
         operationsByResource.put(Resource.CUSTOMER, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.DASHBOARD, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.ENTITY_VIEW, Operation.defaultEntityOperations);
+        operationsByResource.put(Resource.EDGE, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.TENANT, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.TENANT_PROFILE, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.API_USAGE_STATE, new HashSet<>(Arrays.asList(Operation.ALL, Operation.READ, Operation.READ_TELEMETRY)));
@@ -123,6 +127,7 @@ public enum Resource {
         operationsByResource.put(Resource.USER, userOperations);
         operationsByResource.put(Resource.WIDGETS_BUNDLE, Operation.crudOperations);
         operationsByResource.put(Resource.WIDGET_TYPE, Operation.crudOperations);
+        operationsByResource.put(Resource.TB_RESOURCE, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.CONVERTER, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.INTEGRATION, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.SCHEDULER_EVENT, Operation.defaultEntityOperations);
@@ -132,6 +137,7 @@ public enum Resource {
         operationsByResource.put(Resource.ASSET_GROUP, Operation.defaultEntityGroupOperations);
         operationsByResource.put(Resource.USER_GROUP, Operation.defaultEntityGroupOperations);
         operationsByResource.put(Resource.ENTITY_VIEW_GROUP, Operation.defaultEntityGroupOperations);
+        operationsByResource.put(Resource.EDGE_GROUP, Operation.defaultEntityGroupOperations);
         operationsByResource.put(Resource.DASHBOARD_GROUP, Operation.defaultEntityGroupOperations);
         operationsByResource.put(Resource.ROLE, Operation.defaultEntityOperations);
         operationsByResource.put(Resource.GROUP_PERMISSION, Operation.crudOperations);
@@ -152,7 +158,8 @@ public enum Resource {
                 Resource.ROLE,
                 Resource.WHITE_LABELING,
                 Resource.OAUTH2_CONFIGURATION_INFO,
-                Resource.OAUTH2_CONFIGURATION_TEMPLATE)));
+                Resource.OAUTH2_CONFIGURATION_TEMPLATE,
+                Resource.TB_RESOURCE)));
 
         resourcesByAuthority.put(Authority.TENANT_ADMIN, new HashSet<>(Arrays.asList(
                 Resource.ALL,
@@ -163,6 +170,7 @@ public enum Resource {
                 Resource.API_USAGE_STATE,
                 Resource.ASSET,
                 Resource.ENTITY_VIEW,
+                Resource.EDGE,
                 Resource.CUSTOMER,
                 Resource.DASHBOARD,
                 Resource.TENANT,
@@ -181,9 +189,11 @@ public enum Resource {
                 Resource.ASSET_GROUP,
                 Resource.DASHBOARD_GROUP,
                 Resource.ENTITY_VIEW_GROUP,
+                Resource.EDGE_GROUP,
                 Resource.GROUP_PERMISSION,
                 Resource.WHITE_LABELING,
-                Resource.AUDIT_LOG)));
+                Resource.AUDIT_LOG,
+                Resource.TB_RESOURCE)));
 
         resourcesByAuthority.put(Authority.CUSTOMER_USER, new HashSet<>(Arrays.asList(
                 Resource.ALL,
@@ -192,6 +202,7 @@ public enum Resource {
                 Resource.DEVICE,
                 Resource.ASSET,
                 Resource.ENTITY_VIEW,
+                Resource.EDGE,
                 Resource.CUSTOMER,
                 Resource.DASHBOARD,
                 Resource.USER,
@@ -206,6 +217,7 @@ public enum Resource {
                 Resource.ASSET_GROUP,
                 Resource.DASHBOARD_GROUP,
                 Resource.ENTITY_VIEW_GROUP,
+                Resource.EDGE_GROUP,
                 Resource.GROUP_PERMISSION,
                 Resource.WHITE_LABELING,
                 Resource.AUDIT_LOG)));

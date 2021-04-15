@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.server.common.data.TbResource;
 import org.thingsboard.server.common.data.TbResourceInfo;
+import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.TbResourceId;
 import org.thingsboard.server.common.data.lwm2m.LwM2mObject;
@@ -56,8 +57,10 @@ import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.dao.resource.TbResourceService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.StringJoiner;
 
 @Slf4j
 @RestController
@@ -127,9 +130,7 @@ public class TbResourceController extends BaseController {
         try {
             resource.setTenantId(getTenantId());
             checkEntity(resource.getId(), resource, Resource.TB_RESOURCE, null);
-            TbResource savedResource = checkNotNull(resourceService.saveResource(resource));
-            tbClusterService.onResourceChange(savedResource, null);
-            return savedResource;
+            return addResource(resource);
         } catch (Exception e) {
             throw handleException(e);
         }
@@ -197,5 +198,12 @@ public class TbResourceController extends BaseController {
         } catch (Exception e) {
             throw handleException(e);
         }
+    }
+
+    private TbResource addResource(TbResource resource) throws Exception {
+            checkEntity(resource.getId(), resource, Resource.TB_RESOURCE, null);
+            TbResource savedResource = checkNotNull(resourceService.saveResource(resource));
+            tbClusterService.onResourceChange(savedResource, null);
+            return savedResource;
     }
 }

@@ -64,14 +64,14 @@ import { ResourceModule } from '@home/pages/resource/resource.module';
     WidgetLibraryModule,
     AuditLogModule,
     ApiUsageModule,
-    ResourceModule,
     UserModule,
     RoleModule,
     ConverterModule,
     IntegrationModule,
     EntityGroupModule,
     IFrameViewModule,
-    SchedulerModule
+    SchedulerModule,
+    ResourceModule
   ],
   providers: [
     {

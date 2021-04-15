@@ -57,8 +57,8 @@ import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.device.claim.ClaimData;
 import org.thingsboard.server.dao.device.claim.ClaimResponse;
 import org.thingsboard.server.dao.device.claim.ClaimResult;
-import org.thingsboard.server.dao.device.claim.ReclaimResult;
 import org.thingsboard.server.dao.group.EntityGroupService;
+import org.thingsboard.server.dao.device.claim.ReclaimResult;
 import org.thingsboard.server.dao.model.ModelConstants;
 
 import java.io.IOException;
