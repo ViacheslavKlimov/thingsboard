@@ -28,13 +28,19 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.transport.udp.adaptors;
 
-public enum DeviceTransportType {
-    DEFAULT,
-    MQTT,
-    LWM2M,
-    COAP
-    UDP,
-    TCP
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.thingsboard.server.common.adaptor.AdaptorException;
+import org.thingsboard.server.gen.transport.TransportProtos;
+
+@Component
+@Slf4j
+public class BaseUdpAdaptor implements UdpTransportAdaptor {
+
+    @Override
+    public TransportProtos.PostTelemetryMsg convertToPostTelemetry(Object inbound) throws AdaptorException {
+        return null;
+    }
 }

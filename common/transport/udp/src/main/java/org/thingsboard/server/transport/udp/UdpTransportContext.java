@@ -28,13 +28,24 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.transport.udp;
 
-public enum DeviceTransportType {
-    DEFAULT,
-    MQTT,
-    LWM2M,
-    COAP
-    UDP,
-    TCP
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.stereotype.Component;
+import org.thingsboard.server.common.transport.TransportContext;
+import org.thingsboard.server.transport.udp.adaptors.UdpTransportAdaptor;
+
+@Slf4j
+@Component
+@ConditionalOnExpression("'${service.type:null}'=='tb-transport' || ('${service.type:null}'=='monolith' && '${transport.udp.enabled}'=='true')")
+public class UdpTransportContext extends TransportContext {
+
+    @Getter
+    @Autowired
+    private UdpTransportAdaptor adaptor;
+
 }

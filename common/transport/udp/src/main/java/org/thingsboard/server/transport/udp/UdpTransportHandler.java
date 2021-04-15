@@ -28,13 +28,30 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.transport.udp;
 
-public enum DeviceTransportType {
-    DEFAULT,
-    MQTT,
-    LWM2M,
-    COAP
-    UDP,
-    TCP
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
+import org.thingsboard.server.common.transport.TransportService;
+
+import java.nio.charset.StandardCharsets;
+
+@Slf4j
+public class UdpTransportHandler extends SimpleChannelInboundHandler<byte[]> {
+
+    private final UdpTransportContext ctx;
+    private final TransportService transportService;
+
+    public UdpTransportHandler(UdpTransportContext ctx) {
+        this.ctx = ctx;
+        this.transportService = ctx.getTransportService();
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, byte[] bytes) throws Exception {
+        log.info("msg: {}", bytes);
+        String strMsg = new String(bytes, StandardCharsets.UTF_8);
+        log.info("strMsg: {}", strMsg);
+    }
 }

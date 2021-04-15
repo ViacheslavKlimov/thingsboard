@@ -28,13 +28,36 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.udp;
 
-public enum DeviceTransportType {
-    DEFAULT,
-    MQTT,
-    LWM2M,
-    COAP
-    UDP,
-    TCP
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+import java.util.Arrays;
+
+@SpringBootConfiguration
+@EnableAsync
+@EnableScheduling
+@ComponentScan({"org.thingsboard.server.udp", "org.thingsboard.server.common", "org.thingsboard.server.transport.udp", "org.thingsboard.server.queue"})
+public class ThingsboardUdpTransportApplication {
+
+    private static final String SPRING_CONFIG_NAME_KEY = "--spring.config.name";
+    private static final String DEFAULT_SPRING_CONFIG_PARAM = SPRING_CONFIG_NAME_KEY + "=" + "tb-udp-transport";
+
+    public static void main(String[] args) {
+        SpringApplication.run(ThingsboardUdpTransportApplication.class, updateArguments(args));
+    }
+
+    private static String[] updateArguments(String[] args) {
+        if (Arrays.stream(args).noneMatch(arg -> arg.startsWith(SPRING_CONFIG_NAME_KEY))) {
+            String[] modifiedArgs = new String[args.length + 1];
+            System.arraycopy(args, 0, modifiedArgs, 0, args.length);
+            modifiedArgs[args.length] = DEFAULT_SPRING_CONFIG_PARAM;
+            return modifiedArgs;
+        }
+        return args;
+    }
 }

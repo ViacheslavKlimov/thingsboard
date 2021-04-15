@@ -28,13 +28,36 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.common.data.device.data;
 
-public enum DeviceTransportType {
-    DEFAULT,
-    MQTT,
-    LWM2M,
-    COAP
-    UDP,
-    TCP
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import org.thingsboard.server.common.data.DeviceTransportType;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Data
+public class UdpDeviceTransportConfiguration implements DeviceTransportConfiguration {
+
+    @JsonIgnore
+    private Map<String, Object> properties = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> properties() {
+        return this.properties;
+    }
+
+    @JsonAnySetter
+    public void put(String name, Object value) {
+        this.properties.put(name, value);
+    }
+
+    @Override
+    public DeviceTransportType getType() {
+        return DeviceTransportType.UDP;
+    }
+
 }

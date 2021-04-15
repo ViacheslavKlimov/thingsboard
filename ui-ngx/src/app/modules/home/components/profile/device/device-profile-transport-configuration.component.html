@@ -56,5 +56,17 @@
         formControlName="configuration">
       </tb-profile-lwm2m-device-transport-configuration>
     </ng-template>
+    <ng-template [ngSwitchCase]="deviceTransportType.UDP">
+      <tb-udp-device-profile-transport-configuration
+        [required]="required"
+        formControlName="configuration">
+      </tb-udp-device-profile-transport-configuration>
+    </ng-template>
+    <ng-template [ngSwitchCase]="deviceTransportType.TCP">
+      <tb-tcp-device-profile-transport-configuration
+        [required]="required"
+        formControlName="configuration">
+      </tb-tcp-device-profile-transport-configuration>
+    </ng-template>
   </div>
 </div>
