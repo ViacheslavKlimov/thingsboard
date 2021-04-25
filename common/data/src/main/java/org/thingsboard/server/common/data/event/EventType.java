@@ -31,5 +31,5 @@
 package org.thingsboard.server.common.data.event;
 
 public enum EventType {
-    ERROR, LC_EVENT, STATS, DEBUG_RULE_NODE, DEBUG_RULE_CHAIN
+    ERROR, LC_EVENT, STATS, DEBUG_RULE_NODE, DEBUG_RULE_CHAIN, DEBUG_INTEGRATION, DEBUG_CONVERTER
 }

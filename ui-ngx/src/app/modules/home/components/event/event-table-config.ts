@@ -151,12 +151,9 @@ export class EventTableConfig extends EntityTableConfig<Event, TimePageLink> {
   updateColumns(updateTableColumns: boolean = false): void {
     this.columns = [];
     this.columns.push(
-      new DateEntityTableColumn<Event>('createdTime', 'event.event-time', this.datePipe, '120px'));
-    if (this.eventType !== EventType.RAW_DATA) {
-      this.columns.push(
-        new EntityTableColumn<Event>('server', 'event.server', '100px',
-          (entity) => entity.body.server, entity => ({}), false));
-    }
+      new DateEntityTableColumn<Event>('createdTime', 'event.event-time', this.datePipe, '120px'),
+      new EntityTableColumn<Event>('server', 'event.server', '100px',
+        (entity) => entity.body.server, entity => ({}), false));
     switch (this.eventType) {
       case EventType.ERROR:
         this.columns.push(
@@ -349,26 +346,6 @@ export class EventTableConfig extends EntityTableConfig<Event, TimePageLink> {
             '40px')
         );
         break;
-      case EventType.RAW_DATA:
-        this.columns[0].width = '30%';
-        this.columns.push(
-          new EntityActionTableColumn<Event>('message', 'event.message',
-            {
-              name: this.translate.instant('action.view'),
-              icon: 'more_horiz',
-              isEnabled: (entity) => entity.body.message ? entity.body.message.length > 0 : false,
-              onAction: ($event, entity) => this.showContent($event, entity.body.message,
-                'event.message', entity.body.messageType)
-            },
-            '20%'),
-          new EntityTableColumn<Event>('uuid', 'event.uuid', '50%',
-            (entity) => entity.body.uuid, entity => ({
-              padding: '0 12px 0 0',
-            }), false, key => ({
-              padding: '0 12px 0 0'
-            }))
-        );
-        break;
     }
     if (updateTableColumns) {
       this.table.columnsUpdated(true);
@@ -414,8 +391,27 @@ export class EventTableConfig extends EntityTableConfig<Event, TimePageLink> {
         break;
       case EventType.STATS:
         this.filterColumns.push(
-          {key: 'messagesProcessed', title: 'event.messages-processed'},
-          {key: 'errorsOccurred', title: 'event.errors-occurred'}
+          {key: 'messagesProcessed', title: 'event.min-messages-processed'},
+          {key: 'errorsOccurred', title: 'event.min-errors-occurred'}
+        );
+        break;
+      case DebugEventType.DEBUG_CONVERTER:
+        this.filterColumns.push(
+          {key: 'type', title: 'event.type'},
+          {key: 'in', title: 'event.in'},
+          {key: 'out', title: 'event.out'},
+          {key: 'metadataSearch', title: 'event.metadata'},
+          {key: 'isError', title: 'event.error'},
+          {key: 'error', title: 'event.error'}
+        );
+        break;
+      case DebugEventType.DEBUG_INTEGRATION:
+        this.filterColumns.push(
+          {key: 'type', title: 'event.type'},
+          {key: 'message', title: 'event.message'},
+          {key: 'statusIntegration', title: 'event.status'},
+          {key: 'isError', title: 'event.error'},
+          {key: 'error', title: 'event.error'}
         );
         break;
       case DebugEventType.DEBUG_RULE_NODE:

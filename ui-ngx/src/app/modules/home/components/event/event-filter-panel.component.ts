@@ -30,7 +30,7 @@
 ///
 
 import { Component, Inject, InjectionToken } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OverlayRef } from '@angular/cdk/overlay';
 import { EntityType } from '@shared/models/entity-type.models';
 import { FilterEventBody } from '@shared/models/event.models';
@@ -63,6 +63,7 @@ export class EventFilterPanelComponent {
 
   private msgDirectionTypes = ['IN', 'OUT'];
   private statusTypes = ['Success', 'Failure'];
+  private msgTypes = ['Uplink', 'Downlink'];
   private entityTypes = Object.keys(EntityType);
 
   showColumns: FilterEntityColumn[] = [];
@@ -74,7 +75,11 @@ export class EventFilterPanelComponent {
     this.eventFilterFormGroup = this.fb.group({});
     this.data.columns.forEach((column) => {
       this.showColumns.push(column);
-      this.eventFilterFormGroup.addControl(column.key, this.fb.control(this.data.filterParams[column.key] || ''));
+      const validators = [];
+      if (this.isNumberFields(column.key)) {
+        validators.push(Validators.min(0));
+      }
+      this.eventFilterFormGroup.addControl(column.key, this.fb.control(this.data.filterParams[column.key] || '', validators));
       if (column.key === 'isError') {
         this.conditionError = true;
       }
@@ -82,7 +87,11 @@ export class EventFilterPanelComponent {
   }
 
   isSelector(key: string): string {
-    return ['msgDirectionType', 'status', 'entityName'].includes(key) ? key : '';
+    return ['msgDirectionType', 'status', 'type', 'entityName'].includes(key) ? key : '';
+  }
+
+  isNumberFields(key: string): string {
+    return ['messagesProcessed', 'errorsOccurred'].includes(key) ? key : '';
   }
 
   selectorValues(key: string): string[] {
@@ -91,6 +100,8 @@ export class EventFilterPanelComponent {
         return this.msgDirectionTypes;
       case 'status':
         return this.statusTypes;
+      case 'type':
+        return this.msgTypes;
       case 'entityName':
         return this.entityTypes;
     }
