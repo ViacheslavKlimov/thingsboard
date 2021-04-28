@@ -34,10 +34,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.leshan.core.model.DDFFileParser;
-import org.eclipse.leshan.core.model.DefaultDDFFileValidator;
-import org.eclipse.leshan.core.model.InvalidDDFFileException;
-import org.eclipse.leshan.core.model.ObjectModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -51,10 +47,6 @@ import org.thingsboard.server.common.data.group.EntityGroup;
 import org.thingsboard.server.common.data.id.AdminSettingsId;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.RuleChainId;
-import org.thingsboard.server.common.data.ResourceType;
-import org.thingsboard.server.common.data.TbResource;
-import org.thingsboard.server.common.data.id.CustomerId;
-import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.oauth2.OAuth2ClientRegistrationTemplate;
 import org.thingsboard.server.common.data.rule.RuleChain;
@@ -62,7 +54,6 @@ import org.thingsboard.server.common.data.rule.RuleChainMetaData;
 import org.thingsboard.server.common.data.widget.WidgetTypeDetails;
 import org.thingsboard.server.common.data.widget.WidgetsBundle;
 import org.thingsboard.server.dao.dashboard.DashboardService;
-import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.group.EntityGroupService;
 import org.thingsboard.server.dao.oauth2.OAuth2ConfigTemplateService;
 import org.thingsboard.server.dao.resource.ResourceService;
@@ -268,29 +259,6 @@ public class InstallScripts {
                         }
                     }
             );
-        }
-    }
-
-    public void loadSystemLwm2mResources() throws Exception {
-        Path modelsDir = Paths.get(getDataDir(), MODELS_DIR);
-        if (Files.isDirectory(modelsDir)) {
-            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(modelsDir, path -> path.toString().endsWith(XML_EXT))) {
-                dirStream.forEach(
-                        path -> {
-                            try {
-                                byte[] fileBytes = Files.readAllBytes(path);
-                                TbResource resource = new TbResource();
-                                resource.setFileName(path.getFileName().toString());
-                                resource.setTenantId(TenantId.SYS_TENANT_ID);
-                                resource.setResourceType(ResourceType.LWM2M_MODEL);
-                                resource.setData(Base64.getEncoder().encodeToString(fileBytes));
-                                resourceService.saveResource(resource);
-                            } catch (Exception e) {
-                                throw new DataValidationException(String.format("Could not parse the XML of objectModel with name %s", path.toString()));
-                            }
-                        }
-                );
-            }
         }
     }
 

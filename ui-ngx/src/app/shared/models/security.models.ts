@@ -109,7 +109,8 @@ export enum Resource {
   API_USAGE_STATE = 'API_USAGE_STATE',
   TB_RESOURCE = 'TB_RESOURCE',
   EDGE = 'EDGE',
-  EDGE_GROUP = 'EDGE_GROUP'
+  EDGE_GROUP = 'EDGE_GROUP',
+  FIRMWARE = 'FIRMWARE'
 }
 
 const resourceTypeTranslations = new Map<Resource, string>();
@@ -140,7 +141,8 @@ export const resourceByEntityType = new Map<EntityType, Resource>(
     [EntityType.ROLE, Resource.ROLE],
     [EntityType.GROUP_PERMISSION, Resource.GROUP_PERMISSION],
     [EntityType.TB_RESOURCE, Resource.TB_RESOURCE],
-    [EntityType.EDGE, Resource.EDGE]
+    [EntityType.EDGE, Resource.EDGE],
+    [EntityType.FIRMWARE, Resource.FIRMWARE]
   ]
 );
 
