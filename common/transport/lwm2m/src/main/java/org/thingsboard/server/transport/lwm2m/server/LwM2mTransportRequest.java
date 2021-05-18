@@ -313,14 +313,17 @@ public class LwM2mTransportRequest {
     @SuppressWarnings({"error sendRequest"})
     private void sendRequest(Registration registration, LwM2mClient lwM2MClient, DownlinkRequest request,
                              long timeoutInMs, Lwm2mClientRpcRequest rpcRequest) {
+        log.info("*** sendRequest: " + request);
         context.getServer().send(registration, request, timeoutInMs, (ResponseCallback<?>) response -> {
 
             if (!lwM2MClient.isInit()) {
+                log.info("*** Got Success Response: *** " + response.getCoapResponse());
                 lwM2MClient.initReadValue(this.serviceImpl, convertPathFromObjectIdToIdVer(request.getPath().toString(), registration));
             }
             if (CoAP.ResponseCode.isSuccess(((Response) response.getCoapResponse()).getCode())) {
                 this.handleResponse(registration, request.getPath().toString(), response, request, rpcRequest);
             } else {
+                log.info("*** Got Failure Response: *** " + response.getCoapResponse());
                 String msg = String.format("%s: SendRequest %s: CoapCode - %s Lwm2m code - %d name - %s Resource path - %s", LOG_LW2M_ERROR, request.getClass().getName().toString(),
                         ((Response) response.getCoapResponse()).getCode(), response.getCode().getCode(), response.getCode().getName(), request.getPath().toString());
                 serviceImpl.sendLogsToThingsboard(msg, registration.getId());
@@ -344,9 +347,10 @@ public class LwM2mTransportRequest {
             /** version == null
              set setClient_fw_info... = empty
              **/
+            log.error("*** Error Response *** " + e.getMessage(), e);
             if (lwM2MClient.getFwUpdate().isInfoFwSwUpdate()) {
                 lwM2MClient.getFwUpdate().initReadValue(serviceImpl, request.getPath().toString());
-                log.warn("updateFirmwareClient2");
+                log.trace("updateFirmwareClient2");
             }
             if (!lwM2MClient.isInit()) {
                 lwM2MClient.initReadValue(this.serviceImpl, convertPathFromObjectIdToIdVer(request.getPath().toString(), registration));
@@ -429,6 +433,7 @@ public class LwM2mTransportRequest {
     private void sendResponse(Registration registration, String path, LwM2mResponse response,
                               DownlinkRequest request, Lwm2mClientRpcRequest rpcRequest) {
         String pathIdVer = convertPathFromObjectIdToIdVer(path, registration);
+        log.info("*** Received LwM2mResponse: " + response );
         if (response instanceof ReadResponse) {
             serviceImpl.onUpdateValueAfterReadResponse(registration, pathIdVer, (ReadResponse) response, rpcRequest);
         } else if (response instanceof CancelObservationResponse) {
