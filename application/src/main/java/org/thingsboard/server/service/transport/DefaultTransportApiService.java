@@ -37,6 +37,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -68,6 +69,7 @@ import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.security.DeviceCredentials;
 import org.thingsboard.server.common.data.security.DeviceCredentialsType;
+import org.thingsboard.server.common.data.stats.KpiStatistics;
 import org.thingsboard.server.common.msg.EncryptionUtil;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgDataType;
@@ -88,6 +90,7 @@ import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentials
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetKpiStatisticsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMsg;
@@ -108,6 +111,7 @@ import org.thingsboard.server.service.profile.TbDeviceProfileCache;
 import org.thingsboard.server.service.queue.TbClusterService;
 import org.thingsboard.server.service.resource.TbResourceService;
 import org.thingsboard.server.service.state.DeviceStateService;
+import org.thingsboard.server.service.stats.KpiStatisticsService;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -123,6 +127,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @TbCoreComponent
+@RequiredArgsConstructor
 public class DefaultTransportApiService implements TransportApiService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -141,30 +146,9 @@ public class DefaultTransportApiService implements TransportApiService {
     private final TbResourceService resourceService;
     private final FirmwareService firmwareService;
     private final FirmwareDataCache firmwareDataCache;
+    private final KpiStatisticsService kpiStatisticsService;
 
     private final ConcurrentMap<String, ReentrantLock> deviceCreationLocks = new ConcurrentHashMap<>();
-
-    public DefaultTransportApiService(TbDeviceProfileCache deviceProfileCache,
-                                      TbTenantProfileCache tenantProfileCache, TbApiUsageStateService apiUsageStateService, DeviceService deviceService,
-                                      RelationService relationService, DeviceCredentialsService deviceCredentialsService,
-                                      DeviceStateService deviceStateService, DbCallbackExecutorService dbCallbackExecutorService,
-                                      TbClusterService tbClusterService, DataDecodingEncodingService dataDecodingEncodingService,
-                                      DeviceProvisionService deviceProvisionService, TbResourceService resourceService, FirmwareService firmwareService, FirmwareDataCache firmwareDataCache) {
-        this.deviceProfileCache = deviceProfileCache;
-        this.tenantProfileCache = tenantProfileCache;
-        this.apiUsageStateService = apiUsageStateService;
-        this.deviceService = deviceService;
-        this.relationService = relationService;
-        this.deviceCredentialsService = deviceCredentialsService;
-        this.deviceStateService = deviceStateService;
-        this.dbCallbackExecutorService = dbCallbackExecutorService;
-        this.tbClusterService = tbClusterService;
-        this.dataDecodingEncodingService = dataDecodingEncodingService;
-        this.deviceProvisionService = deviceProvisionService;
-        this.resourceService = resourceService;
-        this.firmwareService = firmwareService;
-        this.firmwareDataCache = firmwareDataCache;
-    }
 
     @Override
     public ListenableFuture<TbProtoQueueMsg<TransportApiResponseMsg>> handle(TbProtoQueueMsg<TransportApiRequestMsg> tbProtoQueueMsg) {
@@ -201,6 +185,8 @@ public class DefaultTransportApiService implements TransportApiService {
             result = handle(transportApiRequestMsg.getDeviceCredentialsRequestMsg());
         } else if (transportApiRequestMsg.hasFirmwareRequestMsg()) {
             result = handle(transportApiRequestMsg.getFirmwareRequestMsg());
+        } else if (transportApiRequestMsg.hasKpiStatisticsRequestMsg()) {
+            result = handle(transportApiRequestMsg.getKpiStatisticsRequestMsg());
         }
 
         return Futures.transform(Optional.ofNullable(result).orElseGet(this::getEmptyTransportApiResponseFuture),
@@ -464,6 +450,16 @@ public class DefaultTransportApiService implements TransportApiService {
         return Futures.immediateFuture(TransportApiResponseMsg.newBuilder()
                 .setSnmpDevicesResponseMsg(responseMsg)
                 .build());
+    }
+
+    private ListenableFuture<TransportApiResponseMsg> handle(GetKpiStatisticsRequestMsg kpiStatisticsRequestMsg) {
+        KpiStatistics kpiStatistics = kpiStatisticsService.calculateKpiStatistics();
+        TransportApiResponseMsg responseMsg = TransportApiResponseMsg.newBuilder()
+                .setKpiStatisticsResponseMsg(TransportProtos.GetKpiStatisticsResponseMsg.newBuilder()
+                        .setData(ByteString.copyFrom(dataDecodingEncodingService.encode(kpiStatistics))))
+                .build();
+
+        return Futures.immediateFuture(responseMsg);
     }
 
     private ListenableFuture<TransportApiResponseMsg> getDeviceInfo(DeviceId deviceId, DeviceCredentials credentials) {

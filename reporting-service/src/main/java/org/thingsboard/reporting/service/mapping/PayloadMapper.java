@@ -28,21 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.snmp;
+package org.thingsboard.reporting.service.mapping;
 
-public enum SnmpMethod {
-    GET(-96),
-    SET(-93),
-    TRAP(-89);
+import org.thingsboard.server.common.data.stats.KpiStatistics;
 
-    // codes taken from org.snmp4j.PDU class
-    private final int code;
+public interface PayloadMapper {
+    String convertKpiStatisticsToString(KpiStatistics kpiStatistics);
 
-    SnmpMethod(int code) {
-        this.code = code;
-    }
-
-    public int getCode() {
-        return code;
+    enum Type {
+        JSON, XML
     }
 }

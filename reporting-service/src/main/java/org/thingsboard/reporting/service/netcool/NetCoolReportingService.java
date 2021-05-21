@@ -28,21 +28,27 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.snmp;
+package org.thingsboard.reporting.service.netcool;
 
-public enum SnmpMethod {
-    GET(-96),
-    SET(-93),
-    TRAP(-89);
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.snmp4j.CommunityTarget;
+import org.snmp4j.security.SecurityModel;
+import org.snmp4j.smi.OctetString;
+import org.springframework.stereotype.Service;
 
-    // codes taken from org.snmp4j.PDU class
-    private final int code;
+@Service
+@RequiredArgsConstructor
+public class NetCoolReportingService { // send traps with events
+    private void initNetCoolSnmpTarget() {
+        CommunityTarget target = new CommunityTarget();
+        target.setSecurityModel(SecurityModel.SECURITY_MODEL_SNMPv2c);
+        target.setCommunity(new OctetString());
 
-    SnmpMethod(int code) {
-        this.code = code;
     }
 
-    public int getCode() {
-        return code;
+    @Data
+    public static class NetCoolConfig {
+//        private
     }
 }

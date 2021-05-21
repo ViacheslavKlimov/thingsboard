@@ -28,21 +28,23 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.snmp;
+package org.thingsboard.server.service.stats;
 
-public enum SnmpMethod {
-    GET(-96),
-    SET(-93),
-    TRAP(-89);
+import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.stats.KpiStatistics;
+import org.thingsboard.server.queue.util.TbCoreComponent;
 
-    // codes taken from org.snmp4j.PDU class
-    private final int code;
-
-    SnmpMethod(int code) {
-        this.code = code;
-    }
-
-    public int getCode() {
-        return code;
+@Service
+@TbCoreComponent
+public class KpiStatisticsService {
+    public KpiStatistics calculateKpiStatistics() {
+        return KpiStatistics.builder()
+                .devices(0L)
+                .onlineDevices(0L)
+                .offlineDevices(0L)
+                .apiCalls(0L)
+                .provisionRequests(0L)
+//                .perCustomerProvisionRequests(Map.of(, 0L))
+                .build();
     }
 }

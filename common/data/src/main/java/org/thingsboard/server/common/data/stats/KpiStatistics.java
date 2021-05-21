@@ -28,21 +28,52 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.snmp;
+package org.thingsboard.server.common.data.stats;
 
-public enum SnmpMethod {
-    GET(-96),
-    SET(-93),
-    TRAP(-89);
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.thingsboard.server.common.data.id.CustomerId;
 
-    // codes taken from org.snmp4j.PDU class
-    private final int code;
+import java.io.Serializable;
+import java.util.Map;
 
-    SnmpMethod(int code) {
-        this.code = code;
-    }
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class KpiStatistics implements Serializable {
+    private CustomerId customerId;
+    private Long devices;
+    private Long onlineDevices;
+    private Long offlineDevices;
+    private Long apiCalls;
 
-    public int getCode() {
-        return code;
-    }
+    private Long provisionRequests;
+    private Map<CustomerId, Long> perCustomerProvisionRequests;
+
+//    public enum KpiKey {
+//        NUMBER_OF_DEVICES("devices"),
+//        NUMBER_OF_ONLINE_DEVICES("onlineDevices"),
+//        NUMBER_OF_OFFLINE_DEVICES("offlineDevices"),
+//        NUMBER_OF_PROVISION_REQUESTS("provisionRequests");
+//
+//        private final String name;
+//
+//        KpiKey(String name) {
+//            this.name = name;
+//        }
+//
+//        @JsonValue
+//        public String keyName() {
+//            return name;
+//        }
+//    }
+//
+//    @Data
+//    public static class KpiEntry {
+//        private final KpiKey key;
+//        private final Long value;
+//    }
 }

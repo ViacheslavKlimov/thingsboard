@@ -292,6 +292,14 @@ message GetSnmpDevicesResponseMsg {
   bool hasNextPage = 2;
 }
 
+message GetKpiStatisticsRequestMsg {
+
+}
+
+message GetKpiStatisticsResponseMsg {
+  bytes data = 1;
+}
+
 message EntityUpdateMsg {
   string entityType = 1;
   bytes data = 2;
@@ -696,6 +704,7 @@ message TransportApiRequestMsg {
   GetSnmpDevicesRequestMsg snmpDevicesRequestMsg = 11;
   GetDeviceRequestMsg deviceRequestMsg = 12;
   GetDeviceCredentialsRequestMsg deviceCredentialsRequestMsg = 13;
+  GetKpiStatisticsRequestMsg kpiStatisticsRequestMsg = 14;
 }
 
 /* Response from ThingsBoard Core Service to Transport Service */
@@ -710,6 +719,7 @@ message TransportApiResponseMsg {
   GetFirmwareResponseMsg firmwareResponseMsg = 8;
   GetDeviceResponseMsg deviceResponseMsg = 9;
   GetDeviceCredentialsResponseMsg deviceCredentialsResponseMsg = 10;
+  GetKpiStatisticsResponseMsg kpiStatisticsResponseMsg = 11;
 }
 
 /* Messages that are handled by ThingsBoard Core Service */

@@ -28,21 +28,24 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.transport.snmp;
+package org.thingsboard.reporting.config;
 
-public enum SnmpMethod {
-    GET(-96),
-    SET(-93),
-    TRAP(-89);
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.thingsboard.reporting.service.mapping.JsonPayloadMapper;
+import org.thingsboard.reporting.service.mapping.PayloadMapper;
 
-    // codes taken from org.snmp4j.PDU class
-    private final int code;
+@Configuration
+public class MappingConfig {
+    private PayloadMapper.Type payloadMappingType = PayloadMapper.Type.JSON;
 
-    SnmpMethod(int code) {
-        this.code = code;
-    }
-
-    public int getCode() {
-        return code;
+    @Bean
+    public PayloadMapper payloadMapper() {
+        switch (payloadMappingType) {
+            case JSON:
+                return new JsonPayloadMapper();
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 }
