@@ -31,10 +31,11 @@
 package org.thingsboard.reporting.service.nagios;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.thingsboard.common.util.ThingsBoardThreadFactory;
 import org.thingsboard.reporting.service.mapping.PayloadMapper;
 import org.thingsboard.reporting.snmp.SnmpAgent;
 import org.thingsboard.reporting.snmp.SnmpAgent.StringSnmpVariable;
@@ -44,9 +45,7 @@ import org.thingsboard.server.common.transport.util.DataDecodingEncodingService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.AfterStartUp;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -61,35 +60,48 @@ public class NagiosReportingService {
     @Value("${snmp.community}")
     private String snmpCommunity;
     @Value("${nagios.kpi_statistics.oid}")
-    private String kpiStatisticsOid;
+    private String kpiStatsOid;
     @Value("${nagios.kpi_statistics.updating_period}")
-    private int kpiStatisticsUpdatingPeriod;
+    private int kpiStatsUpdatingPeriod;
+    @Value("${nagios.kpi_statistics.load_on_request}")
+    private Boolean loadKpiStatsOnRequest;
 
     private final TransportService transportService;
     private final DataDecodingEncodingService dataDecodingEncodingService;
     private final PayloadMapper payloadMapper;
 
     @AfterStartUp
-    public void init() throws IOException {
+    public void run() throws IOException {
         snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
         snmpAgent.start();
 
-        StringSnmpVariable kpiStatisticsVariable = snmpAgent.registerStringVariable(kpiStatisticsOid);
+        if (loadKpiStatsOnRequest) {
+            snmpAgent.registerStringVariable(kpiStatsOid, () -> {
+                return mapToString(getKpiStatistics());
+            });
+        } else {
+            StringSnmpVariable kpiStatisticsVariable = snmpAgent.registerStringVariable(kpiStatsOid);
+            Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+                try {
+                    kpiStatisticsVariable.setValue(mapToString(getKpiStatistics()));
+                } catch (Exception e) {
+                    log.error("Failed to retrieve KPI statistics: {}", ExceptionUtils.getRootCauseMessage(e));
+                }
+            }, 0, kpiStatsUpdatingPeriod, TimeUnit.MILLISECONDS);
+        }
 
-        kpiStatisticsUpdatingPeriod = 5;
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-                    try {
-                        KpiStatistics kpiStatistics = getKpiStatistics();
-                        kpiStatisticsVariable.setValue(payloadMapper.convertKpiStatisticsToString(kpiStatistics));
-                    } catch (Exception e) {
-                        log.error("Failed to retrieve KPI statistics: {}", e.toString());
-                    }
-                }, 0, kpiStatisticsUpdatingPeriod, TimeUnit.MILLISECONDS);
     }
 
+    @SneakyThrows
     private KpiStatistics getKpiStatistics() {
-        TransportProtos.GetKpiStatisticsResponseMsg responseMsg = transportService.getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg.getDefaultInstance());
+        TransportProtos.GetKpiStatisticsResponseMsg responseMsg = transportService.getKpiStatistics(
+                TransportProtos.GetKpiStatisticsRequestMsg.getDefaultInstance()
+        ).get(2, TimeUnit.SECONDS);
         return (KpiStatistics) dataDecodingEncodingService.decode(responseMsg.getData().toByteArray())
-                .orElseThrow(() -> new IllegalStateException("Could not get KPI statistics"));
+                .orElseThrow(() -> new IllegalStateException("failed to decode"));
+    }
+
+    private String mapToString(KpiStatistics kpiStatistics) {
+        return payloadMapper.convertKpiStatisticsToString(kpiStatistics);
     }
 }

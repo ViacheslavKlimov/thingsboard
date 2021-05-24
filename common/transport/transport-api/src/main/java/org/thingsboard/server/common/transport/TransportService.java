@@ -30,6 +30,7 @@
  */
 package org.thingsboard.server.common.transport;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.transport.auth.GetOrCreateDeviceFromGatewayResponse;
@@ -46,7 +47,6 @@ import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileRequ
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetFirmwareRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetFirmwareResponseMsg;
-import org.thingsboard.server.gen.transport.TransportProtos.GetKpiStatisticsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetKpiStatisticsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMsg;
@@ -87,7 +87,7 @@ public interface TransportService {
 
     GetDeviceCredentialsResponseMsg getDeviceCredentials(GetDeviceCredentialsRequestMsg requestMsg);
 
-    GetKpiStatisticsResponseMsg getKpiStatistics(GetKpiStatisticsRequestMsg requestMsg);
+    ListenableFuture<GetKpiStatisticsResponseMsg> getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg requestMsg);
 
     void process(DeviceTransportType transportType, ValidateDeviceTokenRequestMsg msg,
                  TransportServiceCallback<ValidateDeviceCredentialsResponse> callback);

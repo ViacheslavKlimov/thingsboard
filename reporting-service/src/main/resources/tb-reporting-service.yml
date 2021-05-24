@@ -35,8 +35,9 @@ snmp:
 
 nagios:
   kpi_statistics:
-    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}"
-    updating_period: "${KPI_STATISTICS_UPDATING_PERIOD:5000}"
+    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats are being hosted on this OID
+    load_on_request: "${KPI_STATISTICS_LOAD_ON_REQUEST:false}" # To load KPI stats on each SNMP GET request, or otherwise update stats each {updating_period}
+    updating_period: "${KPI_STATISTICS_UPDATING_PERIOD:5000}" # In milliseconds
 queue:
   type: "${TB_QUEUE_TYPE:kafka}" # kafka (Apache Kafka) or aws-sqs (AWS SQS) or pubsub (PubSub) or service-bus (Azure Service Bus) or rabbitmq (RabbitMQ)
   kafka:
@@ -204,8 +205,24 @@ queue:
     notifications_topic: "${TB_QUEUE_TRANSPORT_NOTIFICATIONS_TOPIC:tb_transport.notifications}"
     poll_interval: "${TB_QUEUE_TRANSPORT_NOTIFICATIONS_POLL_INTERVAL_MS:25}"
 
+zk:
+  # Enable/disable zookeeper discovery service.
+  enabled: "${ZOOKEEPER_ENABLED:false}"
+  # Zookeeper connect string
+  url: "${ZOOKEEPER_URL:localhost:2181}"
+  # Zookeeper retry interval in milliseconds
+  retry_interval_ms: "${ZOOKEEPER_RETRY_INTERVAL_MS:3000}"
+  # Zookeeper connection timeout in milliseconds
+  connection_timeout_ms: "${ZOOKEEPER_CONNECTION_TIMEOUT_MS:3000}"
+  # Zookeeper session timeout in milliseconds
+  session_timeout_ms: "${ZOOKEEPER_SESSION_TIMEOUT_MS:3000}"
+  # Name of the directory in zookeeper 'filesystem'
+  zk_dir: "${ZOOKEEPER_NODES_DIR:/thingsboard}"
+
 service:
   type: tb-transport
+  id: "${TB_SERVICE_ID:}"
+  tenant_id: "${TB_SERVICE_TENANT_ID:}" # empty or specific tenant id.
 
 transport:
   sessions:

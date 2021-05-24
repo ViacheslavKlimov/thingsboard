@@ -30,16 +30,21 @@
  */
 package org.thingsboard.server.service.stats;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.stats.KpiStatistics;
+import org.thingsboard.server.dao.device.DeviceDao;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
 @Service
 @TbCoreComponent
+@RequiredArgsConstructor
 public class KpiStatisticsService {
+    private final DeviceDao deviceDao;
+
     public KpiStatistics calculateKpiStatistics() {
         return KpiStatistics.builder()
-                .devices(0L)
+                .devices(deviceDao.count())
                 .onlineDevices(0L)
                 .offlineDevices(0L)
                 .apiCalls(0L)

@@ -48,4 +48,6 @@ public interface Dao<T> {
 
     boolean removeById(TenantId tenantId, UUID id);
 
+    Long count();
+
 }

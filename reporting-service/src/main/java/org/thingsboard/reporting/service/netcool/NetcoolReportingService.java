@@ -30,25 +30,25 @@
  */
 package org.thingsboard.reporting.service.netcool;
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.snmp4j.CommunityTarget;
-import org.snmp4j.security.SecurityModel;
-import org.snmp4j.smi.OctetString;
+import org.snmp4j.Snmp;
+import org.snmp4j.Target;
 import org.springframework.stereotype.Service;
+import org.thingsboard.common.util.snmp.SnmpUtils;
 
 @Service
 @RequiredArgsConstructor
-public class NetCoolReportingService { // send traps with events
-    private void initNetCoolSnmpTarget() {
-        CommunityTarget target = new CommunityTarget();
-        target.setSecurityModel(SecurityModel.SECURITY_MODEL_SNMPv2c);
-        target.setCommunity(new OctetString());
+public class NetcoolReportingService { // send traps with events
+    private String snmpHost;
+    private Integer snmpPort;
+    private String snmpCommunity = "public";
 
+    private final Snmp snmp = new Snmp();
+
+    private void initNetcoolSnmpTarget() {
+        Target target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
     }
 
-    @Data
-    public static class NetCoolConfig {
-//        private
-    }
+//    private void sendTrap(Object event, )
+
 }

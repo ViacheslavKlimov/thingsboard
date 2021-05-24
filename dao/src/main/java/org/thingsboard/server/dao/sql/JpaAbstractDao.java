@@ -107,4 +107,10 @@ public abstract class JpaAbstractDao<E extends BaseEntity<D>, D>
         List<E> entities = Lists.newArrayList(getCrudRepository().findAll());
         return DaoUtil.convertDataList(entities);
     }
+
+    @Override
+    public Long count() {
+        return getCrudRepository().count();
+    }
+
 }

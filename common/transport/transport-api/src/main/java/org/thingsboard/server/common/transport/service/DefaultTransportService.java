@@ -353,15 +353,16 @@ public class DefaultTransportService implements TransportService {
 
     @Override
     @SneakyThrows
-    public TransportProtos.GetKpiStatisticsResponseMsg getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg requestMsg) {
+    public ListenableFuture<TransportProtos.GetKpiStatisticsResponseMsg> getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg requestMsg) {
         TbProtoQueueMsg<TransportApiRequestMsg> protoMsg = new TbProtoQueueMsg<>(
                 UUID.randomUUID(), TransportProtos.TransportApiRequestMsg.newBuilder()
                 .setKpiStatisticsRequestMsg(requestMsg)
                 .build()
         );
 
-        TbProtoQueueMsg<TransportApiResponseMsg> response = transportApiRequestTemplate.send(protoMsg).get();
-        return response.getValue().getKpiStatisticsResponseMsg();
+        return Futures.transform(transportApiRequestTemplate.send(protoMsg), response -> {
+            return response.getValue().getKpiStatisticsResponseMsg();
+        }, MoreExecutors.directExecutor());
     }
 
     @Override

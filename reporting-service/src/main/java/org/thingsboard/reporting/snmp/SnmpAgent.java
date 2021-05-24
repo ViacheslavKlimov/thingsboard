@@ -31,6 +31,8 @@
 package org.thingsboard.reporting.snmp;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
@@ -62,6 +64,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
+@Slf4j
 public class SnmpAgent extends BaseAgent {
     private final int port;
     private final String community;
@@ -108,12 +111,15 @@ public class SnmpAgent extends BaseAgent {
         MOScalar<OctetString> mo = registerStringMO(oid, "");
         server.addLookupListener(new MOServerLookupListener() {
             @Override
-            public void lookupEvent(MOServerLookupEvent event) {
-            }
+            public void lookupEvent(MOServerLookupEvent event) {}
 
             @Override
             public void queryEvent(MOServerLookupEvent event) {
-                mo.setValue(new OctetString(valueSupplier.get()));
+                try {
+                    mo.setValue(new OctetString(valueSupplier.get()));
+                } catch (Exception e) {
+                    log.error("Failed to calculate variable value: {}", ExceptionUtils.getRootCauseMessage(e));
+                }
             }
         }, mo);
     }
@@ -154,11 +160,13 @@ public class SnmpAgent extends BaseAgent {
         communityMIB.getSnmpCommunityEntry().addRow(row);
     }
 
+    @Override
     protected void registerManagedObjects() {}
 
     @Override
     protected void unregisterManagedObjects() {}
 
+    @Override
     protected void addNotificationTargets(SnmpTargetMIB targetMIB, SnmpNotificationMIB notificationMIB) {}
 
     @Override
