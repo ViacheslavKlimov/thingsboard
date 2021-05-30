@@ -28,32 +28,28 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data;
+package org.thingsboard.server.transport.lwm2m.server.store;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.thingsboard.server.common.data.id.FirmwareId;
+import org.thingsboard.server.transport.lwm2m.secure.TbX509DtlsSessionInfo;
 
-import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentHashMap;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class Firmware extends FirmwareInfo {
+public class TbL2M2MDtlsSessionInMemoryStore implements TbLwM2MDtlsSessionStore {
 
-    private static final long serialVersionUID = 3091601761339422546L;
+    private final ConcurrentHashMap<String, TbX509DtlsSessionInfo> store = new ConcurrentHashMap<>();
 
-    private transient ByteBuffer data;
-
-    public Firmware() {
-        super();
+    @Override
+    public void put(String endpoint, TbX509DtlsSessionInfo msg) {
+        store.put(endpoint, msg);
     }
 
-    public Firmware(FirmwareId id) {
-        super(id);
+    @Override
+    public TbX509DtlsSessionInfo get(String endpoint) {
+        return store.get(endpoint);
     }
 
-    public Firmware(Firmware firmware) {
-        super(firmware);
-        this.data = firmware.getData();
+    @Override
+    public void remove(String endpoint) {
+        store.remove(endpoint);
     }
 }

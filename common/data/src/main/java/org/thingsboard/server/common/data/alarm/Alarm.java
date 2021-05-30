@@ -37,8 +37,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.thingsboard.server.common.data.BaseData;
-import org.thingsboard.server.common.data.HasCustomerId;
 import org.thingsboard.server.common.data.EntityType;
+import org.thingsboard.server.common.data.HasCustomerId;
 import org.thingsboard.server.common.data.HasName;
 import org.thingsboard.server.common.data.TenantEntity;
 import org.thingsboard.server.common.data.id.AlarmId;
@@ -54,7 +54,7 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
-public class Alarm extends BaseData<AlarmId> implements HasName, HasCustomerId, TenantEntity {
+public class Alarm extends BaseData<AlarmId> implements HasName, TenantEntity, HasCustomerId {
 
     private TenantId tenantId;
     private CustomerId customerId;

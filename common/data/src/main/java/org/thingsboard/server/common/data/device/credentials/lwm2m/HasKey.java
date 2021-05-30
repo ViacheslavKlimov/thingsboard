@@ -28,16 +28,22 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.rpc;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import lombok.Data;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 
-/**
- * @author Andrew Shvayka
- */
-@Data
-public class RpcRequest {
-    private final String methodName;
-    private final String requestData;
-    private Long timeout;
+public abstract class HasKey extends AbstractLwM2MClientCredentials {
+    private byte[] key;
+
+    @SneakyThrows
+    public void setKey(String key) {
+        if (key != null) {
+            this.key = Hex.decodeHex(key.toLowerCase().toCharArray());
+        }
+    }
+
+    public byte[] getKey() {
+        return key;
+    }
 }

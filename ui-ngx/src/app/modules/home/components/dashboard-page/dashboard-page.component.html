@@ -96,7 +96,7 @@
                   (click)="isFullscreen = !isFullscreen">
             <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
           </button>
-          <button [fxShow]="currentDashboardId && !isEdit && isTenantAdmin() && displayUpdateDashboardImage()" mat-icon-button
+          <button [fxShow]="currentDashboardId && !isEdit && !isMobileApp && canEdit() && !readonly && displayUpdateDashboardImage()" mat-icon-button
                   matTooltip="{{'dashboard.update-image' | translate}}"
                   matTooltipPosition="below"
                   (click)="updateDashboardImage($event)">
@@ -227,7 +227,7 @@
             </tb-dashboard-layout>
           </mat-drawer-content>
         </mat-drawer-container>
-        <section fxLayout="row" class="layout-wrap tb-footer-buttons" fxLayoutAlign="start end"
+        <section data-html2canvas-ignore fxLayout="row" class="layout-wrap tb-footer-buttons" fxLayoutAlign="start end"
                  *ngIf="!readonly && !reportView && !stateSelectView">
           <tb-footer-fab-buttons *ngIf="!embedded && !isMobileApp"
                                  [fxShow]="!isAddingWidget && isEdit && !widgetEditMode"
@@ -257,8 +257,6 @@
       <mat-drawer class="tb-details-drawer"
                   [opened]="isEditingWidget || isAddingWidget"
                   (openedStart)="detailsDrawerOpenedStart()"
-                  (opened)="detailsDrawerOpened()"
-                  (closedStart)="detailsDrawerClosedStart()"
                   (closed)="detailsDrawerClosed()"
                   mode="over"
                   position="end">

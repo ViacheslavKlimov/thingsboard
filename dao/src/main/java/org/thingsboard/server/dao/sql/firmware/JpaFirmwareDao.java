@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.Firmware;
+import org.thingsboard.server.common.data.firmware.Firmware;
 import org.thingsboard.server.dao.firmware.FirmwareDao;
 import org.thingsboard.server.dao.model.sql.FirmwareEntity;
 import org.thingsboard.server.dao.sql.JpaAbstractSearchTextDao;

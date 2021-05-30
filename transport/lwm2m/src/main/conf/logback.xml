@@ -50,6 +50,9 @@
     </appender>
 
     <logger name="org.thingsboard.server" level="INFO" />
+    <logger name="org.thingsboard.server.lwm2m" level="TRACE" />
+    <logger name="org.eclipse.californium.elements.UDPConnector" level="TRACE"/>
+    <logger name="org.eclipse.californium.core.network.CoapEndpoint" level="TRACE"/>
 
     <logger name="com.microsoft.azure.servicebus.primitives.CoreMessageReceiver" level="OFF" />
 

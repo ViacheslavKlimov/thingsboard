@@ -111,4 +111,5 @@ public class ApiUsageState extends BaseData<ApiUsageStateId> implements TenantEn
     public EntityType getEntityType() {
         return EntityType.API_USAGE_STATE;
     }
+
 }

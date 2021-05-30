@@ -33,18 +33,27 @@ import { BaseData } from '@shared/models/base-data';
 import { TenantId } from '@shared/models/id/tenant-id';
 import { FirmwareId } from '@shared/models/id/firmware-id';
 import { DeviceProfileId } from '@shared/models/id/device-profile-id';
+import { EntityGroupId } from '@shared/models/id/entity-group-id';
 
 export enum ChecksumAlgorithm {
-  MD5 = 'md5',
-  SHA256 = 'sha256',
-  CRC32 = 'crc32'
+  MD5 = 'MD5',
+  SHA256 = 'SHA256',
+  SHA384 = 'SHA384',
+  SHA512 = 'SHA512',
+  CRC32 = 'CRC32',
+  MURMUR3_32 = 'MURMUR3_32',
+  MURMUR3_128 = 'MURMUR3_128'
 }
 
 export const ChecksumAlgorithmTranslationMap = new Map<ChecksumAlgorithm, string>(
   [
     [ChecksumAlgorithm.MD5, 'MD5'],
     [ChecksumAlgorithm.SHA256, 'SHA-256'],
-    [ChecksumAlgorithm.CRC32, 'CRC-32']
+    [ChecksumAlgorithm.SHA384, 'SHA-384'],
+    [ChecksumAlgorithm.SHA512, 'SHA-512'],
+    [ChecksumAlgorithm.CRC32, 'CRC-32'],
+    [ChecksumAlgorithm.MURMUR3_32, 'MURMUR3-32'],
+    [ChecksumAlgorithm.MURMUR3_128, 'MURMUR3-128']
   ]
 );
 
@@ -78,4 +87,12 @@ export interface FirmwareInfo extends BaseData<FirmwareId> {
 export interface Firmware extends FirmwareInfo {
   file?: File;
   data: string;
+}
+
+export interface FirmwareGroupInfo {
+  firmwareId: FirmwareId;
+  firmwareType: FirmwareType;
+  firmwareUpdateTime?: number;
+  groupId: EntityGroupId;
+  id?: string;
 }

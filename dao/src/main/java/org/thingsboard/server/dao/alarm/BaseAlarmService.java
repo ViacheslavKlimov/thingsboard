@@ -363,6 +363,7 @@ public class BaseAlarmService extends AbstractEntityService implements AlarmServ
         return alarmCounts;
     }
 
+    @Override
     public AlarmSeverity findHighestAlarmSeverity(TenantId tenantId, EntityId entityId, AlarmSearchStatus alarmSearchStatus,
                                                   AlarmStatus alarmStatus) {
         Set<AlarmStatus> statusList = null;

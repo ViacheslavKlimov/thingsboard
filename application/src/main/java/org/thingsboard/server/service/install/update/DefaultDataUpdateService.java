@@ -42,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.rule.engine.profile.TbDeviceProfileNode;
 import org.thingsboard.rule.engine.profile.TbDeviceProfileNodeConfiguration;
 import org.thingsboard.server.common.data.AdminSettings;
@@ -55,14 +56,14 @@ import org.thingsboard.server.common.data.SearchTextBased;
 import org.thingsboard.server.common.data.ShortCustomerInfo;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.User;
+import org.thingsboard.server.common.data.alarm.Alarm;
+import org.thingsboard.server.common.data.alarm.AlarmInfo;
+import org.thingsboard.server.common.data.alarm.AlarmQuery;
 import org.thingsboard.server.common.data.group.EntityGroup;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
-import org.thingsboard.server.common.data.alarm.Alarm;
-import org.thingsboard.server.common.data.alarm.AlarmInfo;
-import org.thingsboard.server.common.data.alarm.AlarmQuery;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UUIDBased;
@@ -89,12 +90,15 @@ import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.common.data.wl.Favicon;
 import org.thingsboard.server.common.data.wl.PaletteSettings;
 import org.thingsboard.server.common.data.wl.WhiteLabelingParams;
+import org.thingsboard.server.dao.alarm.AlarmDao;
+import org.thingsboard.server.dao.alarm.AlarmService;
 import org.thingsboard.server.dao.asset.AssetService;
 import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.edge.EdgeService;
+import org.thingsboard.server.dao.entity.EntityService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.group.EntityGroupService;
@@ -106,7 +110,6 @@ import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.wl.WhiteLabelingService;
-import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.service.install.InstallScripts;
 import org.thingsboard.server.service.install.SystemDataLoaderService;
 
@@ -251,13 +254,13 @@ public class DefaultDataUpdateService implements DataUpdateService {
             new PaginatedUpdater<>() {
 
                 @Override
-                protected boolean forceReportTotal() {
-                    return true;
+                protected String getName() {
+                    return "Tenants default rule chain updater";
                 }
 
                 @Override
-                protected String getName() {
-                    return "Tenants default rule chain updater";
+                protected boolean forceReportTotal() {
+                    return true;
                 }
 
                 @Override
@@ -282,13 +285,12 @@ public class DefaultDataUpdateService implements DataUpdateService {
             new PaginatedUpdater<>() {
 
                 @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
-
-                @Override
                 protected String getName() {
                     return "Tenants default edge rule chain updater";
+                }
+                @Override
+                protected boolean forceReportTotal() {
+                    return true;
                 }
 
                 @Override
@@ -313,13 +315,12 @@ public class DefaultDataUpdateService implements DataUpdateService {
             new PaginatedUpdater<>() {
 
                 @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
-
-                @Override
                 protected String getName() {
                     return "Tenants root rule chain updater";
+                }
+                @Override
+                protected boolean forceReportTotal() {
+                    return true;
                 }
 
                 @Override
@@ -375,15 +376,14 @@ public class DefaultDataUpdateService implements DataUpdateService {
 
     private final PaginatedUpdater<String, Tenant> tenantsEntityViewsUpdater =
             new PaginatedUpdater<>() {
-
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
-
+        
                 @Override
                 protected String getName() {
                     return "Tenants entity views updater";
+                }
+                @Override
+                protected boolean forceReportTotal() {
+                    return true;
                 }
 
                 @Override
@@ -834,50 +834,6 @@ public class DefaultDataUpdateService implements DataUpdateService {
         }, MoreExecutors.directExecutor());
     }
 
-    private final PaginatedUpdater<String, Tenant> tenantsAlarmsCustomerUpdater =
-            new PaginatedUpdater<>() {
-
-                @Override
-                protected String getName() {
-                    return "Tenants alarms customer updater";
-                }
-
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
-
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
-
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    updateTenantAlarmsCustomer(tenant.getId());
-                }
-            };
-
-    private void updateTenantAlarmsCustomer(TenantId tenantId) {
-        AlarmQuery alarmQuery = new AlarmQuery(null, new TimePageLink(100), null, null, false);
-        PageData<AlarmInfo> alarms = alarmDao.findAlarms(tenantId, alarmQuery);
-        boolean hasNext = true;
-        while (hasNext) {
-            for (Alarm alarm : alarms.getData()) {
-                if (alarm.getCustomerId() == null && alarm.getOriginator() != null) {
-                    alarm.setCustomerId(entityService.fetchEntityCustomerId(tenantId, alarm.getOriginator()));
-                    alarmDao.save(tenantId, alarm);
-                }
-            }
-            if (alarms.hasNext()) {
-                alarmQuery.setPageLink(alarmQuery.getPageLink().nextPageLink());
-                alarms = alarmDao.findAlarms(tenantId, alarmQuery);
-            } else {
-                hasNext = false;
-            }
-        }
-    }
-    
     private void updateSystemWhiteLabelingParameters() {
         AdminSettings whiteLabelParamsSettings = adminSettingsService.findAdminSettingsByKey(TenantId.SYS_TENANT_ID, WHITE_LABEL_PARAMS);
         JsonNode storedWl = null;
@@ -950,6 +906,50 @@ public class DefaultDataUpdateService implements DataUpdateService {
             if (pageData.hasNext()) {
                 pageLink = pageLink.nextPageLink();
                 pageData = integrationService.findTenantIntegrations(tenantId, pageLink);
+            } else {
+                hasNext = false;
+            }
+        }
+    }
+
+    private final PaginatedUpdater<String, Tenant> tenantsAlarmsCustomerUpdater =
+            new PaginatedUpdater<>() {
+
+                @Override
+                protected String getName() {
+                    return "Tenants alarms customer updater";
+                }
+
+                @Override
+                protected boolean forceReportTotal() {
+                    return true;
+                }
+
+                @Override
+                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+                    return tenantService.findTenants(pageLink);
+                }
+
+                @Override
+                protected void updateEntity(Tenant tenant) {
+                    updateTenantAlarmsCustomer(tenant.getId());
+                }
+            };
+
+    private void updateTenantAlarmsCustomer(TenantId tenantId) {
+        AlarmQuery alarmQuery = new AlarmQuery(null, new TimePageLink(100), null, null, false);
+        PageData<AlarmInfo> alarms = alarmDao.findAlarms(tenantId, alarmQuery);
+        boolean hasNext = true;
+        while (hasNext) {
+            for (Alarm alarm : alarms.getData()) {
+                if (alarm.getCustomerId() == null && alarm.getOriginator() != null) {
+                    alarm.setCustomerId(entityService.fetchEntityCustomerId(tenantId, alarm.getOriginator()));
+                    alarmDao.save(tenantId, alarm);
+                }
+            }
+            if (alarms.hasNext()) {
+                alarmQuery.setPageLink(alarmQuery.getPageLink().nextPageLink());
+                alarms = alarmDao.findAlarms(tenantId, alarmQuery);
             } else {
                 hasNext = false;
             }
