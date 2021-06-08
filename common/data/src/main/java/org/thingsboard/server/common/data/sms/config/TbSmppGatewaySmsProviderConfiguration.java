@@ -28,16 +28,18 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms.exception;
+package org.thingsboard.server.common.data.sms.config;
 
-public abstract class SmsException extends RuntimeException {
+import lombok.Data;
 
-    public SmsException(String msg) {
-        super(msg);
+@Data
+public class TbSmppGatewaySmsProviderConfiguration implements SmsProviderConfiguration {
+    private String url;
+    private String username;
+    private String password;
+
+    @Override
+    public SmsProviderType getType() {
+        return SmsProviderType.TB_SMPP_GATEWAY;
     }
-
-    public SmsException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
-
 }

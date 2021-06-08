@@ -28,13 +28,15 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms;
+package org.thingsboard.server.common.data.sms;
 
-import org.thingsboard.server.common.data.sms.SmsSender;
-import org.thingsboard.server.common.data.sms.config.SmsProviderConfiguration;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface SmsSenderFactory {
-
-    SmsSender createSmsSender(SmsProviderConfiguration config);
-
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class SmsSendResponse {
+    private Integer messageSegments;
 }

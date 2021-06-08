@@ -28,13 +28,15 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms;
+package org.thingsboard.server.common.data.sms.exception;
 
-import org.thingsboard.server.common.data.sms.SmsSender;
-import org.thingsboard.server.common.data.sms.config.SmsProviderConfiguration;
+public class SmsSendException extends SmsException {
 
-public interface SmsSenderFactory {
+    public SmsSendException(String msg) {
+        super(msg);
+    }
 
-    SmsSender createSmsSender(SmsProviderConfiguration config);
-
+    public SmsSendException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

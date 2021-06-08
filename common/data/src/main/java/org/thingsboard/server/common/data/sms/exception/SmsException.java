@@ -28,14 +28,16 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms;
+package org.thingsboard.server.common.data.sms.exception;
 
-import org.thingsboard.rule.engine.api.sms.exception.SmsException;
+public abstract class SmsException extends RuntimeException {
 
-public interface SmsSender {
+    public SmsException(String msg) {
+        super(msg);
+    }
 
-    int sendSms(String numberTo, String message) throws SmsException;
-
-    void destroy();
+    public SmsException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 
 }

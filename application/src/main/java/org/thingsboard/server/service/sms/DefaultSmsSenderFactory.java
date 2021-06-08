@@ -31,12 +31,14 @@
 package org.thingsboard.server.service.sms;
 
 import org.springframework.stereotype.Component;
-import org.thingsboard.rule.engine.api.sms.SmsSender;
+import org.thingsboard.server.common.data.sms.SmsSender;
 import org.thingsboard.rule.engine.api.sms.SmsSenderFactory;
 import org.thingsboard.server.common.data.sms.config.AwsSnsSmsProviderConfiguration;
+import org.thingsboard.server.common.data.sms.config.TbSmppGatewaySmsProviderConfiguration;
 import org.thingsboard.server.common.data.sms.config.SmsProviderConfiguration;
 import org.thingsboard.server.common.data.sms.config.TwilioSmsProviderConfiguration;
 import org.thingsboard.server.service.sms.aws.AwsSmsSender;
+import org.thingsboard.server.service.sms.rest_api.TbSmppGatewaySmsSender;
 import org.thingsboard.server.service.sms.twilio.TwilioSmsSender;
 
 @Component
@@ -49,6 +51,8 @@ public class DefaultSmsSenderFactory implements SmsSenderFactory {
                 return new AwsSmsSender((AwsSnsSmsProviderConfiguration)config);
             case TWILIO:
                 return new TwilioSmsSender((TwilioSmsProviderConfiguration)config);
+            case TB_SMPP_GATEWAY:
+                return new TbSmppGatewaySmsSender((TbSmppGatewaySmsProviderConfiguration) config);
             default:
                 throw new RuntimeException("Unknown SMS provider type " + config.getType());
         }

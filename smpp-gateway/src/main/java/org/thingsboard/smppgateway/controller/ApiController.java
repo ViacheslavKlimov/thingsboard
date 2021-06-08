@@ -28,15 +28,36 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms.exception;
+package org.thingsboard.smppgateway.controller;
 
-public class SmsSendException extends SmsException {
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.server.common.data.sms.SmsSendRequest;
+import org.thingsboard.server.common.data.sms.SmsSendResponse;
+import org.thingsboard.smppgateway.service.SmppSmsSender;
 
-    public SmsSendException(String msg) {
-        super(msg);
+@RestController
+@RequestMapping("/api/sms")
+@RequiredArgsConstructor
+@Slf4j
+public class ApiController {
+    private final SmppSmsSender smppSmsSender;
+
+    @PostMapping
+    public ResponseEntity<SmsSendResponse> sendSmsMessage(@RequestBody SmsSendRequest request) {
+        int messageSegments;
+        try {
+            messageSegments = smppSmsSender.sendSms(request.getNumberTo(), request.getMessage());
+        } catch (Exception e) {
+            log.error("Error occurred while sending SMS message: " + e.toString(), e);
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(new SmsSendResponse(messageSegments));
     }
 
-    public SmsSendException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
 }

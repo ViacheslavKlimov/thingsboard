@@ -30,36 +30,27 @@
     OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 
 -->
-<div [formGroup]="smsProviderConfigurationFormGroup">
+<form [formGroup]="tbSmppGatewaySmsProviderConfigurationFormGroup" style="padding-bottom: 16px;">
   <mat-form-field class="mat-block">
-    <mat-label translate>admin.sms-provider-type</mat-label>
-    <mat-select formControlName="type" [required]="required">
-      <mat-option *ngFor="let type of smsProviderTypes" [value]="type">
-        {{smsProviderTypeTranslations.get(type) | translate}}
-      </mat-option>
-    </mat-select>
-    <mat-error *ngIf="smsProviderConfigurationFormGroup.get('type').hasError('required')">
-      {{ 'admin.sms-provider-type-required' | translate }}
+    <mat-label translate>admin.tb-smpp-gateway-sms-provider-url</mat-label>
+    <input required matInput formControlName="url">
+    <mat-hint innerHTML="{{ 'admin.tb-smpp-gateway-sms-provider-url-hint' | translate }}"></mat-hint>
+    <mat-error *ngIf="tbSmppGatewaySmsProviderConfigurationFormGroup.get('url').hasError('required')">
+      {{ 'admin.tb-smpp-gateway-sms-provider-url-required' | translate }}
     </mat-error>
   </mat-form-field>
-  <div [ngSwitch]="smsProviderConfigurationFormGroup.get('type').value">
-    <ng-template [ngSwitchCase]="smsProviderType.AWS_SNS">
-      <tb-aws-sns-provider-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-aws-sns-provider-configuration>
-    </ng-template>
-    <ng-template [ngSwitchCase]="smsProviderType.TWILIO">
-      <tb-twilio-sms-provider-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-twilio-sms-provider-configuration>
-    </ng-template>
-    <ng-template [ngSwitchCase]="smsProviderType.TB_SMPP_GATEWAY">
-      <tb-smpp-gateway-sms-provider-configuration
-        [required]="required"
-        formControlName="configuration">
-      </tb-smpp-gateway-sms-provider-configuration>
-    </ng-template>
-  </div>
-</div>
+  <mat-form-field class="mat-block">
+    <mat-label translate>admin.tb-smpp-gateway-sms-provider-username</mat-label>
+    <input required matInput formControlName="username">
+    <mat-error *ngIf="tbSmppGatewaySmsProviderConfigurationFormGroup.get('username').hasError('required')">
+      {{ 'admin.tb-smpp-gateway-sms-provider-username-required' | translate }}
+    </mat-error>
+  </mat-form-field>
+  <mat-form-field class="mat-block">
+    <mat-label translate>admin.tb-smpp-gateway-sms-provider-password</mat-label>
+    <input required matInput formControlName="password">
+    <mat-error *ngIf="tbSmppGatewaySmsProviderConfigurationFormGroup.get('password').hasError('required')">
+      {{ 'admin.tb-smpp-gateway-sms-provider-password-required' | translate }}
+    </mat-error>
+  </mat-form-field>
+</form>

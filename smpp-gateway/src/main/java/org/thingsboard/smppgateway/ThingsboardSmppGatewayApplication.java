@@ -28,16 +28,30 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api.sms.exception;
+package org.thingsboard.smppgateway;
 
-public class SmsParseException extends SmsException {
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-    public SmsParseException(String msg) {
-        super(msg);
+import java.util.Arrays;
+
+@SpringBootApplication
+public class ThingsboardSmppGatewayApplication {
+    private static final String SPRING_CONFIG_NAME_KEY = "--spring.config.name";
+    private static final String DEFAULT_SPRING_CONFIG_PARAM = SPRING_CONFIG_NAME_KEY + "=" + "tb-smpp-gateway";
+
+    public static void main(String[] args) {
+        SpringApplication.run(ThingsboardSmppGatewayApplication.class, updateArguments(args));
     }
 
-    public SmsParseException(String msg, Throwable cause) {
-        super(msg, cause);
+    private static String[] updateArguments(String[] args) {
+        if (Arrays.stream(args).noneMatch(arg -> arg.startsWith(SPRING_CONFIG_NAME_KEY))) {
+            String[] modifiedArgs = new String[args.length + 1];
+            System.arraycopy(args, 0, modifiedArgs, 0, args.length);
+            modifiedArgs[args.length] = DEFAULT_SPRING_CONFIG_PARAM;
+            return modifiedArgs;
+        }
+        return args;
     }
 
 }

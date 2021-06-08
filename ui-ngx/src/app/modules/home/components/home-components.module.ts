@@ -136,6 +136,7 @@ import { TenantProfileConfigurationComponent } from '@home/components/profile/te
 import { SmsProviderConfigurationComponent } from '@home/components/sms/sms-provider-configuration.component';
 import { AwsSnsProviderConfigurationComponent } from '@home/components/sms/aws-sns-provider-configuration.component';
 import { TwilioSmsProviderConfigurationComponent } from '@home/components/sms/twilio-sms-provider-configuration.component';
+import { TbSmppGatewaySmsProviderConfigurationComponent } from '@home/components/sms/tb-smpp-gateway-sms-provider-configuration.component';
 import { CopyDeviceCredentialsComponent } from '@home/components/device/copy-device-credentials.component';
 import { Lwm2mProfileComponentsModule } from '@home/components/profile/device/lwm2m/lwm2m-profile-components.module';
 import { DashboardPageComponent } from '@home/components/dashboard-page/dashboard-page.component';
@@ -307,6 +308,7 @@ import { WidgetContainerComponent } from '@home/components/widget/widget-contain
       SmsProviderConfigurationComponent,
       AwsSnsProviderConfigurationComponent,
       TwilioSmsProviderConfigurationComponent,
+      TbSmppGatewaySmsProviderConfigurationComponent,
       EntityGroupWizardDialogComponent,
       DashboardToolbarComponent,
       DashboardPageComponent,
@@ -440,6 +442,7 @@ import { WidgetContainerComponent } from '@home/components/widget/widget-contain
     SmsProviderConfigurationComponent,
     AwsSnsProviderConfigurationComponent,
     TwilioSmsProviderConfigurationComponent,
+    TbSmppGatewaySmsProviderConfigurationComponent,
     EntityGroupWizardDialogComponent,
     DashboardToolbarComponent,
     DashboardPageComponent,
