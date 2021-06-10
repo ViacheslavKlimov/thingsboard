@@ -31,23 +31,20 @@
 package org.thingsboard.reporting.service.nagios;
 
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.snmp4j.agent.DuplicateRegistrationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.thingsboard.reporting.service.mapping.PayloadMapper;
 import org.thingsboard.reporting.snmp.SnmpAgent;
-import org.thingsboard.reporting.snmp.SnmpAgent.StringSnmpVariable;
-import org.thingsboard.server.common.data.stats.KpiStatistics;
-import org.thingsboard.server.common.transport.TransportService;
-import org.thingsboard.server.common.transport.util.DataDecodingEncodingService;
-import org.thingsboard.server.gen.transport.TransportProtos;
+import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.queue.util.AfterStartUp;
 
 import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,48 +57,46 @@ public class NagiosReportingService {
     @Value("${snmp.community}")
     private String snmpCommunity;
     @Value("${nagios.kpi_statistics.oid}")
-    private String kpiStatsOid;
-    @Value("${nagios.kpi_statistics.updating_period}")
-    private int kpiStatsUpdatingPeriod;
-    @Value("${nagios.kpi_statistics.load_on_request}")
-    private Boolean loadKpiStatsOnRequest;
+    private String kpiStatsBaseOid;
 
-    private final TransportService transportService;
-    private final DataDecodingEncodingService dataDecodingEncodingService;
-    private final PayloadMapper payloadMapper;
+    private final KpiStatsService kpiStatsService;
 
     @AfterStartUp
-    public void run() throws IOException {
+    public void run() throws IOException, DuplicateRegistrationException {
         snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
         snmpAgent.start();
 
-        if (loadKpiStatsOnRequest) {
-            snmpAgent.registerStringVariable(kpiStatsOid, () -> {
-                return mapToString(getKpiStatistics());
-            });
-        } else {
-            StringSnmpVariable kpiStatisticsVariable = snmpAgent.registerStringVariable(kpiStatsOid);
-            Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-                try {
-                    kpiStatisticsVariable.setValue(mapToString(getKpiStatistics()));
-                } catch (Exception e) {
-                    log.error("Failed to retrieve KPI statistics: {}", ExceptionUtils.getRootCauseMessage(e));
-                }
-            }, 0, kpiStatsUpdatingPeriod, TimeUnit.MILLISECONDS);
-        }
+//        Arrays.stream(KpiKey.values()).forEach(kpiKey -> {
+//            snmpAgent.registerVariable(kpiKey.composeOid(kpiStatsBaseOid), () -> {
+//                KpiStats kpiStats;
+//                try {
+//                    kpiStats = kpiStatsService.getCurrentStats();
+//                } catch (Exception e) {
+//                    log.error("Failed to obtain KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
+//                    return null;
+//                }
+//
+//                Object kpiValue = kpiStats.getOrDefault(kpiKey, 0L); // FIXME: default value depends on the key
+//
+//                kpiStats.nullify(kpiKey);
+//                return kpiValue;
+//            });
+//        });
 
+        Map<Integer, Supplier<Object>> kpiVariables = Arrays.stream(KpiKey.values())
+                .collect(Collectors.toMap(KpiKey::getId, kpiKey -> {
+                    return () -> {
+                        KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
+                        Object kpiValue = kpiStats.getOrDefault(kpiKey, 0L); // FIXME: default value depends on the key
+
+                        if (!kpiKey.isEntityKpi()) {
+                            kpiStats.nullify(kpiKey);
+                        }
+
+                        return kpiValue;
+                    };
+                }));
+        snmpAgent.registerVariables(kpiVariables, kpiStatsBaseOid);
     }
 
-    @SneakyThrows
-    private KpiStatistics getKpiStatistics() {
-        TransportProtos.GetKpiStatisticsResponseMsg responseMsg = transportService.getKpiStatistics(
-                TransportProtos.GetKpiStatisticsRequestMsg.getDefaultInstance()
-        ).get(2, TimeUnit.SECONDS);
-        return (KpiStatistics) dataDecodingEncodingService.decode(responseMsg.getData().toByteArray())
-                .orElseThrow(() -> new IllegalStateException("failed to decode"));
-    }
-
-    private String mapToString(KpiStatistics kpiStatistics) {
-        return payloadMapper.convertKpiStatisticsToString(kpiStatistics);
-    }
 }

@@ -28,24 +28,31 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.config;
+package org.thingsboard.server.service.stats;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.thingsboard.reporting.service.mapping.JsonPayloadMapper;
-import org.thingsboard.reporting.service.mapping.PayloadMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.stats.KpiEntry;
+import org.thingsboard.server.common.data.stats.KpiKey;
+import org.thingsboard.server.dao.attributes.AttributesDao;
+import org.thingsboard.server.dao.device.DeviceDao;
+import org.thingsboard.server.queue.util.TbCoreComponent;
 
-@Configuration
-public class MappingConfig {
-    private PayloadMapper.Type payloadMappingType = PayloadMapper.Type.JSON;
+import java.util.List;
 
-    @Bean
-    public PayloadMapper payloadMapper() {
-        switch (payloadMappingType) {
-            case JSON:
-                return new JsonPayloadMapper();
-            default:
-                throw new UnsupportedOperationException();
-        }
+@Service
+@TbCoreComponent
+@RequiredArgsConstructor
+public class EntitiesKpiStatsService {
+    private final DeviceDao deviceDao;
+    private final AttributesDao attributesDao;
+
+    public List<KpiEntry> calculate() {
+        return List.of(
+                new KpiEntry(KpiKey.TOTAL_DEVICES, deviceDao.count()),
+                new KpiEntry(KpiKey.ONLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true)), // FIXME: from telemetry?
+                new KpiEntry(KpiKey.OFFLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false))
+        );
     }
+
 }

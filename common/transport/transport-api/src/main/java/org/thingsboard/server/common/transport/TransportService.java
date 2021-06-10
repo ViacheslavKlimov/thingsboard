@@ -36,18 +36,18 @@ import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.transport.auth.GetOrCreateDeviceFromGatewayResponse;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.common.transport.service.SessionMetaData;
-import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.ClaimDeviceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetFirmwareRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetFirmwareResponseMsg;
-import org.thingsboard.server.gen.transport.TransportProtos.GetKpiStatisticsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceResponseMsg;
@@ -87,7 +87,7 @@ public interface TransportService {
 
     GetDeviceCredentialsResponseMsg getDeviceCredentials(GetDeviceCredentialsRequestMsg requestMsg);
 
-    ListenableFuture<GetKpiStatisticsResponseMsg> getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg requestMsg);
+    GetEntitiesKpiStatsResponseMsg getEntitiesKpiStats(GetEntitiesKpiStatsRequestMsg requestMsg);
 
     void process(DeviceTransportType transportType, ValidateDeviceTokenRequestMsg msg,
                  TransportServiceCallback<ValidateDeviceCredentialsResponse> callback);

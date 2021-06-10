@@ -59,4 +59,7 @@ public interface AttributesDao {
     List<String> findAllKeysByDeviceProfileId(TenantId tenantId, DeviceProfileId deviceProfileId);
 
     List<String> findAllKeysByEntityIds(TenantId tenantId, EntityType entityType, List<EntityId> entityIds);
+
+    Long countDevicesAttributesByKeyAndBoolValue(String key, Boolean value);
+
 }

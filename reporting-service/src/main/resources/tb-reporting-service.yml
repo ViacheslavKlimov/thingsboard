@@ -35,8 +35,7 @@ snmp:
 
 nagios:
   kpi_statistics:
-    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats are being hosted on this OID
-    load_on_request: "${KPI_STATISTICS_LOAD_ON_REQUEST:false}" # To load KPI stats on each SNMP GET request, or otherwise update stats each {updating_period}
+    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats will be hosted on this OID
     updating_period: "${KPI_STATISTICS_UPDATING_PERIOD:5000}" # In milliseconds
 queue:
   type: "${TB_QUEUE_TYPE:kafka}" # kafka (Apache Kafka) or aws-sqs (AWS SQS) or pubsub (PubSub) or service-bus (Azure Service Bus) or rabbitmq (RabbitMQ)
@@ -123,7 +122,7 @@ queue:
     requests_topic: "${TB_QUEUE_TRANSPORT_API_REQUEST_TOPIC:tb_transport.api.requests}"
     responses_topic: "${TB_QUEUE_TRANSPORT_API_RESPONSE_TOPIC:tb_transport.api.responses}"
     max_pending_requests: "${TB_QUEUE_TRANSPORT_MAX_PENDING_REQUESTS:10000}"
-    max_requests_timeout: "${TB_QUEUE_TRANSPORT_MAX_REQUEST_TIMEOUT:3000}"
+    max_requests_timeout: "${TB_QUEUE_TRANSPORT_MAX_REQUEST_TIMEOUT:5000}"
     max_callback_threads: "${TB_QUEUE_TRANSPORT_MAX_CALLBACK_THREADS:100}"
     request_poll_interval: "${TB_QUEUE_TRANSPORT_REQUEST_POLL_INTERVAL_MS:25}"
     response_poll_interval: "${TB_QUEUE_TRANSPORT_RESPONSE_POLL_INTERVAL_MS:25}"
@@ -221,8 +220,7 @@ zk:
 
 service:
   type: tb-transport
-  id: "${TB_SERVICE_ID:}"
-  tenant_id: "${TB_SERVICE_TENANT_ID:}" # empty or specific tenant id.
+  id: tb-reporting-service
 
 transport:
   sessions:

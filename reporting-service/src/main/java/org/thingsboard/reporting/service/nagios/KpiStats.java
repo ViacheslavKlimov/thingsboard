@@ -28,14 +28,33 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.service.mapping;
+package org.thingsboard.reporting.service.nagios;
 
-import org.thingsboard.server.common.adaptor.JsonConverter;
-import org.thingsboard.server.common.data.stats.KpiStatistics;
+import lombok.Data;
+import org.thingsboard.server.common.data.stats.KpiKey;
 
-public class JsonPayloadMapper implements PayloadMapper {
-    @Override
-    public String convertKpiStatisticsToString(KpiStatistics kpiStatistics) {
-        return JsonConverter.toJson(kpiStatistics);
+import java.io.Serializable;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Data
+public class KpiStats implements Serializable {
+    private final Map<KpiKey, Long> entries = new ConcurrentHashMap<>();
+
+    public void set(KpiKey key, Long value) {
+        entries.put(key, value);
     }
+
+    public Object getOrDefault(KpiKey key, Long defaultValue) {
+        return entries.getOrDefault(key, defaultValue);
+    }
+
+    public void increase(KpiKey key, Long value) {
+        entries.put(key, entries.getOrDefault(key, 0L) + value);
+    }
+
+    public void nullify(KpiKey key) {
+        entries.put(key, 0L);
+    }
+
 }

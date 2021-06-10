@@ -292,12 +292,12 @@ message GetSnmpDevicesResponseMsg {
   bool hasNextPage = 2;
 }
 
-message GetKpiStatisticsRequestMsg {
+message GetEntitiesKpiStatsRequestMsg {
 
 }
 
-message GetKpiStatisticsResponseMsg {
-  bytes data = 1;
+message GetEntitiesKpiStatsResponseMsg {
+  repeated KpiKV KpiKVs = 1;
 }
 
 message EntityUpdateMsg {
@@ -704,7 +704,7 @@ message TransportApiRequestMsg {
   GetSnmpDevicesRequestMsg snmpDevicesRequestMsg = 11;
   GetDeviceRequestMsg deviceRequestMsg = 12;
   GetDeviceCredentialsRequestMsg deviceCredentialsRequestMsg = 13;
-  GetKpiStatisticsRequestMsg kpiStatisticsRequestMsg = 14;
+  GetEntitiesKpiStatsRequestMsg entitiesKpiStatsRequestMsg = 14;
 }
 
 /* Response from ThingsBoard Core Service to Transport Service */
@@ -719,7 +719,7 @@ message TransportApiResponseMsg {
   GetFirmwareResponseMsg firmwareResponseMsg = 8;
   GetDeviceResponseMsg deviceResponseMsg = 9;
   GetDeviceCredentialsResponseMsg deviceCredentialsResponseMsg = 10;
-  GetKpiStatisticsResponseMsg kpiStatisticsResponseMsg = 11;
+  GetEntitiesKpiStatsResponseMsg entitiesKpiStatsResponseMsg = 11;
 }
 
 /* Messages that are handled by ThingsBoard Core Service */
@@ -772,9 +772,10 @@ message ToTransportMsg {
   ToTransportUpdateCredentialsProto toTransportUpdateCredentialsNotification = 11;
   ResourceUpdateMsg resourceUpdateMsg = 12;
   ResourceDeleteMsg resourceDeleteMsg = 13;
+  KpiUpdateMsg kpiUpdateMsg = 14;
 }
 
-message UsageStatsKVProto{
+message UsageStatsKVProto {
   string key = 1;
   int64 value = 2;
 }
@@ -798,4 +799,13 @@ message ToFirmwareStateServiceMsg {
   int64 firmwareIdMSB = 6;
   int64 firmwareIdLSB = 7;
   string type = 8;
+}
+
+message KpiUpdateMsg {
+  repeated KpiKV kpiKVs = 1;
+}
+
+message KpiKV {
+  string key = 1;
+  int64 value = 2;
 }

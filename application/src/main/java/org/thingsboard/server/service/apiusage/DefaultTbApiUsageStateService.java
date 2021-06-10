@@ -31,7 +31,6 @@
 package org.thingsboard.server.service.apiusage;
 
 import com.google.common.util.concurrent.FutureCallback;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -60,17 +59,20 @@ import org.thingsboard.server.common.data.kv.LongDataEntry;
 import org.thingsboard.server.common.data.kv.StringDataEntry;
 import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.page.PageDataIterable;
+import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.common.data.tenant.profile.TenantProfileConfiguration;
 import org.thingsboard.server.common.data.tenant.profile.TenantProfileData;
 import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.common.msg.queue.TbCallback;
 import org.thingsboard.server.common.msg.queue.TopicPartitionInfo;
 import org.thingsboard.server.common.msg.tools.SchedulerUtils;
-import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
+import org.thingsboard.server.gen.transport.TransportProtos.KpiKV;
+import org.thingsboard.server.gen.transport.TransportProtos.KpiUpdateMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.UsageStatsKVProto;
 import org.thingsboard.server.queue.TbQueueProducer;
@@ -128,7 +130,8 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
     private final MailService mailService;
     private final OwnersCacheService ownersCacheService;
     private final TbQueueProducerProvider producerProvider;
-    private TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> msgProducer;
+    private TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> usageStatsMsgProducer;
+    private TbQueueProducer<TbProtoQueueMsg<ToTransportMsg>> kpiStatsMsgProducer;
     @Lazy
     @Autowired
     private InternalTelemetryService tsWsService;
@@ -178,7 +181,8 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
     public void init() {
         if (enabled) {
             log.info("Starting api usage service.");
-            msgProducer = producerProvider.getTbUsageStatsMsgProducer();
+            usageStatsMsgProducer = producerProvider.getTbUsageStatsMsgProducer();
+            kpiStatsMsgProducer = producerProvider.getTransportNotificationsMsgProducer();
             scheduler.scheduleAtFixedRate(this::checkStartOfNextCycle, nextCycleCheckInterval, nextCycleCheckInterval, TimeUnit.MILLISECONDS);
             log.info("Started api usage service.");
         }
@@ -198,6 +202,10 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         }
 
         processEntityUsageStats(tenantId, entityId, statsMsg.getValuesList());
+        if (tenantId.equals(TenantId.SYS_TENANT_ID)) {
+            publishKpiStats(statsMsg.getValuesList());
+        }
+
         callback.onSuccess();
     }
 
@@ -251,8 +259,23 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                 .setCustomerIdLSB(owner.getId().getLeastSignificantBits())
                 .build();
 
-        TopicPartitionInfo partitionInfo = partitionService.resolve(ServiceType.TB_CORE, tenantId, owner).newByTopic(msgProducer.getDefaultTopic());
-        msgProducer.send(partitionInfo, new TbProtoQueueMsg<>(UUID.randomUUID(), newStatsMsg), null);
+        TopicPartitionInfo partitionInfo = partitionService.resolve(ServiceType.TB_CORE, tenantId, owner).newByTopic(usageStatsMsgProducer.getDefaultTopic());
+        usageStatsMsgProducer.send(partitionInfo, new TbProtoQueueMsg<>(UUID.randomUUID(), newStatsMsg), null);
+    }
+
+    private void publishKpiStats(List<UsageStatsKVProto> usageStats) {
+        TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(TenantId.SYS_TENANT_ID.getId(), ToTransportMsg.newBuilder()
+                .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()
+                        .addAllKpiKVs(usageStats.stream()
+                                .filter(usageStatsKVProto -> KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).isPresent())
+                                .map(usageStatsKVProto -> KpiKV.newBuilder()
+                                        .setKey(KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).get().name())
+                                        .setValue(usageStatsKVProto.getValue())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
+                .build());
+        kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-reporting-service"), kpiStatsMsg, null);
     }
 
     @Override

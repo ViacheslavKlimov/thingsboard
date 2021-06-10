@@ -36,9 +36,9 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.protobuf.ByteString;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.thingsboard.common.util.ThingsBoardExecutors;
@@ -134,6 +134,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Service
 @TbTransportComponent
+@ConditionalOnMissingBean(type = "transportService")
 public class DefaultTransportService implements TransportService {
 
     public static final String OVERWRITE_ACTIVITY_TIME = "overwriteActivityTime";
@@ -352,17 +353,19 @@ public class DefaultTransportService implements TransportService {
     }
 
     @Override
-    @SneakyThrows
-    public ListenableFuture<TransportProtos.GetKpiStatisticsResponseMsg> getKpiStatistics(TransportProtos.GetKpiStatisticsRequestMsg requestMsg) {
+    public TransportProtos.GetEntitiesKpiStatsResponseMsg getEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {
         TbProtoQueueMsg<TransportApiRequestMsg> protoMsg = new TbProtoQueueMsg<>(
                 UUID.randomUUID(), TransportProtos.TransportApiRequestMsg.newBuilder()
-                .setKpiStatisticsRequestMsg(requestMsg)
+                .setEntitiesKpiStatsRequestMsg(requestMsg)
                 .build()
         );
 
-        return Futures.transform(transportApiRequestTemplate.send(protoMsg), response -> {
-            return response.getValue().getKpiStatisticsResponseMsg();
-        }, MoreExecutors.directExecutor());
+        try {
+            TbProtoQueueMsg<TransportApiResponseMsg> response = transportApiRequestTemplate.send(protoMsg).get();
+            return response.getValue().getEntitiesKpiStatsResponseMsg();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

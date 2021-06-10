@@ -30,13 +30,13 @@
  */
 package org.thingsboard.common.util.snmp;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.snmp4j.CommunityTarget;
-import org.snmp4j.PDU;
-import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModel;
 import org.snmp4j.smi.Integer32;
+import org.snmp4j.smi.Null;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.Variable;
@@ -82,6 +82,16 @@ public class SnmpUtils {
                 variable = new OctetString(value);
         }
         return variable;
+    }
+
+    public static Variable toSnmpVariable(Object value) {
+        if (value instanceof Integer || value instanceof Long) { // FIXME: Long may not fit
+            return new Integer32(((Number) value).intValue());
+        } else if (value != null) {
+            return new OctetString(value.toString());
+        } else {
+            return Null.instance;
+        }
     }
 
 }

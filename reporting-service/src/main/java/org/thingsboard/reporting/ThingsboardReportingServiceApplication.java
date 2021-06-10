@@ -32,7 +32,7 @@ package org.thingsboard.reporting;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Arrays;
 
@@ -42,6 +42,7 @@ import java.util.Arrays;
         "org.thingsboard.server.queue",
         "org.thingsboard.server.cache"
 })
+@EnableScheduling
 public class ThingsboardReportingServiceApplication {
     private static final String SPRING_CONFIG_NAME_KEY = "--spring.config.name";
     private static final String DEFAULT_SPRING_CONFIG_PARAM = SPRING_CONFIG_NAME_KEY + "=" + "tb-reporting-service";

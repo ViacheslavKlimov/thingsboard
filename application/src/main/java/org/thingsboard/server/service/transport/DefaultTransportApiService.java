@@ -69,7 +69,7 @@ import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.security.DeviceCredentials;
 import org.thingsboard.server.common.data.security.DeviceCredentialsType;
-import org.thingsboard.server.common.data.stats.KpiStatistics;
+import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.msg.EncryptionUtil;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgDataType;
@@ -88,14 +88,16 @@ import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.DeviceInfoProto;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileResponseMsg;
-import org.thingsboard.server.gen.transport.TransportProtos.GetKpiStatisticsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.KpiKV;
 import org.thingsboard.server.gen.transport.TransportProtos.ProvisionDeviceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiResponseMsg;
@@ -111,8 +113,9 @@ import org.thingsboard.server.service.profile.TbDeviceProfileCache;
 import org.thingsboard.server.service.queue.TbClusterService;
 import org.thingsboard.server.service.resource.TbResourceService;
 import org.thingsboard.server.service.state.DeviceStateService;
-import org.thingsboard.server.service.stats.KpiStatisticsService;
+import org.thingsboard.server.service.stats.EntitiesKpiStatsService;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -146,7 +149,7 @@ public class DefaultTransportApiService implements TransportApiService {
     private final TbResourceService resourceService;
     private final FirmwareService firmwareService;
     private final FirmwareDataCache firmwareDataCache;
-    private final KpiStatisticsService kpiStatisticsService;
+    private final EntitiesKpiStatsService entitiesKpiStatsService;
 
     private final ConcurrentMap<String, ReentrantLock> deviceCreationLocks = new ConcurrentHashMap<>();
 
@@ -185,8 +188,8 @@ public class DefaultTransportApiService implements TransportApiService {
             result = handle(transportApiRequestMsg.getDeviceCredentialsRequestMsg());
         } else if (transportApiRequestMsg.hasFirmwareRequestMsg()) {
             result = handle(transportApiRequestMsg.getFirmwareRequestMsg());
-        } else if (transportApiRequestMsg.hasKpiStatisticsRequestMsg()) {
-            result = handle(transportApiRequestMsg.getKpiStatisticsRequestMsg());
+        } else if (transportApiRequestMsg.hasEntitiesKpiStatsRequestMsg()) {
+            result = handle(transportApiRequestMsg.getEntitiesKpiStatsRequestMsg());
         }
 
         return Futures.transform(Optional.ofNullable(result).orElseGet(this::getEmptyTransportApiResponseFuture),
@@ -452,11 +455,17 @@ public class DefaultTransportApiService implements TransportApiService {
                 .build());
     }
 
-    private ListenableFuture<TransportApiResponseMsg> handle(GetKpiStatisticsRequestMsg kpiStatisticsRequestMsg) {
-        KpiStatistics kpiStatistics = kpiStatisticsService.calculateKpiStatistics();
+    private ListenableFuture<TransportApiResponseMsg> handle(GetEntitiesKpiStatsRequestMsg requestMsg) {
+        List<KpiEntry> kpiStats = entitiesKpiStatsService.calculate();
         TransportApiResponseMsg responseMsg = TransportApiResponseMsg.newBuilder()
-                .setKpiStatisticsResponseMsg(TransportProtos.GetKpiStatisticsResponseMsg.newBuilder()
-                        .setData(ByteString.copyFrom(dataDecodingEncodingService.encode(kpiStatistics))))
+                .setEntitiesKpiStatsResponseMsg(GetEntitiesKpiStatsResponseMsg.newBuilder()
+                        .addAllKpiKVs(kpiStats.stream()
+                                .map(kpiEntry -> KpiKV.newBuilder()
+                                        .setKey(kpiEntry.getKey().name())
+                                        .setValue(kpiEntry.getValue())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
                 .build();
 
         return Futures.immediateFuture(responseMsg);

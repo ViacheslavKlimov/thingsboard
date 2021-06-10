@@ -32,15 +32,34 @@ package org.thingsboard.reporting.snmp;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
 import org.snmp4j.agent.DuplicateRegistrationException;
+import org.snmp4j.agent.MOGroup;
 import org.snmp4j.agent.MOServerLookupEvent;
 import org.snmp4j.agent.MOServerLookupListener;
+import org.snmp4j.agent.ManagedObject;
+import org.snmp4j.agent.mo.DefaultMOMutableRow2PC;
+import org.snmp4j.agent.mo.DefaultMOMutableTableModel;
+import org.snmp4j.agent.mo.DefaultMOTable;
+import org.snmp4j.agent.mo.DefaultMOTableRow;
 import org.snmp4j.agent.mo.MOAccessImpl;
+import org.snmp4j.agent.mo.MOColumn;
+import org.snmp4j.agent.mo.MOGroupImpl;
+import org.snmp4j.agent.mo.MOMutableColumn;
+import org.snmp4j.agent.mo.MOMutableTableModel;
+import org.snmp4j.agent.mo.MOMutableTableRow;
 import org.snmp4j.agent.mo.MOScalar;
+import org.snmp4j.agent.mo.MOTable;
+import org.snmp4j.agent.mo.MOTableIndex;
+import org.snmp4j.agent.mo.MOTableModel;
+import org.snmp4j.agent.mo.MOTableRow;
+import org.snmp4j.agent.mo.MOTableRowEvent;
+import org.snmp4j.agent.mo.MOTableRowListener;
+import org.snmp4j.agent.mo.MOTableSubIndex;
+import org.snmp4j.agent.mo.ext.StaticMOGroup;
 import org.snmp4j.agent.mo.snmp.RowStatus;
 import org.snmp4j.agent.mo.snmp.SnmpCommunityMIB;
 import org.snmp4j.agent.mo.snmp.SnmpCommunityMIB.SnmpCommunityEntryRow;
@@ -54,15 +73,25 @@ import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModel;
 import org.snmp4j.security.USM;
 import org.snmp4j.smi.Integer32;
+import org.snmp4j.smi.Null;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
+import org.snmp4j.smi.SMIConstants;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.Variable;
+import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
+import org.thingsboard.common.util.snmp.SnmpUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class SnmpAgent extends BaseAgent {
@@ -96,36 +125,72 @@ public class SnmpAgent extends BaseAgent {
         transportMappings = new TransportMapping<?>[]{new DefaultUdpTransportMapping(new UdpAddress(port))};
     }
 
-    public StringSnmpVariable registerStringVariable(String oid) {
-        return registerStringVariable(oid, "");
+    public void registerVariable(String oid, Supplier<Object> valueSupplier) {
+        registerVariable(oid, valueSupplier, null);
     }
 
-    @SneakyThrows
-    public StringSnmpVariable registerStringVariable(String oid, String value) {
-        MOScalar<OctetString> mo = registerStringMO(oid, value);
-        return new StringSnmpVariable(mo);
-    }
-
-    @SneakyThrows
-    public void registerStringVariable(String oid, Supplier<String> valueSupplier) {
-        MOScalar<OctetString> mo = registerStringMO(oid, "");
+    public void registerVariable(String oid, Supplier<Object> valueSupplier, Object defaultValue) {
+        MOScalar<Variable> mo = registerMO(oid, SnmpUtils.toSnmpVariable(defaultValue));
         server.addLookupListener(new MOServerLookupListener() {
             @Override
-            public void lookupEvent(MOServerLookupEvent event) {}
+            public void lookupEvent(MOServerLookupEvent event) {
+            }
 
             @Override
             public void queryEvent(MOServerLookupEvent event) {
-                try {
-                    mo.setValue(new OctetString(valueSupplier.get()));
-                } catch (Exception e) {
-                    log.error("Failed to calculate variable value: {}", ExceptionUtils.getRootCauseMessage(e));
+                Object value = valueSupplier.get();
+                if (value == null) {
+                    value = defaultValue;
                 }
+                mo.setValue(SnmpUtils.toSnmpVariable(value));
             }
         }, mo);
     }
 
-    private MOScalar<OctetString> registerStringMO(String oid, String value) throws DuplicateRegistrationException {
-        MOScalar<OctetString> mo = new MOScalar<>(new OID(oid), MOAccessImpl.ACCESS_READ_ONLY, new OctetString(value));
+    public void registerVariables(Map<Integer, Supplier<Object>> variables, String baseOid) throws DuplicateRegistrationException {
+        MOMutableTableModel<MOMutableTableRow> model = new DefaultMOMutableTableModel<>();
+        MOColumn<Variable> column = new MOMutableColumn<>(
+                Integer.parseInt(StringUtils.substringAfterLast(baseOid, ".")),
+                SMIConstants.SYNTAX_NULL, MOAccessImpl.ACCESS_READ_ONLY, Null.instance
+        );
+        DefaultMOTable<?, ?, ?> table = new DefaultMOTable<>(
+                new OID(StringUtils.substringBeforeLast(baseOid, ".")),
+                new MOTableIndex(new MOTableSubIndex[]{new MOTableSubIndex(SMIConstants.SYNTAX_NULL)}, false),
+                new MOColumn[]{column}, model
+        );
+
+        variables.keySet().forEach(id -> {
+            MOMutableTableRow row = new DefaultMOMutableRow2PC(new OID(id.toString()), new Variable[]{Null.instance});
+            model.addRow(row);
+        });
+
+        table.setVolatile(true);
+        server.register(table, null);
+
+        server.addLookupListener(new MOServerLookupListener() {
+            @Override
+            public void lookupEvent(MOServerLookupEvent event) {
+            }
+
+            @Override
+            public void queryEvent(MOServerLookupEvent event) {
+                if (event.getQuery().getLowerBound().equals(new OID(baseOid))) {
+                    return;
+                }
+
+                int[] oid = event.getQuery().getLowerBound().getValue();
+                int id = oid[oid.length - 1];
+
+                Supplier<Object> valueSupplier = variables.get(id);
+                Object value = valueSupplier.get();
+                model.getRow(new OID(String.valueOf(id))).setValue(0, SnmpUtils.toSnmpVariable(value));
+            }
+        }, table);
+    }
+
+    @SneakyThrows
+    private MOScalar<Variable> registerMO(String oid, Variable variable) {
+        MOScalar<Variable> mo = new MOScalar<>(new OID(oid), MOAccessImpl.ACCESS_READ_ONLY, variable);
         server.register(mo, null);
         return mo;
     }
@@ -172,15 +237,15 @@ public class SnmpAgent extends BaseAgent {
     @Override
     protected void addUsmUser(USM usm) {}
 
-    public static class StringSnmpVariable {
-        private final MOScalar<OctetString> mo;
+    public static class SnmpVariable {
+        private final MOScalar<Variable> mo;
 
-        protected StringSnmpVariable(MOScalar<OctetString> mo) {
+        protected SnmpVariable(MOScalar<Variable> mo) {
             this.mo = mo;
         }
 
-        public void setValue(String value) {
-            mo.setValue(new OctetString(value));
+        public void setValue(Object value) {
+            mo.setValue(SnmpUtils.toSnmpVariable(value));
         }
     }
 

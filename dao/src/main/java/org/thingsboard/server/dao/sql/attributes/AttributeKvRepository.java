@@ -74,5 +74,10 @@ public interface AttributeKvRepository extends CrudRepository<AttributeKvEntity,
     @Query(value = "SELECT DISTINCT attribute_key FROM attribute_kv WHERE entity_type = :entityType " +
             "AND entity_id in :entityIds ORDER BY attribute_key", nativeQuery = true)
     List<String> findAllKeysByEntityIds(@Param("entityType") String entityType, @Param("entityIds") List<UUID> entityIds);
-}
 
+    @Query("SELECT COUNT(attr) FROM AttributeKvEntity attr " +
+            "WHERE attr.id.attributeKey = :key AND attr.id.entityType = 'DEVICE' AND attr.booleanValue = :value " +
+            "AND EXISTS (SELECT 1 FROM DeviceEntity d WHERE d.id = attr.id.entityId)")
+    Long countDevicesAttributesByKeyAndBoolValue(@Param("key") String key, @Param("value") boolean value);
+
+}
