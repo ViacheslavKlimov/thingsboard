@@ -173,4 +173,6 @@ public interface DeviceDao extends Dao<Device>, TenantEntityDao {
 
     PageData<UUID> findDevicesIdsByDeviceProfileTransportType(DeviceTransportType transportType, PageLink pageLink);
 
+    Long countByCreatedTimeAfter(Long time);
+
 }

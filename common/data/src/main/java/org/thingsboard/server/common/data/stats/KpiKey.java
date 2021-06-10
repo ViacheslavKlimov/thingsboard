@@ -8,35 +8,41 @@ import java.util.Optional;
 
 @Getter
 public enum KpiKey {
-    TOTAL_DEVICES(2, true),
-    ONLINE_DEVICES(4, true),
-    OFFLINE_DEVICES(6, true),
+    TOTAL_DEVICES(1_1),
+    ONLINE_DEVICES(1_2),
+    OFFLINE_DEVICES(1_3),
 
-    NEW_PROVISIONED_DEVICES(8),
+    NEW_PROVISIONED_DEVICES(2_1),
 
-    RULE_ENGINE_EXECUTIONS(10, ApiUsageRecordKey.RE_EXEC_COUNT),
-    TRANSPORT_MESSAGES(12, ApiUsageRecordKey.TRANSPORT_MSG_COUNT);
+    API_CALLS(3_1),
+//    API_CALLS_SUCCESS_RATE(3_2),
+
+//    UPLINK_MESSAGES(4_1), // transport messages
+//    UPLINK_MESSAGES_SUCCESS_RATE(4_2),
+//    DOWNLINK_MESSAGES(5_1),
+//    DOWNLINK_MESSAGES_SUCCESS_RATE(5_2),
+
+    SUCCESSFUL_DOWNLINK_MESSAGES(6_1),
+    UNSUCCESSFUL_DOWNLINK_MESSAGES(6_3),
+
+    RPC(10),
+
+//    RULE_ENGINE_SUCCESSFUL_EXECUTIONS(10_1, ApiUsageRecordKey.RE_EXEC_COUNT),
+//    RULE_ENGINE_ERROR_EXECUTIONS(10_2),
+
+//    CREATED_ALARMS(11_1)
+    ;
 
     private final int id;
     private final ApiUsageRecordKey apiUsageRecordKey;
-    private final boolean isEntityKpi;
 
     KpiKey(int id) {
-        this(id, false, null);
+        this(id, null);
     }
 
     KpiKey(int id, ApiUsageRecordKey apiUsageRecordKey) {
-        this(id, false, apiUsageRecordKey);
-    }
-
-    KpiKey(int id, boolean isEntityKpi) {
-        this(id, isEntityKpi, null);
-    }
-
-    KpiKey(int id, boolean isEntityKpi, ApiUsageRecordKey apiUsageRecordKey) {
         this.id = id;
         this.apiUsageRecordKey = apiUsageRecordKey;
-        this.isEntityKpi = isEntityKpi;
     }
 
     public String composeOid(String baseOid) {

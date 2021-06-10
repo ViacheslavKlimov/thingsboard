@@ -147,7 +147,7 @@ public class SnmpAgent extends BaseAgent {
         }, mo);
     }
 
-    public void registerVariables(Map<Integer, Supplier<Object>> variables, String baseOid) throws DuplicateRegistrationException {
+    public void registerVariables(List<Integer> ids, Supplier<Map<Integer, Object>> valuesSupplier, String baseOid) throws DuplicateRegistrationException {
         MOMutableTableModel<MOMutableTableRow> model = new DefaultMOMutableTableModel<>();
         MOColumn<Variable> column = new MOMutableColumn<>(
                 Integer.parseInt(StringUtils.substringAfterLast(baseOid, ".")),
@@ -159,7 +159,7 @@ public class SnmpAgent extends BaseAgent {
                 new MOColumn[]{column}, model
         );
 
-        variables.keySet().forEach(id -> {
+        ids.forEach(id -> {
             MOMutableTableRow row = new DefaultMOMutableRow2PC(new OID(id.toString()), new Variable[]{Null.instance});
             model.addRow(row);
         });
@@ -175,15 +175,22 @@ public class SnmpAgent extends BaseAgent {
             @Override
             public void queryEvent(MOServerLookupEvent event) {
                 if (event.getQuery().getLowerBound().equals(new OID(baseOid))) {
+                    Map<Integer, Object> values = valuesSupplier.get();
+                    values.forEach((id, value) -> {
+                        model.getRow(new OID(String.valueOf(id))).setValue(0, SnmpUtils.toSnmpVariable(value));
+                    });
                     return;
                 }
 
                 int[] oid = event.getQuery().getLowerBound().getValue();
-                int id = oid[oid.length - 1];
+                int currentId = oid[oid.length - 1];
 
-                Supplier<Object> valueSupplier = variables.get(id);
-                Object value = valueSupplier.get();
-                model.getRow(new OID(String.valueOf(id))).setValue(0, SnmpUtils.toSnmpVariable(value));
+                /*
+                 * Works if values are queried via SNMP walk
+                 * */
+                if (currentId == ids.get(0)) {
+
+                }
             }
         }, table);
     }

@@ -456,7 +456,7 @@ public class DefaultTransportApiService implements TransportApiService {
     }
 
     private ListenableFuture<TransportApiResponseMsg> handle(GetEntitiesKpiStatsRequestMsg requestMsg) {
-        List<KpiEntry> kpiStats = entitiesKpiStatsService.calculate();
+        List<KpiEntry> kpiStats = entitiesKpiStatsService.get(requestMsg);
         TransportApiResponseMsg responseMsg = TransportApiResponseMsg.newBuilder()
                 .setEntitiesKpiStatsResponseMsg(GetEntitiesKpiStatsResponseMsg.newBuilder()
                         .addAllKpiKVs(kpiStats.stream()

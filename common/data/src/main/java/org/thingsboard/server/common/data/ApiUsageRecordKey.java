@@ -41,6 +41,7 @@ public enum ApiUsageRecordKey {
     JS_EXEC_COUNT(ApiFeature.JS, "jsExecutionCount", "jsExecutionLimit"),
     EMAIL_EXEC_COUNT(ApiFeature.EMAIL, "emailCount", "emailLimit"),
     SMS_EXEC_COUNT(ApiFeature.SMS, "smsCount", "smsLimit");
+
     private static final ApiUsageRecordKey[] JS_RECORD_KEYS = {JS_EXEC_COUNT};
     private static final ApiUsageRecordKey[] RE_RECORD_KEYS = {RE_EXEC_COUNT};
     private static final ApiUsageRecordKey[] DB_RECORD_KEYS = {STORAGE_DP_COUNT};
@@ -54,6 +55,10 @@ public enum ApiUsageRecordKey {
     private final String apiCountKey;
     @Getter
     private final String apiLimitKey;
+
+    ApiUsageRecordKey(ApiFeature apiFeature, String apiCountKey) {
+        this(apiFeature, apiCountKey, null);
+    }
 
     ApiUsageRecordKey(ApiFeature apiFeature, String apiCountKey, String apiLimitKey) {
         this.apiFeature = apiFeature;

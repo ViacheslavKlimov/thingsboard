@@ -1,6 +1,5 @@
 package org.thingsboard.reporting.service.nagios;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,13 +20,9 @@ import org.thingsboard.server.queue.discovery.TbServiceInfoProvider;
 import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.provider.TbTransportQueueFactory;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
-import org.thingsboard.server.queue.util.AfterStartUp;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,28 +41,22 @@ public class KpiStatsService extends DefaultTransportService {
     }
 
     private final KpiStats currentKpiStats = new KpiStats();
+    private volatile long lastRequestTime;
 
     public KpiStats getCurrentKpiStats() {
         try {
-            requestEntitiesKpiStats().forEach(kpiEntry -> {
+            TransportProtos.GetEntitiesKpiStatsRequestMsg request = TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
+                    .setNewCreatedDevicesTimeFrom(lastRequestTime)
+                    .build();
+            requestEntitiesKpiStats(request).forEach(kpiEntry -> {
                 currentKpiStats.set(kpiEntry.getKey(), kpiEntry.getValue());
             });
         } catch (Exception e) {
             log.error("Failed to update entities KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
         }
+        lastRequestTime = System.currentTimeMillis();
         return currentKpiStats;
     }
-
-//    @AfterStartUp
-//    public void initEntitiesKpiStatsUpdating() {
-//        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-//            try {
-//
-//            } catch (Exception e) {
-//                log.error("Failed to update entities KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
-//            }
-//        }, 0, 10, TimeUnit.SECONDS);
-//    }
 
     private void onKpiStatsUpdate(TransportProtos.KpiUpdateMsg kpiUpdateMsg) {
         kpiUpdateMsg.getKpiKVsList().stream()
@@ -77,10 +66,8 @@ public class KpiStatsService extends DefaultTransportService {
                 });
     }
 
-    private List<KpiEntry> requestEntitiesKpiStats() throws Exception {
-        TransportProtos.GetEntitiesKpiStatsResponseMsg responseMsg = getEntitiesKpiStats(
-                TransportProtos.GetEntitiesKpiStatsRequestMsg.getDefaultInstance()
-        );
+    private List<KpiEntry> requestEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {
+        TransportProtos.GetEntitiesKpiStatsResponseMsg responseMsg = getEntitiesKpiStats(requestMsg);
         return responseMsg.getKpiKVsList().stream()
                 .map(this::toKpiEntry)
                 .collect(Collectors.toList());

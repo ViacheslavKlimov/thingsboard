@@ -293,7 +293,7 @@ message GetSnmpDevicesResponseMsg {
 }
 
 message GetEntitiesKpiStatsRequestMsg {
-
+  int64 newCreatedDevicesTimeFrom = 1;
 }
 
 message GetEntitiesKpiStatsResponseMsg {

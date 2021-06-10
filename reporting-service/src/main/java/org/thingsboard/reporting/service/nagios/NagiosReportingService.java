@@ -32,7 +32,6 @@ package org.thingsboard.reporting.service.nagios;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.snmp4j.agent.DuplicateRegistrationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -42,6 +41,8 @@ import org.thingsboard.server.queue.util.AfterStartUp;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -66,37 +67,17 @@ public class NagiosReportingService {
         snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
         snmpAgent.start();
 
-//        Arrays.stream(KpiKey.values()).forEach(kpiKey -> {
-//            snmpAgent.registerVariable(kpiKey.composeOid(kpiStatsBaseOid), () -> {
-//                KpiStats kpiStats;
-//                try {
-//                    kpiStats = kpiStatsService.getCurrentStats();
-//                } catch (Exception e) {
-//                    log.error("Failed to obtain KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
-//                    return null;
-//                }
-//
-//                Object kpiValue = kpiStats.getOrDefault(kpiKey, 0L); // FIXME: default value depends on the key
-//
-//                kpiStats.nullify(kpiKey);
-//                return kpiValue;
-//            });
-//        });
+        List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).collect(Collectors.toList());
+        snmpAgent.registerVariables(ids, () -> {
+            KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
 
-        Map<Integer, Supplier<Object>> kpiVariables = Arrays.stream(KpiKey.values())
-                .collect(Collectors.toMap(KpiKey::getId, kpiKey -> {
-                    return () -> {
-                        KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
-                        Object kpiValue = kpiStats.getOrDefault(kpiKey, 0L); // FIXME: default value depends on the key
+            Map<Integer, Object> values = new HashMap<>();
+            Arrays.stream(KpiKey.values()).forEach(kpiKey -> {
+                values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, 0L));
+            });
 
-                        if (!kpiKey.isEntityKpi()) {
-                            kpiStats.nullify(kpiKey);
-                        }
-
-                        return kpiValue;
-                    };
-                }));
-        snmpAgent.registerVariables(kpiVariables, kpiStatsBaseOid);
+            return values;
+        }, kpiStatsBaseOid);
     }
 
 }
