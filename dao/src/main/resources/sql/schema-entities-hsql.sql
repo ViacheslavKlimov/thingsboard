@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS alarm (
     start_ts bigint,
     status varchar(255),
     tenant_id uuid,
+    customer_id uuid,
     propagate_relation_types varchar,
     type varchar(255)
 );
@@ -166,7 +167,8 @@ CREATE TABLE IF NOT EXISTS dashboard (
     search_text varchar(255),
     tenant_id uuid,
     customer_id uuid,
-    title varchar(255)
+    title varchar(255),
+    image varchar(1000000)
 );
 
 CREATE TABLE IF NOT EXISTS rule_chain (
@@ -206,14 +208,15 @@ CREATE TABLE IF NOT EXISTS rule_node_state (
     CONSTRAINT fk_rule_node_state_node_id FOREIGN KEY (rule_node_id) REFERENCES rule_node(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS firmware (
-    id uuid NOT NULL CONSTRAINT firmware_pkey PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS ota_package (
+    id uuid NOT NULL CONSTRAINT ota_package_pkey PRIMARY KEY,
     created_time bigint NOT NULL,
     tenant_id uuid NOT NULL,
     device_profile_id uuid ,
     type varchar(32) NOT NULL,
     title varchar(255) NOT NULL,
     version varchar(255) NOT NULL,
+    url varchar(255),
     file_name varchar(255),
     content_type varchar(255),
     checksum_algorithm varchar(32),
@@ -222,7 +225,7 @@ CREATE TABLE IF NOT EXISTS firmware (
     data_size bigint,
     additional_info varchar,
     search_text varchar(255),
-    CONSTRAINT firmware_tenant_title_version_unq_key UNIQUE (tenant_id, title, version)
+    CONSTRAINT ota_package_tenant_title_version_unq_key UNIQUE (tenant_id, title, version)
 );
 
 CREATE TABLE IF NOT EXISTS device_profile (
@@ -230,6 +233,7 @@ CREATE TABLE IF NOT EXISTS device_profile (
     created_time bigint NOT NULL,
     name varchar(255),
     type varchar(255),
+    image varchar(1000000),
     transport_type varchar(255),
     provision_type varchar(255),
     profile_data jsonb,
@@ -240,13 +244,15 @@ CREATE TABLE IF NOT EXISTS device_profile (
     firmware_id uuid,
     software_id uuid,
     default_rule_chain_id uuid,
+    default_dashboard_id uuid,
     default_queue_name varchar(255),
     provision_device_key varchar,
     CONSTRAINT device_profile_name_unq_key UNIQUE (tenant_id, name),
     CONSTRAINT device_provision_key_unq_key UNIQUE (provision_device_key),
     CONSTRAINT fk_default_rule_chain_device_profile FOREIGN KEY (default_rule_chain_id) REFERENCES rule_chain(id),
-    CONSTRAINT fk_firmware_device_profile FOREIGN KEY (firmware_id) REFERENCES firmware(id),
-    CONSTRAINT fk_software_device_profile FOREIGN KEY (software_id) REFERENCES firmware(id)
+    CONSTRAINT fk_default_dashboard_device_profile FOREIGN KEY (default_dashboard_id) REFERENCES dashboard(id),
+    CONSTRAINT fk_firmware_device_profile FOREIGN KEY (firmware_id) REFERENCES ota_package(id),
+    CONSTRAINT fk_software_device_profile FOREIGN KEY (software_id) REFERENCES ota_package(id)
 );
 
 CREATE TABLE IF NOT EXISTS device (
@@ -265,8 +271,8 @@ CREATE TABLE IF NOT EXISTS device (
     software_id uuid,
     CONSTRAINT device_name_unq_key UNIQUE (tenant_id, name),
     CONSTRAINT fk_device_profile FOREIGN KEY (device_profile_id) REFERENCES device_profile(id),
-    CONSTRAINT fk_firmware_device FOREIGN KEY (firmware_id) REFERENCES firmware(id),
-    CONSTRAINT fk_software_device FOREIGN KEY (software_id) REFERENCES firmware(id)
+    CONSTRAINT fk_firmware_device FOREIGN KEY (firmware_id) REFERENCES ota_package(id),
+    CONSTRAINT fk_software_device FOREIGN KEY (software_id) REFERENCES ota_package(id)
 );
 
 CREATE TABLE IF NOT EXISTS device_credentials (
@@ -563,6 +569,7 @@ CREATE TABLE IF NOT EXISTS api_usage_state (
     js_exec varchar(32),
     email_exec varchar(32),
     sms_exec varchar(32),
+    alarm_exec varchar(32),
     CONSTRAINT api_usage_state_unq_key UNIQUE (tenant_id, entity_id)
 );
 
@@ -644,4 +651,15 @@ CREATE TABLE IF NOT EXISTS edge_event (
     tenant_id uuid,
     entity_group_id uuid,
     ts bigint NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS device_group_ota_package (
+    id uuid NOT NULL CONSTRAINT entity_group_firmware_pkey PRIMARY KEY,
+    group_id uuid NOT NULL,
+    ota_package_type varchar(32) NOT NULL,
+    ota_package_id uuid NOT NULL,
+    ota_package_update_time bigint NOT NULL,
+    CONSTRAINT device_group_ota_package_unq_key UNIQUE (group_id, ota_package_type),
+    CONSTRAINT fk_ota_package_device_group_ota_package FOREIGN KEY (ota_package_id) REFERENCES ota_package(id),
+    CONSTRAINT fk_entity_group_device_group_ota_package FOREIGN KEY (group_id) REFERENCES entity_group(id) ON DELETE CASCADE
 );

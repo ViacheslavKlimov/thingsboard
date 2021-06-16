@@ -60,6 +60,7 @@
         <module>transport</module>
         <module>black-box-tests</module>
         <module>integration</module>
+        <module>smpp-gateway</module>
     </modules>
 
     <build>

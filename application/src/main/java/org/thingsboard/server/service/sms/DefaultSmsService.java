@@ -37,7 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.NestedRuntimeException;
 import org.springframework.stereotype.Service;
 import org.thingsboard.rule.engine.api.SmsService;
-import org.thingsboard.rule.engine.api.sms.SmsSender;
+import org.thingsboard.server.common.data.sms.SmsSender;
 import org.thingsboard.rule.engine.api.sms.SmsSenderFactory;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.sms.config.SmsProviderConfiguration;

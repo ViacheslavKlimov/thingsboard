@@ -123,13 +123,15 @@ export const phoneNumberPatternTwilio = /^\+[1-9]\d{1,14}$|^(MG|PN).*$/;
 
 export enum SmsProviderType {
   AWS_SNS = 'AWS_SNS',
-  TWILIO = 'TWILIO'
+  TWILIO = 'TWILIO',
+  TB_SMPP_GATEWAY = 'TB_SMPP_GATEWAY'
 }
 
 export const smsProviderTypeTranslationMap = new Map<SmsProviderType, string>(
   [
     [SmsProviderType.AWS_SNS, 'admin.sms-provider-type-aws-sns'],
-    [SmsProviderType.TWILIO, 'admin.sms-provider-type-twilio']
+    [SmsProviderType.TWILIO, 'admin.sms-provider-type-twilio'],
+    [SmsProviderType.TB_SMPP_GATEWAY, 'admin.sms-provider-type-tb-smpp-gateway']
   ]
 );
 
@@ -145,7 +147,13 @@ export interface TwilioSmsProviderConfiguration {
   numberFrom?: string;
 }
 
-export type SmsProviderConfigurations = AwsSnsSmsProviderConfiguration & TwilioSmsProviderConfiguration;
+export interface TbSmppGatewaySmsProviderConfiguration {
+  url?: string;
+  username?: string;
+  password?: string;
+}
+
+export type SmsProviderConfigurations = AwsSnsSmsProviderConfiguration & TwilioSmsProviderConfiguration & TbSmppGatewaySmsProviderConfiguration;
 
 export interface SmsProviderConfiguration extends SmsProviderConfigurations {
   useSystemSmsSettings?: boolean;
@@ -169,6 +177,12 @@ export function smsProviderConfigurationValidator(required: boolean): ValidatorF
             const twilioConfiguration: TwilioSmsProviderConfiguration = configuration;
             valid = isNotEmptyStr(twilioConfiguration.numberFrom) && isNotEmptyStr(twilioConfiguration.accountSid)
               && isNotEmptyStr(twilioConfiguration.accountToken);
+            break;
+          case SmsProviderType.TB_SMPP_GATEWAY:
+            const tbSmppGatewaySmsProviderConfiguration: TbSmppGatewaySmsProviderConfiguration = configuration;
+            valid = isNotEmptyStr(tbSmppGatewaySmsProviderConfiguration.url)
+              && isNotEmptyStr(tbSmppGatewaySmsProviderConfiguration.username)
+              && isNotEmptyStr(tbSmppGatewaySmsProviderConfiguration.password);
             break;
         }
       }
@@ -207,6 +221,14 @@ export function createSmsProviderConfiguration(type: SmsProviderType): SmsProvid
           accountToken: ''
         };
         smsProviderConfiguration = {...twilioSmsProviderConfiguration, type: SmsProviderType.TWILIO};
+        break;
+      case SmsProviderType.TB_SMPP_GATEWAY:
+        const tbSmppGatewaySmsProviderConfiguration: TbSmppGatewaySmsProviderConfiguration = {
+          url: '',
+          username: '',
+          password: ''
+        };
+        smsProviderConfiguration = {...tbSmppGatewaySmsProviderConfiguration, type: SmsProviderType.TB_SMPP_GATEWAY};
         break;
     }
   }
