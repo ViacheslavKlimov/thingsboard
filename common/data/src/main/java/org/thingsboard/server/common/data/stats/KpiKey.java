@@ -14,39 +14,51 @@ public enum KpiKey {
 
     NEW_PROVISIONED_DEVICES(2_1),
 
-    API_CALLS(3_1),
-//    API_CALLS_SUCCESS_RATE(3_2),
+    API_CALLS(3_1, ApiUsageRecordKey.REST_API_CALLS_COUNT), // yet counted on system level
+    FAILED_API_CALLS(3_2, ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT),
+    API_CALLS_SUCCESS_RATE(3_3, 100L),
 
-//    UPLINK_MESSAGES(4_1), // transport messages
-//    UPLINK_MESSAGES_SUCCESS_RATE(4_2),
-//    DOWNLINK_MESSAGES(5_1),
-//    DOWNLINK_MESSAGES_SUCCESS_RATE(5_2),
+    UPLINK_MESSAGES(4_1, ApiUsageRecordKey.UPLINK_MSG_COUNT), // messages to core from devices
+    FAILED_UPLINK_MESSAGES(4_2, ApiUsageRecordKey.FAILED_UPLINK_MSG_COUNT),
+    UPLINK_MESSAGES_SUCCESS_RATE(4_3, 100L),
 
-    SUCCESSFUL_DOWNLINK_MESSAGES(6_1),
-    UNSUCCESSFUL_DOWNLINK_MESSAGES(6_3),
+    DOWNLINK_MESSAGES(5_1, ApiUsageRecordKey.DOWNLINK_MSG_COUNT), // responses from core to devices (server rpc, etc.)
+    SUCCESSFUL_DOWNLINK_MESSAGES(5_2),
+    FAILED_DOWNLINK_MESSAGES(ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT), // no ack in 3 minutes
+    DOWNLINK_MESSAGES_SUCCESS_RATE(5_4),
 
-    RPC(10),
+//    RPC(10),
 
-//    RULE_ENGINE_SUCCESSFUL_EXECUTIONS(10_1, ApiUsageRecordKey.RE_EXEC_COUNT),
-//    RULE_ENGINE_ERROR_EXECUTIONS(10_2),
+    RULE_ENGINE_EXECUTIONS(10_1, ApiUsageRecordKey.RE_EXEC_COUNT),
+    FAILED_RULE_ENGINE_EXECUTIONS(10_2, ApiUsageRecordKey.FAILED_RE_EXEC_COUNT),
 
-//    CREATED_ALARMS(11_1)
+    CREATED_ALARMS(11_1, ApiUsageRecordKey.CREATED_ALARMS_COUNT),
+
+//    WBC_TRAFFIC,
+//    E111_TRAFFIC,
+//    TMA_TRAFFIC
     ;
 
-    private final int id;
-    private final ApiUsageRecordKey apiUsageRecordKey;
+    private Integer id;
+    private ApiUsageRecordKey apiUsageRecordKey;
+    private Long defaultValue = 0L;
 
-    KpiKey(int id) {
-        this(id, null);
+    KpiKey(Integer id) {
+        this.id = id;
     }
 
-    KpiKey(int id, ApiUsageRecordKey apiUsageRecordKey) {
+    KpiKey(ApiUsageRecordKey apiUsageRecordKey) {
+        this.apiUsageRecordKey = apiUsageRecordKey;
+    }
+
+    KpiKey(Integer id, ApiUsageRecordKey apiUsageRecordKey) {
         this.id = id;
         this.apiUsageRecordKey = apiUsageRecordKey;
     }
 
-    public String composeOid(String baseOid) {
-        return String.format("%s.%s", baseOid, getId());
+    KpiKey(Integer id, Long defaultValue) {
+        this.id = id;
+        this.defaultValue = defaultValue;
     }
 
     public static Optional<KpiKey> forApiUsageRecordKey(ApiUsageRecordKey apiUsageRecordKey) {

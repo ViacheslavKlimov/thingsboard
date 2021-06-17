@@ -38,10 +38,17 @@ public enum ApiUsageRecordKey {
     TRANSPORT_DP_COUNT(ApiFeature.TRANSPORT, "transportDataPointsCount", "transportDataPointsLimit"),
     STORAGE_DP_COUNT(ApiFeature.DB, "storageDataPointsCount", "storageDataPointsLimit"),
     RE_EXEC_COUNT(ApiFeature.RE, "ruleEngineExecutionCount", "ruleEngineExecutionLimit"),
+    FAILED_RE_EXEC_COUNT("failedRuleEngineExecutionCount"),
     JS_EXEC_COUNT(ApiFeature.JS, "jsExecutionCount", "jsExecutionLimit"),
     EMAIL_EXEC_COUNT(ApiFeature.EMAIL, "emailCount", "emailLimit"),
     SMS_EXEC_COUNT(ApiFeature.SMS, "smsCount", "smsLimit"),
-    CREATED_ALARMS_COUNT(ApiFeature.ALARM, "createdAlarmsCount", "createdAlarmsLimit");
+    CREATED_ALARMS_COUNT(ApiFeature.ALARM, "createdAlarmsCount", "createdAlarmsLimit"),
+    REST_API_CALLS_COUNT("restApiCallsCount"),
+    FAILED_REST_API_CALLS_COUNT("failedRestApiCallsCount"),
+    UPLINK_MSG_COUNT("uplinkMsgCount"),
+    FAILED_UPLINK_MSG_COUNT("failedUplinkMsgCount"),
+    DOWNLINK_MSG_COUNT("downlinkMsgCount"),
+    FAILED_DOWNLINK_MSG_COUNT("failedDownlinkMsgCount");
 
     private static final ApiUsageRecordKey[] JS_RECORD_KEYS = {JS_EXEC_COUNT};
     private static final ApiUsageRecordKey[] RE_RECORD_KEYS = {RE_EXEC_COUNT};
@@ -58,8 +65,8 @@ public enum ApiUsageRecordKey {
     @Getter
     private final String apiLimitKey;
 
-    ApiUsageRecordKey(ApiFeature apiFeature, String apiCountKey) {
-        this(apiFeature, apiCountKey, null);
+    ApiUsageRecordKey(String apiCountKey) {
+        this(null, apiCountKey, null);
     }
 
     ApiUsageRecordKey(ApiFeature apiFeature, String apiCountKey, String apiLimitKey) {

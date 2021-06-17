@@ -225,15 +225,21 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
             if (newHourTs != hourTs) {
                 usageState.setHour(newHourTs);
             }
+
             updatedEntries = new ArrayList<>(ApiUsageRecordKey.values().length);
             Set<ApiFeature> apiFeatures = new HashSet<>();
             for (UsageStatsKVProto kvProto : values) {
                 ApiUsageRecordKey recordKey = ApiUsageRecordKey.valueOf(kvProto.getKey());
+
                 long newValue = usageState.add(recordKey, kvProto.getValue());
                 updatedEntries.add(new BasicTsKvEntry(ts, new LongDataEntry(recordKey.getApiCountKey(), newValue)));
+
                 long newHourlyValue = usageState.addToHourly(recordKey, kvProto.getValue());
                 updatedEntries.add(new BasicTsKvEntry(newHourTs, new LongDataEntry(recordKey.getApiCountKey() + HOURLY, newHourlyValue)));
-                apiFeatures.add(recordKey.getApiFeature());
+
+                if (recordKey.getApiFeature() != null) {
+                    apiFeatures.add(recordKey.getApiFeature());
+                }
             }
             if (usageState.getEntityType() == EntityType.TENANT && !usageState.getEntityId().equals(TenantId.SYS_TENANT_ID)) {
                 result = ((TenantApiUsageState) usageState).checkStateUpdatedDueToThreshold(apiFeatures);
@@ -264,15 +270,19 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
     }
 
     private void publishKpiStats(List<UsageStatsKVProto> usageStats) {
+        List<KpiKV> kpis = usageStats.stream()
+                .filter(usageStatsKVProto -> KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).isPresent())
+                .map(usageStatsKVProto -> KpiKV.newBuilder()
+                        .setKey(KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).get().name())
+                        .setValue(usageStatsKVProto.getValue())
+                        .build())
+                .collect(Collectors.toList());
+        if (kpis.isEmpty()) return;
+        log.debug("Reporting KPI updates: {}", kpis);
+
         TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(TenantId.SYS_TENANT_ID.getId(), ToTransportMsg.newBuilder()
                 .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()
-                        .addAllKpiKVs(usageStats.stream()
-                                .filter(usageStatsKVProto -> KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).isPresent())
-                                .map(usageStatsKVProto -> KpiKV.newBuilder()
-                                        .setKey(KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).get().name())
-                                        .setValue(usageStatsKVProto.getValue())
-                                        .build())
-                                .collect(Collectors.toList()))
+                        .addAllKpiKVs(kpis)
                         .build())
                 .build());
         kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-reporting-service"), kpiStatsMsg, null);
@@ -378,6 +388,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         long ts = System.currentTimeMillis();
         List<TsKvEntry> profileThresholds = new ArrayList<>();
         for (ApiUsageRecordKey key : ApiUsageRecordKey.values()) {
+            if (key.getApiLimitKey() == null) continue;
             long newProfileThreshold = newData.getProfileThreshold(key);
             if (oldData == null || oldData.getProfileThreshold(key) != newProfileThreshold) {
                 log.info("[{}] Updating profile threshold [{}]:[{}]", tenantId, key, newProfileThreshold);

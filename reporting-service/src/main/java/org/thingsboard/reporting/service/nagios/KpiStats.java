@@ -45,7 +45,7 @@ public class KpiStats implements Serializable {
         entries.put(key, value);
     }
 
-    public Object getOrDefault(KpiKey key, Long defaultValue) {
+    public Long getOrDefault(KpiKey key, Long defaultValue) {
         return entries.getOrDefault(key, defaultValue);
     }
 
@@ -55,6 +55,10 @@ public class KpiStats implements Serializable {
 
     public void nullify(KpiKey key) {
         entries.put(key, 0L);
+    }
+
+    public void nullifyAll() {
+        entries.clear();
     }
 
 }

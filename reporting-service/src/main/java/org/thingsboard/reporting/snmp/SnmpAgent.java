@@ -37,29 +37,19 @@ import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
 import org.snmp4j.agent.DuplicateRegistrationException;
-import org.snmp4j.agent.MOGroup;
 import org.snmp4j.agent.MOServerLookupEvent;
 import org.snmp4j.agent.MOServerLookupListener;
-import org.snmp4j.agent.ManagedObject;
 import org.snmp4j.agent.mo.DefaultMOMutableRow2PC;
 import org.snmp4j.agent.mo.DefaultMOMutableTableModel;
 import org.snmp4j.agent.mo.DefaultMOTable;
-import org.snmp4j.agent.mo.DefaultMOTableRow;
 import org.snmp4j.agent.mo.MOAccessImpl;
 import org.snmp4j.agent.mo.MOColumn;
-import org.snmp4j.agent.mo.MOGroupImpl;
 import org.snmp4j.agent.mo.MOMutableColumn;
 import org.snmp4j.agent.mo.MOMutableTableModel;
 import org.snmp4j.agent.mo.MOMutableTableRow;
 import org.snmp4j.agent.mo.MOScalar;
-import org.snmp4j.agent.mo.MOTable;
 import org.snmp4j.agent.mo.MOTableIndex;
-import org.snmp4j.agent.mo.MOTableModel;
-import org.snmp4j.agent.mo.MOTableRow;
-import org.snmp4j.agent.mo.MOTableRowEvent;
-import org.snmp4j.agent.mo.MOTableRowListener;
 import org.snmp4j.agent.mo.MOTableSubIndex;
-import org.snmp4j.agent.mo.ext.StaticMOGroup;
 import org.snmp4j.agent.mo.snmp.RowStatus;
 import org.snmp4j.agent.mo.snmp.SnmpCommunityMIB;
 import org.snmp4j.agent.mo.snmp.SnmpCommunityMIB.SnmpCommunityEntryRow;
@@ -79,19 +69,14 @@ import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.SMIConstants;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.Variable;
-import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.thingsboard.common.util.snmp.SnmpUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class SnmpAgent extends BaseAgent {
@@ -174,7 +159,7 @@ public class SnmpAgent extends BaseAgent {
 
             @Override
             public void queryEvent(MOServerLookupEvent event) {
-                if (event.getQuery().getLowerBound().equals(new OID(baseOid))) {
+                if (event.getQuery().getLowerBound().equals(new OID(baseOid))) { // FIXME: may not work
                     Map<Integer, Object> values = valuesSupplier.get();
                     values.forEach((id, value) -> {
                         model.getRow(new OID(String.valueOf(id))).setValue(0, SnmpUtils.toSnmpVariable(value));
@@ -189,7 +174,7 @@ public class SnmpAgent extends BaseAgent {
                  * Works if values are queried via SNMP walk
                  * */
                 if (currentId == ids.get(0)) {
-
+                    // model.getRow(...).setValue(...)
                 }
             }
         }, table);

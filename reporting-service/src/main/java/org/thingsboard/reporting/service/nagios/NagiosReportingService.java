@@ -32,19 +32,19 @@ package org.thingsboard.reporting.service.nagios;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.snmp4j.agent.DuplicateRegistrationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thingsboard.reporting.snmp.SnmpAgent;
 import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.queue.util.AfterStartUp;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,19 +62,32 @@ public class NagiosReportingService {
 
     private final KpiStatsService kpiStatsService;
 
+    private final AtomicLong lastRequestTime = new AtomicLong();
+
     @AfterStartUp
-    public void run() throws IOException, DuplicateRegistrationException {
+    public void run() throws Exception {
         snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
         snmpAgent.start();
 
-        List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).collect(Collectors.toList());
+        List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
         snmpAgent.registerVariables(ids, () -> {
+            if (System.currentTimeMillis() - lastRequestTime.get() < TimeUnit.SECONDS.toMillis(15)) {
+                return Arrays.stream(KpiKey.values())
+                        .filter(kpiKey -> kpiKey.getId() != null)
+                        .collect(Collectors.toMap(KpiKey::getId, KpiKey::getDefaultValue));
+            }
+
             KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
 
             Map<Integer, Object> values = new HashMap<>();
-            Arrays.stream(KpiKey.values()).forEach(kpiKey -> {
-                values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, 0L));
-            });
+            Arrays.stream(KpiKey.values())
+                    .filter(kpiKey -> kpiKey.getId() != null)
+                    .forEach(kpiKey -> {
+                        values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, kpiKey.getDefaultValue()));
+                    });
+
+            kpiStats.nullifyAll();
+            lastRequestTime.set(System.currentTimeMillis());
 
             return values;
         }, kpiStatsBaseOid);

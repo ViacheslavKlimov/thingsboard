@@ -43,9 +43,12 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.tools.TbRateLimitsException;
+import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.service.security.exception.AuthMethodNotSupportedException;
 import org.thingsboard.server.service.security.exception.JwtExpiredTokenException;
 import org.thingsboard.server.service.security.exception.UserPasswordExpiredException;
@@ -61,6 +64,8 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
 
     @Autowired
     private ObjectMapper mapper;
+    @Autowired
+    private TbApiUsageReportClient apiUsageReportClient;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -72,6 +77,8 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
             mapper.writeValue(response.getWriter(),
                     ThingsboardErrorResponse.of("You don't have permission to perform this operation!",
                             ThingsboardErrorCode.PERMISSION_DENIED, HttpStatus.FORBIDDEN));
+
+            apiUsageReportClient.report(TenantId.SYS_TENANT_ID, null, ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT);
         }
     }
 
@@ -102,6 +109,8 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
             } catch (IOException e) {
                 log.error("Can't handle exception", e);
             }
+
+            apiUsageReportClient.report(TenantId.SYS_TENANT_ID, null, ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT);
         }
     }
 

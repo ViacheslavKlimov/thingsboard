@@ -22,6 +22,7 @@ import org.thingsboard.server.queue.provider.TbTransportQueueFactory;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -41,21 +42,36 @@ public class KpiStatsService extends DefaultTransportService {
     }
 
     private final KpiStats currentKpiStats = new KpiStats();
+
     private volatile long lastRequestTime;
 
     public KpiStats getCurrentKpiStats() {
+        collectAdditionalKpiStats();
+        lastRequestTime = System.currentTimeMillis();
+        return currentKpiStats;
+    }
+
+    private void collectAdditionalKpiStats() {
+        if (lastRequestTime == 0) {
+            lastRequestTime = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(1);
+        }
+
+        TransportProtos.GetEntitiesKpiStatsRequestMsg request = TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
+                .setNewCreatedDevicesTimeFrom(lastRequestTime)
+                .build();
         try {
-            TransportProtos.GetEntitiesKpiStatsRequestMsg request = TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
-                    .setNewCreatedDevicesTimeFrom(lastRequestTime)
-                    .build();
             requestEntitiesKpiStats(request).forEach(kpiEntry -> {
                 currentKpiStats.set(kpiEntry.getKey(), kpiEntry.getValue());
             });
         } catch (Exception e) {
             log.error("Failed to update entities KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
         }
-        lastRequestTime = System.currentTimeMillis();
-        return currentKpiStats;
+
+        Long allApiCalls = currentKpiStats.getOrDefault(KpiKey.API_CALLS, 0L);
+        Long failedApiCalls = currentKpiStats.getOrDefault(KpiKey.FAILED_API_CALLS, 0L);
+        if (allApiCalls > 0) {
+            currentKpiStats.set(KpiKey.API_CALLS_SUCCESS_RATE, (long) (((double) (allApiCalls - failedApiCalls) / allApiCalls) * 100));
+        }
     }
 
     private void onKpiStatsUpdate(TransportProtos.KpiUpdateMsg kpiUpdateMsg) {
@@ -64,6 +80,7 @@ public class KpiStatsService extends DefaultTransportService {
                 .forEach(kpiEntry -> {
                     currentKpiStats.increase(kpiEntry.getKey(), kpiEntry.getValue());
                 });
+        log.info("KPI stats update: {}. Current stats: {}", kpiUpdateMsg.getKpiKVsList().toString().replace(System.lineSeparator(), " "), currentKpiStats);
     }
 
     private List<KpiEntry> requestEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {

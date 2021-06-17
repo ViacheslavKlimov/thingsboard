@@ -151,7 +151,9 @@ public class DefaultTbApiUsageReportClient implements TbApiUsageReportClient {
             ConcurrentMap<OwnerId, AtomicLong> statsForKey = stats.get(key);
 
             statsForKey.computeIfAbsent(new OwnerId(tenantId), id -> new AtomicLong()).addAndGet(value);
-            statsForKey.computeIfAbsent(new OwnerId(TenantId.SYS_TENANT_ID), id -> new AtomicLong()).addAndGet(value);
+            if (!tenantId.equals(TenantId.SYS_TENANT_ID)) {
+                statsForKey.computeIfAbsent(new OwnerId(TenantId.SYS_TENANT_ID), id -> new AtomicLong()).addAndGet(value);
+            }
 
             if (enabledPerCustomer && customerId != null && !customerId.isNullUid()) {
                 statsForKey.computeIfAbsent(new OwnerId(tenantId, customerId), id -> new AtomicLong()).addAndGet(value);

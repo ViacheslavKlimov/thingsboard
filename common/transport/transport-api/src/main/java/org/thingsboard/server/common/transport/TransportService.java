@@ -30,12 +30,15 @@
  */
 package org.thingsboard.server.common.transport;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceTransportType;
+import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.transport.auth.GetOrCreateDeviceFromGatewayResponse;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.common.transport.service.SessionMetaData;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportToDeviceActorMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ClaimDeviceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeRequestMsg;
@@ -68,10 +71,11 @@ import org.thingsboard.server.gen.transport.TransportProtos.SubscriptionInfoProt
 import org.thingsboard.server.gen.transport.TransportProtos.ToDeviceRpcResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToServerRpcRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateBasicMqttCredRequestMsg;
-import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceCredentialsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceLwM2MCredentialsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceTokenRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceX509CertRequestMsg;
+
+import java.util.UUID;
 
 /**
  * Created by ashvayka on 04.10.18.
@@ -144,4 +148,19 @@ public interface TransportService {
     SessionMetaData reportActivity(SessionInfoProto sessionInfo);
 
     void deregisterSession(SessionInfoProto sessionInfo);
+
+    default TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
+        return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
+    }
+
+    default CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
+        long msb = sessionInfo.getCustomerIdMSB();
+        long lsb = sessionInfo.getCustomerIdLSB();
+        if (msb != 0 && lsb != 0) {
+            return new CustomerId(new UUID(msb, lsb));
+        } else {
+            return new CustomerId(EntityId.NULL_UUID);
+        }
+    }
+
 }

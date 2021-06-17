@@ -54,7 +54,6 @@ import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
-import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
@@ -488,7 +487,15 @@ public class DefaultTransportService implements TransportService {
         ListenableFuture<ProvisionDeviceResponseMsg> response = Futures.transform(transportApiRequestTemplate.send(protoMsg), tmp ->
                         tmp.getValue().getProvisionDeviceResponseMsg()
                 , MoreExecutors.directExecutor());
-        AsyncCallbackTemplate.withCallback(response, callback::onSuccess, callback::onError, transportCallbackExecutor);
+
+        reportUplinkMsg(TenantId.SYS_TENANT_ID);
+        AsyncCallbackTemplate.withCallback(response, responseMsg -> {
+            reportDownlinkMsg(TenantId.SYS_TENANT_ID);
+            callback.onSuccess(responseMsg);
+        }, throwable -> {
+            reportFailedUplinkMsg(TenantId.SYS_TENANT_ID);
+            callback.onError(throwable);
+        }, transportCallbackExecutor);
     }
 
     @Override
@@ -530,6 +537,7 @@ public class DefaultTransportService implements TransportService {
             DeviceId deviceId = new DeviceId(new UUID(sessionInfo.getDeviceIdMSB(), sessionInfo.getDeviceIdLSB()));
             CustomerId customerId = getCustomerId(sessionInfo);
             MsgPackCallback packCallback = new MsgPackCallback(msg.getTsKvListCount(), new ApiStatsProxyCallback<>(tenantId, customerId, dataPoints, callback));
+            reportUplinkMsg(sessionInfo);
             for (TransportProtos.TsKvListProto tsKv : msg.getTsKvListList()) {
                 TbMsgMetaData metaData = new TbMsgMetaData();
                 metaData.putValue("deviceName", sessionInfo.getDeviceName());
@@ -552,6 +560,7 @@ public class DefaultTransportService implements TransportService {
             metaData.putValue("deviceName", sessionInfo.getDeviceName());
             metaData.putValue("deviceType", sessionInfo.getDeviceType());
             metaData.putValue("notifyDevice", "false");
+            reportUplinkMsg(sessionInfo);
             CustomerId customerId = getCustomerId(sessionInfo);
             sendToRuleEngine(tenantId, deviceId, customerId, sessionInfo, json, metaData, SessionMsgType.POST_ATTRIBUTES_REQUEST,
                     new TransportTbQueueCallback(new ApiStatsProxyCallback<>(tenantId, customerId, msg.getKvList().size(), callback)));
@@ -562,6 +571,7 @@ public class DefaultTransportService implements TransportService {
     public void process(TransportProtos.SessionInfoProto sessionInfo, TransportProtos.GetAttributeRequestMsg msg, TransportServiceCallback<Void> callback) {
         if (checkLimits(sessionInfo, msg, callback)) {
             reportActivityInternal(sessionInfo);
+            reportUplinkMsg(sessionInfo);
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo)
                     .setGetAttributes(msg).build(), new ApiStatsProxyCallback<>(getTenantId(sessionInfo), getCustomerId(sessionInfo), 1, callback));
         }
@@ -572,6 +582,7 @@ public class DefaultTransportService implements TransportService {
         if (checkLimits(sessionInfo, msg, callback)) {
             SessionMetaData sessionMetaData = reportActivityInternal(sessionInfo);
             sessionMetaData.setSubscribedToAttributes(!msg.getUnsubscribe());
+            reportUplinkMsg(sessionInfo);
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo).setSubscribeToAttributes(msg).build(),
                     new ApiStatsProxyCallback<>(getTenantId(sessionInfo), getCustomerId(sessionInfo), 1, callback));
         }
@@ -582,6 +593,7 @@ public class DefaultTransportService implements TransportService {
         if (checkLimits(sessionInfo, msg, callback)) {
             SessionMetaData sessionMetaData = reportActivityInternal(sessionInfo);
             sessionMetaData.setSubscribedToRPC(!msg.getUnsubscribe());
+            reportUplinkMsg(sessionInfo);
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo).setSubscribeToRPC(msg).build(),
                     new ApiStatsProxyCallback<>(getTenantId(sessionInfo), getCustomerId(sessionInfo), 1, callback));
         }
@@ -591,6 +603,7 @@ public class DefaultTransportService implements TransportService {
     public void process(TransportProtos.SessionInfoProto sessionInfo, TransportProtos.ToDeviceRpcResponseMsg msg, TransportServiceCallback<Void> callback) {
         if (checkLimits(sessionInfo, msg, callback)) {
             reportActivityInternal(sessionInfo);
+            reportUplinkMsg(sessionInfo);
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo).setToDeviceRPCCallResponse(msg).build(),
                     new ApiStatsProxyCallback<>(getTenantId(sessionInfo), getCustomerId(sessionInfo), 1, callback));
         }
@@ -622,6 +635,7 @@ public class DefaultTransportService implements TransportService {
     public void process(TransportProtos.SessionInfoProto sessionInfo, TransportProtos.ToServerRpcRequestMsg msg, TransportServiceCallback<Void> callback) {
         if (checkLimits(sessionInfo, msg, callback)) {
             reportActivityInternal(sessionInfo);
+            reportUplinkMsg(sessionInfo);
             UUID sessionId = toSessionId(sessionInfo);
             TenantId tenantId = getTenantId(sessionInfo);
             DeviceId deviceId = getDeviceId(sessionInfo);
@@ -647,6 +661,7 @@ public class DefaultTransportService implements TransportService {
     public void process(TransportProtos.SessionInfoProto sessionInfo, TransportProtos.ClaimDeviceMsg msg, TransportServiceCallback<Void> callback) {
         if (checkLimits(sessionInfo, msg, callback)) {
             reportActivityInternal(sessionInfo);
+            reportUplinkMsg(sessionInfo);
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo)
                     .setClaimDevice(msg).build(), callback);
         }
@@ -658,9 +673,14 @@ public class DefaultTransportService implements TransportService {
             TbProtoQueueMsg<TransportProtos.TransportApiRequestMsg> protoMsg =
                     new TbProtoQueueMsg<>(UUID.randomUUID(), TransportProtos.TransportApiRequestMsg.newBuilder().setOtaPackageRequestMsg(msg).build());
 
-            AsyncCallbackTemplate.withCallback(transportApiRequestTemplate.send(protoMsg), response -> {
+            reportUplinkMsg(sessionInfo);
+            AsyncCallbackTemplate.withCallback(transportApiRequestTemplate.send(protoMsg), response -> { // TODO: refactor
+                reportDownlinkMsg(sessionInfo); // FIXME: failed downlink msg for LwM2M
                 callback.onSuccess(response.getValue().getOtaPackageResponseMsg());
-            }, callback::onError, transportCallbackExecutor);
+            }, throwable -> {
+                reportFailedUplinkMsg(sessionInfo);
+                callback.onError(throwable);
+            }, transportCallbackExecutor);
         }
     }
 
@@ -777,11 +797,14 @@ public class DefaultTransportService implements TransportService {
         SessionMetaData md = sessions.get(sessionId);
         if (md != null) {
             SessionMsgListener listener = md.getListener();
+            TransportProtos.SessionInfoProto sessionInfo = md.getSessionInfo();
             transportCallbackExecutor.submit(() -> {
                 if (toSessionMsg.hasGetAttributesResponse()) {
+                    reportDownlinkMsg(sessionInfo); // FIXME: failed downlink msg for LwM2M
                     listener.onGetAttributesResponse(toSessionMsg.getGetAttributesResponse());
                 }
                 if (toSessionMsg.hasAttributeUpdateNotification()) {
+                    reportDownlinkMsg(sessionInfo); // FIXME: failed downlink msg for LwM2M
                     listener.onAttributeUpdate(toSessionMsg.getAttributeUpdateNotification());
                 }
                 if (toSessionMsg.hasSessionCloseNotification()) {
@@ -791,16 +814,18 @@ public class DefaultTransportService implements TransportService {
                     listener.onToTransportUpdateCredentials(toSessionMsg.getToTransportUpdateCredentialsNotification());
                 }
                 if (toSessionMsg.hasToDeviceRequest()) {
+                    reportDownlinkMsg(sessionInfo); // FIXME: failed downlink msg for LwM2M
                     listener.onToDeviceRpcRequest(toSessionMsg.getToDeviceRequest());
                 }
                 if (toSessionMsg.hasToServerResponse()) {
+                    reportDownlinkMsg(sessionInfo); // FIXME: failed downlink msg for LwM2M
                     String requestId = sessionId + "-" + toSessionMsg.getToServerResponse().getRequestId();
                     toServerRpcPendingMap.remove(requestId);
                     listener.onToServerRpcResponse(toSessionMsg.getToServerResponse());
                 }
             });
             if (md.getSessionType() == TransportProtos.SessionType.SYNC) {
-                deregisterSession(md.getSessionInfo());
+                deregisterSession(sessionInfo);
             }
         } else {
             if (toSessionMsg.hasEntityUpdateMsg()) {
@@ -950,20 +975,6 @@ public class DefaultTransportService implements TransportService {
         return new UUID(sessionInfo.getDeviceIdMSB(), sessionInfo.getDeviceIdLSB());
     }
 
-    protected TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
-        return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
-    }
-
-    protected CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
-        long msb = sessionInfo.getCustomerIdMSB();
-        long lsb = sessionInfo.getCustomerIdLSB();
-        if (msb != 0 && lsb != 0) {
-            return new CustomerId(new UUID(msb, lsb));
-        } else {
-            return new CustomerId(EntityId.NULL_UUID);
-        }
-    }
-
     protected DeviceId getDeviceId(TransportProtos.SessionInfoProto sessionInfo) {
         return new DeviceId(new UUID(sessionInfo.getDeviceIdMSB(), sessionInfo.getDeviceIdLSB()));
     }
@@ -1021,6 +1032,30 @@ public class DefaultTransportService implements TransportService {
 
         TbMsg tbMsg = TbMsg.newMsg(queueName, sessionMsgType.name(), deviceId, customerId, metaData, gson.toJson(json), ruleChainId, null);
         sendToRuleEngine(tenantId, tbMsg, callback);
+    }
+
+    private void reportUplinkMsg(TransportProtos.SessionInfoProto sessionInfo) {
+        reportUplinkMsg(getTenantId(sessionInfo));
+    }
+
+    private void reportUplinkMsg(TenantId tenantId) {
+        apiUsageClient.report(tenantId, null, ApiUsageRecordKey.UPLINK_MSG_COUNT);
+    }
+
+    private void reportFailedUplinkMsg(TransportProtos.SessionInfoProto sessionInfo) {
+        reportFailedUplinkMsg(getTenantId(sessionInfo));
+    }
+
+    private void reportFailedUplinkMsg(TenantId tenantId) {
+        apiUsageClient.report(tenantId, null, ApiUsageRecordKey.FAILED_UPLINK_MSG_COUNT);
+    }
+
+    private void reportDownlinkMsg(TransportProtos.SessionInfoProto sessionInfo) {
+        reportDownlinkMsg(getTenantId(sessionInfo));
+    }
+
+    private void reportDownlinkMsg(TenantId tenantId) {
+        apiUsageClient.report(tenantId, null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
 
     private class TransportTbQueueCallback implements TbQueueCallback {
@@ -1112,6 +1147,7 @@ public class DefaultTransportService implements TransportService {
 
         @Override
         public void onError(Throwable e) {
+            reportFailedUplinkMsg(tenantId);
             callback.onError(e);
         }
     }

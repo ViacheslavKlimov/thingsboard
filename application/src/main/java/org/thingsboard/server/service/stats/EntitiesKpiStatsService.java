@@ -53,8 +53,7 @@ public class EntitiesKpiStatsService {
                 new KpiEntry(KpiKey.TOTAL_DEVICES, deviceDao.count()),
                 new KpiEntry(KpiKey.ONLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true)), // FIXME: from telemetry?
                 new KpiEntry(KpiKey.OFFLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false)),
-                new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom())),
-
+                new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom()))
         );
     }
 

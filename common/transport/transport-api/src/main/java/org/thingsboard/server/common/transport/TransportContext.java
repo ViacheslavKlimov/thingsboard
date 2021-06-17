@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thingsboard.common.util.ThingsBoardExecutors;
 import org.thingsboard.server.cache.ota.OtaPackageDataCache;
+import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.queue.discovery.TbServiceInfoProvider;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
 
@@ -48,7 +49,7 @@ import java.util.concurrent.ExecutorService;
  * Created by ashvayka on 15.10.18.
  */
 @Slf4j
-@Data
+@Getter
 public abstract class TransportContext {
 
     protected final ObjectMapper mapper = new ObjectMapper();
@@ -62,15 +63,16 @@ public abstract class TransportContext {
     @Autowired
     private SchedulerComponent scheduler;
 
-    @Getter
     private ExecutorService executor;
 
-    @Getter
     @Autowired
     private OtaPackageDataCache otaPackageDataCache;
 
     @Autowired
     private TransportResourceCache transportResourceCache;
+
+    @Autowired
+    private TbApiUsageReportClient apiUsageReportClient;
 
     @PostConstruct
     public void init() {
