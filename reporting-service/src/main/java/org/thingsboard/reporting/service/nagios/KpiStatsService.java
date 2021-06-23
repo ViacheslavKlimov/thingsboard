@@ -51,6 +51,10 @@ public class KpiStatsService extends DefaultTransportService {
         return currentKpiStats;
     }
 
+    public KpiStats getRawKpiStats() {
+        return currentKpiStats;
+    }
+
     private void collectAdditionalKpiStats() {
         if (lastRequestTime == 0) {
             lastRequestTime = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(1);

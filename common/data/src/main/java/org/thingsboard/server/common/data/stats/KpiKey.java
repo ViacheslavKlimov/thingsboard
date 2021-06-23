@@ -8,9 +8,9 @@ import java.util.Optional;
 
 @Getter
 public enum KpiKey {
-    TOTAL_DEVICES(1_1),
-    ONLINE_DEVICES(1_2),
-    OFFLINE_DEVICES(1_3),
+    TOTAL_DEVICES(1_1, false),
+    ONLINE_DEVICES(1_2, false), // 'active' might be in telemetry ?
+    OFFLINE_DEVICES(1_3, false),
 
     NEW_PROVISIONED_DEVICES(2_1),
 
@@ -29,8 +29,8 @@ public enum KpiKey {
 
 //    RPC(10),
 
-    RULE_ENGINE_EXECUTIONS(10_1, ApiUsageRecordKey.RE_EXEC_COUNT),
-    FAILED_RULE_ENGINE_EXECUTIONS(10_2, ApiUsageRecordKey.FAILED_RE_EXEC_COUNT),
+    RULE_ENGINE_EXECUTIONS(7_1, ApiUsageRecordKey.RE_EXEC_COUNT),
+    FAILED_RULE_ENGINE_EXECUTIONS(7_2, ApiUsageRecordKey.FAILED_RE_EXEC_COUNT),
 
     CREATED_ALARMS(11_1, ApiUsageRecordKey.CREATED_ALARMS_COUNT),
 
@@ -42,6 +42,7 @@ public enum KpiKey {
     private Integer id;
     private ApiUsageRecordKey apiUsageRecordKey;
     private Long defaultValue = 0L;
+    private boolean isAccumulated = true;
 
     KpiKey(Integer id) {
         this.id = id;
@@ -59,6 +60,15 @@ public enum KpiKey {
     KpiKey(Integer id, Long defaultValue) {
         this.id = id;
         this.defaultValue = defaultValue;
+    }
+
+    KpiKey(Integer id, boolean isAccumulated) {
+        this.id = id;
+        this.isAccumulated = isAccumulated;
+    }
+
+    public boolean isAccumulated() {
+        return isAccumulated;
     }
 
     public static Optional<KpiKey> forApiUsageRecordKey(ApiUsageRecordKey apiUsageRecordKey) {

@@ -62,6 +62,7 @@ import org.eclipse.leshan.core.util.Hex;
 import org.eclipse.leshan.server.registration.Registration;
 import org.springframework.stereotype.Service;
 import org.thingsboard.common.util.JacksonUtil;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.device.data.lwm2m.ObjectAttributes;
 import org.thingsboard.server.queue.util.TbLwM2mTransportComponent;
 import org.thingsboard.server.transport.lwm2m.config.LwM2MTransportServerConfig;
@@ -287,10 +288,13 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                 executor.submit(() -> {
                     callback.onError(JacksonUtil.toString(request), e);
                 });
+                context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
             });
         } catch (Exception e) {
             callback.onError(JacksonUtil.toString(request), e);
+            context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
         }
+        context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
 
     private WriteRequest getWriteRequestSingleResource(ResourceModel.Type type, ContentFormat contentFormat, int objectId, int instanceId, int resourceId, Object value) {

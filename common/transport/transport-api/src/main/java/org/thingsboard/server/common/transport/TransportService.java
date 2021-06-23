@@ -150,17 +150,22 @@ public interface TransportService {
     void deregisterSession(SessionInfoProto sessionInfo);
 
     default TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
-        return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
+        if (sessionInfo != null) {
+            return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
+        } else {
+            return TenantId.SYS_TENANT_ID;
+        }
     }
 
     default CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
-        long msb = sessionInfo.getCustomerIdMSB();
-        long lsb = sessionInfo.getCustomerIdLSB();
-        if (msb != 0 && lsb != 0) {
-            return new CustomerId(new UUID(msb, lsb));
-        } else {
-            return new CustomerId(EntityId.NULL_UUID);
+        if (sessionInfo != null) {
+            long msb = sessionInfo.getCustomerIdMSB();
+            long lsb = sessionInfo.getCustomerIdLSB();
+            if (msb != 0 && lsb != 0) {
+                return new CustomerId(new UUID(msb, lsb));
+            }
         }
+        return new CustomerId(EntityId.NULL_UUID);
     }
 
 }

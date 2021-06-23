@@ -36,6 +36,7 @@ import org.thingsboard.server.common.data.stats.KpiKey;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 @Data
 public class KpiStats implements Serializable {
@@ -57,8 +58,8 @@ public class KpiStats implements Serializable {
         entries.put(key, 0L);
     }
 
-    public void nullifyAll() {
-        entries.clear();
+    public void nullify(Predicate<KpiKey> selector) {
+        entries.keySet().removeIf(selector);
     }
 
 }

@@ -30,11 +30,15 @@
  */
 package org.thingsboard.server.transport.coap;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.elements.EndpointContext;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.transport.TransportContext;
 import org.thingsboard.server.common.transport.TransportService;
@@ -43,7 +47,12 @@ import org.thingsboard.server.common.transport.auth.SessionInfoCreator;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.gen.transport.TransportProtos;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 @Slf4j
@@ -52,10 +61,13 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
 
+    private final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
+
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
         this.transportContext = context;
         this.transportService = context.getTransportService();
+        initMsgAckChecking();
     }
 
     @Override
@@ -88,6 +100,74 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         return TransportProtos.SessionEventMsg.newBuilder()
                 .setSessionType(TransportProtos.SessionType.ASYNC)
                 .setEvent(event).build();
+    }
+
+    protected void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        exchange.respond(response);
+
+        transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
+                transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+        int msgId = response.getMID();
+        requestsAwaitingAck.put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
+        response.addMessageObserver(new MessageObserver() {
+            @Override
+            public void onRetransmission() {}
+
+            @Override
+            public void onResponse(Response response) {}
+
+            @Override
+            public void onAcknowledgement() {
+                requestsAwaitingAck.remove(msgId);
+            }
+
+            @Override
+            public void onReject() {}
+
+            @Override
+            public void onTimeout() {}
+
+            @Override
+            public void onCancel() {}
+
+            @Override
+            public void onReadyToSend() {}
+
+            @Override
+            public void onConnecting() {}
+
+            @Override
+            public void onDtlsRetransmission(int flight) {}
+
+            @Override
+            public void onSent(boolean retransmission) {}
+
+            @Override
+            public void onSendError(Throwable error) {}
+
+            @Override
+            public void onContextEstablished(EndpointContext endpointContext) {}
+
+            @Override
+            public void onComplete() {}
+
+        });
+
+    }
+
+    protected void initMsgAckChecking() {
+        transportContext.getScheduler().scheduleWithFixedDelay(() -> {
+            List<Integer> timedOut = new LinkedList<>();
+            long currentTime = System.currentTimeMillis();
+            requestsAwaitingAck.forEach((requestId, requestInfo) -> {
+                if (currentTime - requestInfo.getRequestTime() >= TimeUnit.SECONDS.toMillis(transportContext.getMsgAckTimeout())) {
+                    timedOut.add(requestId);
+                    transportContext.getApiUsageReportClient().report(transportService.getTenantId(requestInfo.getSessionInfo()),
+                            transportService.getCustomerId(requestInfo.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+                }
+            });
+            timedOut.forEach(requestsAwaitingAck::remove);
+        }, transportContext.getMsgAckTimeout(), 10, TimeUnit.SECONDS);
     }
 
     public static class CoapDeviceAuthCallback implements TransportServiceCallback<ValidateDeviceCredentialsResponse> {
@@ -163,4 +243,11 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
             exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Data
+    static class RequestInfo {
+        private final TransportProtos.SessionInfoProto sessionInfo;
+        private final long requestTime;
+    }
+
 }

@@ -71,26 +71,32 @@ public class NagiosReportingService {
 
         List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
         snmpAgent.registerVariables(ids, () -> {
-            if (System.currentTimeMillis() - lastRequestTime.get() < TimeUnit.SECONDS.toMillis(15)) {
-                return Arrays.stream(KpiKey.values())
-                        .filter(kpiKey -> kpiKey.getId() != null)
-                        .collect(Collectors.toMap(KpiKey::getId, KpiKey::getDefaultValue));
+            if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(2)) {
+                return toValues(kpiStatsService.getRawKpiStats());
             }
 
             KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
+            Map<Integer, Object> values = toValues(kpiStats);
 
-            Map<Integer, Object> values = new HashMap<>();
-            Arrays.stream(KpiKey.values())
-                    .filter(kpiKey -> kpiKey.getId() != null)
-                    .forEach(kpiKey -> {
-                        values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, kpiKey.getDefaultValue()));
-                    });
-
-            kpiStats.nullifyAll();
+            kpiStats.nullify(KpiKey::isAccumulated);
             lastRequestTime.set(System.currentTimeMillis());
 
             return values;
         }, kpiStatsBaseOid);
+    }
+
+    private Map<Integer, Object> toValues(KpiStats kpiStats) {
+        Map<Integer, Object> values = new HashMap<>();
+        getKpiKeysToReport().forEach(kpiKey -> {
+            values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, kpiKey.getDefaultValue()));
+        });
+        return values;
+    }
+
+    private List<KpiKey> getKpiKeysToReport() {
+        return Arrays.stream(KpiKey.values())
+                .filter(kpiKey -> kpiKey.getId() != null)
+                .collect(Collectors.toList());
     }
 
 }

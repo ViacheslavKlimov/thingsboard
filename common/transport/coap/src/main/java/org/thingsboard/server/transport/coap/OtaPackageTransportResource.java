@@ -96,7 +96,7 @@ public class OtaPackageTransportResource extends AbstractCoapTransportResource {
                 .setDeviceIdMSB(sessionInfo.getDeviceIdMSB())
                 .setDeviceIdLSB(sessionInfo.getDeviceIdLSB())
                 .setType(firmwareType.name()).build();
-        transportContext.getTransportService().process(sessionInfo, requestMsg, new OtaPackageCallback(exchange));
+        transportContext.getTransportService().process(sessionInfo, requestMsg, new OtaPackageCallback(exchange, sessionInfo));
     }
 
     private Optional<DeviceTokenCredentials> decodeCredentials(Request request) {
@@ -115,9 +115,11 @@ public class OtaPackageTransportResource extends AbstractCoapTransportResource {
 
     private class OtaPackageCallback implements TransportServiceCallback<TransportProtos.GetOtaPackageResponseMsg> {
         private final CoapExchange exchange;
+        private final TransportProtos.SessionInfoProto sessionInfo;
 
-        OtaPackageCallback(CoapExchange exchange) {
+        OtaPackageCallback(CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
             this.exchange = exchange;
+            this.sessionInfo = sessionInfo;
         }
 
         @Override
@@ -131,23 +133,23 @@ public class OtaPackageTransportResource extends AbstractCoapTransportResource {
                     String strChunk = exchange.getQueryParameter("chunk");
                     int chunkSize = StringUtils.isEmpty(strChunkSize) ? 0 : Integer.parseInt(strChunkSize);
                     int chunk = StringUtils.isEmpty(strChunk) ? 0 : Integer.parseInt(strChunk);
-                    respondOtaPackage(exchange, transportContext.getOtaPackageDataCache().get(firmwareId, chunkSize, chunk));
+                    respondOtaPackage(exchange, sessionInfo, transportContext.getOtaPackageDataCache().get(firmwareId, chunkSize, chunk));
                 } else {
-                    exchange.respond(CoAP.ResponseCode.BAD_REQUEST);
+                    respond(new Response(CoAP.ResponseCode.BAD_REQUEST), exchange, sessionInfo);
                 }
             } else {
-                exchange.respond(CoAP.ResponseCode.NOT_FOUND);
+                respond(new Response(CoAP.ResponseCode.NOT_FOUND), exchange, sessionInfo);
             }
         }
 
         @Override
         public void onError(Throwable e) {
             log.warn("Failed to process request", e);
-            exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
+            respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR), exchange, sessionInfo);
         }
     }
 
-    private void respondOtaPackage(CoapExchange exchange, byte[] data) {
+    private void respondOtaPackage(CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo, byte[] data) {
         Response response = new Response(CoAP.ResponseCode.CONTENT);
         if (data != null && data.length > 0) {
             response.setPayload(data);
@@ -157,7 +159,7 @@ public class OtaPackageTransportResource extends AbstractCoapTransportResource {
                 response.getOptions().setUriPath(exchange.getRequestOptions().getUriPathString());
                 response.getOptions().setBlock2(chunkSize, lastFlag, 0);
             }
-            exchange.respond(response);
+            respond(response, exchange, sessionInfo);
         }
     }
 
