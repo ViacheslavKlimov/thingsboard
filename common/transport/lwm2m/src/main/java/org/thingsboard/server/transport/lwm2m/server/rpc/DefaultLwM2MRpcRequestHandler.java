@@ -41,6 +41,7 @@ import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.TbLwM2mTransportComponent;
 import org.thingsboard.server.transport.lwm2m.config.LwM2MTransportServerConfig;
 import org.thingsboard.server.transport.lwm2m.server.LwM2mOperationType;
+import org.thingsboard.server.transport.lwm2m.server.LwM2mTransportContext;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClientContext;
 import org.thingsboard.server.transport.lwm2m.server.downlink.LwM2mDownlinkMsgHandler;
@@ -81,6 +82,7 @@ import java.util.stream.Collectors;
 public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
 
     private final TransportService transportService;
+    private final LwM2mTransportContext transportContext;
     private final LwM2mClientContext clientContext;
     private final LwM2MTransportServerConfig config;
     private final LwM2mUplinkMsgHandler uplinkHandler;
@@ -89,53 +91,55 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
     private final Map<UUID, Long> rpcSubscriptions = new ConcurrentHashMap<>();
 
     @Override
-    public void onToDeviceRpcRequest(TransportProtos.ToDeviceRpcRequestMsg rpcRequst, TransportProtos.SessionInfoProto sessionInfo) {
+    public void onToDeviceRpcRequest(TransportProtos.ToDeviceRpcRequestMsg rpcRequest, TransportProtos.SessionInfoProto sessionInfo, Runnable onError) {
         this.cleanupOldSessions();
-        UUID requestUUID = new UUID(rpcRequst.getRequestIdMSB(), rpcRequst.getRequestIdLSB());
-        log.warn("Received params: {}", rpcRequst.getParams());
+        UUID requestUUID = new UUID(rpcRequest.getRequestIdMSB(), rpcRequest.getRequestIdLSB());
+        log.warn("Received params: {}", rpcRequest.getParams());
         // We use this map to protect from browser issue that the same command is sent twice.
         // TODO: This is probably not the best place and should be moved to DeviceActor
         if (!this.rpcSubscriptions.containsKey(requestUUID)) {
-            LwM2mOperationType operationType = LwM2mOperationType.fromType(rpcRequst.getMethodName());
+            LwM2mOperationType operationType = LwM2mOperationType.fromType(rpcRequest.getMethodName());
             if (operationType == null) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequst.getRequestId(), ResponseCode.METHOD_NOT_ALLOWED.getName(), "Unsupported operation type: " + rpcRequst.getMethodName());
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.METHOD_NOT_ALLOWED.getName(), "Unsupported operation type: " + rpcRequest.getMethodName());
+                onError.run();
                 return;
             }
             LwM2mClient client = clientContext.getClientBySessionInfo(sessionInfo);
             if (client.getRegistration() == null) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequst.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR.getName(), "Registration is empty");
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR.getName(), "Registration is empty");
+                onError.run();
                 return;
             }
             try {
                 if (operationType.isHasObjectId()) {
-                    String objectId = getIdFromParameters(client, rpcRequst);
+                    String objectId = getIdFromParameters(client, rpcRequest);
                     switch (operationType) {
                         case READ:
-                            sendReadRequest(client, rpcRequst, objectId);
+                            sendReadRequest(client, rpcRequest, objectId);
                             break;
                         case OBSERVE:
-                            sendObserveRequest(client, rpcRequst, objectId);
+                            sendObserveRequest(client, rpcRequest, objectId);
                             break;
                         case DISCOVER:
-                            sendDiscoverRequest(client, rpcRequst, objectId);
+                            sendDiscoverRequest(client, rpcRequest, objectId);
                             break;
                         case EXECUTE:
-                            sendExecuteRequest(client, rpcRequst, objectId);
+                            sendExecuteRequest(client, rpcRequest, objectId);
                             break;
                         case WRITE_ATTRIBUTES:
-                            sendWriteAttributesRequest(client, rpcRequst, objectId);
+                            sendWriteAttributesRequest(client, rpcRequest, objectId);
                             break;
                         case OBSERVE_CANCEL:
-                            sendCancelObserveRequest(client, rpcRequst, objectId);
+                            sendCancelObserveRequest(client, rpcRequest, objectId);
                             break;
                         case DELETE:
-                            sendDeleteRequest(client, rpcRequst, objectId);
+                            sendDeleteRequest(client, rpcRequest, objectId);
                             break;
                         case WRITE_UPDATE:
-                            sendWriteUpdateRequest(client, rpcRequst, objectId);
+                            sendWriteUpdateRequest(client, rpcRequest, objectId);
                             break;
                         case WRITE_REPLACE:
-                            sendWriteReplaceRequest(client, rpcRequst, objectId);
+                            sendWriteReplaceRequest(client, rpcRequest, objectId);
                             break;
                         default:
                             throw new IllegalArgumentException("Unsupported operation: " + operationType.name());
@@ -143,13 +147,13 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                 } else {
                     switch (operationType) {
                         case OBSERVE_CANCEL_ALL:
-                            sendCancelAllObserveRequest(client, rpcRequst);
+                            sendCancelAllObserveRequest(client, rpcRequest);
                             break;
                         case OBSERVE_READ_ALL:
-                            sendObserveAllRequest(client, rpcRequst);
+                            sendObserveAllRequest(client, rpcRequest);
                             break;
                         case DISCOVER_ALL:
-                            sendDiscoverAllRequest(client, rpcRequst);
+                            sendDiscoverAllRequest(client, rpcRequest);
                             break;
                         case FW_UPDATE:
                             //TODO: implement and add break statement
@@ -158,7 +162,8 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                     }
                 }
             } catch (IllegalArgumentException e) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequst.getRequestId(), ResponseCode.BAD_REQUEST.getName(), e.getMessage());
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.BAD_REQUEST.getName(), e.getMessage());
+                onError.run();
             }
         }
     }

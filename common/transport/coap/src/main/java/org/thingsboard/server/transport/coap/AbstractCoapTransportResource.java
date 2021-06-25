@@ -47,8 +47,10 @@ import org.thingsboard.server.common.transport.auth.SessionInfoCreator;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.gen.transport.TransportProtos;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -61,7 +63,8 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
 
-    private final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
+    protected final Set<Integer> rpcRequestsAwaitingResponse = new HashSet<>();
 
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
@@ -102,7 +105,7 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
                 .setEvent(event).build();
     }
 
-    protected void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+    protected RespondResult respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
         exchange.respond(response);
 
         transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
@@ -153,6 +156,7 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
 
         });
 
+        return new RespondResult(msgId);
     }
 
     protected void initMsgAckChecking() {
@@ -248,6 +252,11 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     static class RequestInfo {
         private final TransportProtos.SessionInfoProto sessionInfo;
         private final long requestTime;
+    }
+
+    @Data
+    static class RespondResult {
+        private final int msgId;
     }
 
 }

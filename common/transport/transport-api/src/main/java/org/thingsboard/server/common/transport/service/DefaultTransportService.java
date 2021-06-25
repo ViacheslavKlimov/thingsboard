@@ -817,8 +817,13 @@ public class DefaultTransportService implements TransportService {
                     listener.onToTransportUpdateCredentials(toSessionMsg.getToTransportUpdateCredentialsNotification());
                 }
                 if (toSessionMsg.hasToDeviceRequest()) {
-                    apiUsageClient.report(getTenantId(sessionInfo), getCustomerId(sessionInfo), ApiUsageRecordKey.);
-                    listener.onToDeviceRpcRequest(sessionId, toSessionMsg.getToDeviceRequest());
+                    TransportProtos.ToDeviceRpcRequestMsg toDeviceRpcRequest = toSessionMsg.getToDeviceRequest();
+                    if (toDeviceRpcRequest.getOneway()) {
+                        apiUsageClient.report(getTenantId(sessionInfo), getCustomerId(sessionInfo), ApiUsageRecordKey.ONE_WAY_RPC_REQUEST_COUNT);
+                    } else {
+                        apiUsageClient.report(getTenantId(sessionInfo), getCustomerId(sessionInfo), ApiUsageRecordKey.TWO_WAY_RPC_REQUEST_COUNT);
+                    }
+                    listener.onToDeviceRpcRequest(sessionId, toDeviceRpcRequest);
                 }
                 if (toSessionMsg.hasToServerResponse()) {
                     String requestId = sessionId + "-" + toSessionMsg.getToServerResponse().getRequestId();

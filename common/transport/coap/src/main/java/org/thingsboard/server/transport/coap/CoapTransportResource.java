@@ -49,6 +49,7 @@ import org.thingsboard.server.coapserver.CoapServerService;
 import org.thingsboard.server.coapserver.TbCoapDtlsSessionInfo;
 import org.thingsboard.server.common.adaptor.AdaptorException;
 import org.thingsboard.server.common.adaptor.JsonConverter;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceTransportType;
@@ -76,6 +77,7 @@ import org.thingsboard.server.gen.transport.TransportProtos.SessionEvent;
 import org.thingsboard.server.gen.transport.TransportProtos.SessionInfoProto;
 import org.thingsboard.server.gen.transport.TransportProtos.SubscribeToAttributeUpdatesMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.SubscribeToRPCMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToDeviceRpcResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceTokenRequestMsg;
 import org.thingsboard.server.transport.coap.adaptors.CoapTransportAdaptor;
 
@@ -358,9 +360,10 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                     closeAndDeregister(sessionInfo);
                     break;
                 case TO_DEVICE_RPC_RESPONSE:
-                    transportService.process(sessionInfo,
-                            coapTransportAdaptor.convertToDeviceRpcResponse(sessionId, request, transportConfigurationContainer.getRpcResponseMsgDescriptor()),
+                    ToDeviceRpcResponseMsg rpcResponseMsg = coapTransportAdaptor.convertToDeviceRpcResponse(sessionId, request, transportConfigurationContainer.getRpcResponseMsgDescriptor());
+                    transportService.process(sessionInfo, rpcResponseMsg,
                             new CoapOkCallback(exchange, CoAP.ResponseCode.CREATED, CoAP.ResponseCode.INTERNAL_SERVER_ERROR));
+                    rpcRequestsAwaitingResponse.remove(rpcResponseMsg.getRequestId());
                     break;
                 case TO_SERVER_RPC_REQUEST:
                     transportService.registerSyncSession(sessionInfo, getCoapSessionListener(exchange, coapTransportAdaptor,
@@ -545,7 +548,23 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
             log.trace("[{}] Received RPC command to device", sessionId);
             boolean successful = true;
             try {
-                respond(coapTransportAdaptor.convertToPublish(isConRequest(), msg, rpcRequestDynamicMessageBuilder), exchange, sessionInfo);
+                RespondResult respondResult = respond(coapTransportAdaptor.convertToPublish(isConRequest(), msg, rpcRequestDynamicMessageBuilder), exchange, sessionInfo);
+                if (msg.getOneway()) {
+                    transportContext.getScheduler().schedule(() -> {
+                        if (requestsAwaitingAck.containsKey(respondResult.getMsgId())) {
+                            transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
+                                    transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT);
+                        }
+                    }, Math.max(0, msg.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                } else {
+                    rpcRequestsAwaitingResponse.add(msg.getRequestId());
+                    transportContext.getScheduler().schedule(() -> {
+                        if (requestsAwaitingAck.containsKey(respondResult.getMsgId()) || rpcRequestsAwaitingResponse.contains(msg.getRequestId())) {
+                            transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
+                                    transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
+                        }
+                    }, Math.max(0, msg.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                }
             } catch (AdaptorException e) {
                 log.trace("Failed to reply due to error", e);
                 closeObserveRelationAndNotify(sessionId, CoAP.ResponseCode.INTERNAL_SERVER_ERROR);

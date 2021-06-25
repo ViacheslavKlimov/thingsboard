@@ -55,6 +55,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.thingsboard.server.common.adaptor.AdaptorException;
@@ -80,7 +81,6 @@ import org.thingsboard.server.common.transport.service.DefaultTransportService;
 import org.thingsboard.server.common.transport.service.SessionMetaData;
 import org.thingsboard.server.common.transport.util.SslUtil;
 import org.thingsboard.server.gen.transport.TransportProtos;
-import org.thingsboard.server.gen.transport.TransportProtos.AttributeUpdateNotificationMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ClaimDeviceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeResponseMsg;
@@ -114,9 +114,11 @@ import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -167,6 +169,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     private final ConcurrentMap<String, String> otaPackSessions;
     private final ConcurrentMap<String, Integer> chunkSizes;
     private final ConcurrentMap<Integer, Long> requestsAwaitingAck;
+    private final Set<Integer> rpcRequestsAwaitingResponse;
 
     MqttTransportHandler(MqttTransportContext context, SslHandler sslHandler) {
         this.sessionId = UUID.randomUUID();
@@ -179,6 +182,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         this.otaPackSessions = new ConcurrentHashMap<>();
         this.chunkSizes = new ConcurrentHashMap<>();
         this.requestsAwaitingAck = new ConcurrentHashMap<>();
+        this.rpcRequestsAwaitingResponse = new HashSet<>();
         initMsgAckChecking();
     }
 
@@ -286,6 +290,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             case PUBACK:
                 int msgId = ((MqttPubAckMessage) msg).variableHeader().messageId();
                 requestsAwaitingAck.remove(msgId);
+                break;
             default:
                 break;
         }
@@ -357,6 +362,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             } else if (topicName.startsWith(MqttTopics.DEVICE_RPC_RESPONSE_TOPIC)) {
                 ToDeviceRpcResponseMsg rpcResponseMsg = payloadAdaptor.convertToDeviceRpcResponse(deviceSessionCtx, mqttMsg);
                 transportService.process(deviceSessionCtx.getSessionInfo(), rpcResponseMsg, getPubAckCallback(ctx, msgId, rpcResponseMsg));
+                rpcRequestsAwaitingResponse.remove(rpcResponseMsg.getRequestId());
             } else if (topicName.startsWith(MqttTopics.DEVICE_RPC_REQUESTS_TOPIC)) {
                 ToServerRpcRequestMsg rpcRequestMsg = payloadAdaptor.convertToServerRpcRequest(deviceSessionCtx, mqttMsg);
                 transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequestMsg, getPubAckCallback(ctx, msgId, rpcRequestMsg));
@@ -457,7 +463,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 } else {
                     payloadAdaptor = deviceSessionCtx.getContext().getProtoMqttAdaptor();
                 }
-                publish(deviceSessionCtx, payloadAdaptor.convertToPublish(deviceSessionCtx, provisionResponseMsg).orElse(null));
+                publish(payloadAdaptor.convertToPublish(deviceSessionCtx, provisionResponseMsg).orElse(null), deviceSessionCtx);
                 scheduler.schedule(() -> processDisconnect(ctx), 60, TimeUnit.SECONDS);
             } catch (Exception e) {
                 log.trace("[{}] Failed to convert device attributes response to MQTT msg", sessionId, e);
@@ -511,7 +517,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         ack(ctx, msgId);
         try {
             byte[] firmwareChunk = context.getOtaPackageDataCache().get(firmwareId, chunkSize, chunk);
-            publish(deviceSessionCtx, deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, firmwareChunk, requestId, chunk, type).orElse(null));
+            publish(deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, firmwareChunk, requestId, chunk, type).orElse(null), deviceSessionCtx);
         } catch (Exception e) {
             log.trace("[{}] Failed to send firmware response!", sessionId, e);
         }
@@ -519,8 +525,8 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
 
     private void sendOtaPackageError(ChannelHandlerContext ctx, String error) {
         log.warn("[{}] {}", sessionId, error);
-        publish(deviceSessionCtx, deviceSessionCtx.getPayloadAdaptor()
-                .createMqttPublishMsg(deviceSessionCtx, MqttTopics.DEVICE_FIRMWARE_ERROR_TOPIC, error.getBytes()));
+        publish(deviceSessionCtx.getPayloadAdaptor()
+                .createMqttPublishMsg(deviceSessionCtx, MqttTopics.DEVICE_FIRMWARE_ERROR_TOPIC, error.getBytes()), deviceSessionCtx);
         processDisconnect(ctx);
     }
 
@@ -831,7 +837,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     @Override
     public void onGetAttributesResponse(GetAttributeResponseMsg response) {
         try {
-            publish(deviceSessionCtx, deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, response).orElse(null));
+            publish(deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, response).orElse(null), deviceSessionCtx);
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device attributes response to MQTT msg", sessionId, e);
         }
@@ -841,7 +847,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     public void onAttributeUpdate(UUID sessionId, TransportProtos.AttributeUpdateNotificationMsg notification) {
         log.trace("[{}] Received attributes update notification to device", sessionId);
         try {
-            publish(deviceSessionCtx, deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, notification).orElse(null));
+            publish(deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, notification).orElse(null), deviceSessionCtx);
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device attributes update to MQTT msg", sessionId, e);
         }
@@ -854,34 +860,56 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     }
 
     @Override
-    public void onToDeviceRpcRequest(UUID sessionId, TransportProtos.ToDeviceRpcRequestMsg rpcRequest) {
+    public void onToDeviceRpcRequest(UUID sessionId, ToDeviceRpcRequestMsg rpcRequest) {
         log.trace("[{}] Received RPC command to device", sessionId);
         try {
-            deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcRequest)
-                    .ifPresent(payload -> {
-                        ChannelFuture channelFuture = deviceSessionCtx.getChannel().writeAndFlush(payload);
-                        if (rpcRequest.getPersisted()) {
-                            channelFuture.addListener(future -> {
-                                RpcStatus status;
-                                Throwable t = future.cause();
-                                if (t != null) {
-                                    log.error("Failed delivering RPC command to device!", t);
-                                    status = RpcStatus.FAILED;
-                                } else if (rpcRequest.getOneway()) {
-                                    status = RpcStatus.SUCCESSFUL;
-                                } else {
-                                    status = RpcStatus.DELIVERED;
-                                }
-                                TransportProtos.ToDevicePersistedRpcResponseMsg msg = TransportProtos.ToDevicePersistedRpcResponseMsg.newBuilder()
-                                        .setRequestId(rpcRequest.getRequestId())
-                                        .setRequestIdLSB(rpcRequest.getRequestIdLSB())
-                                        .setRequestIdMSB(rpcRequest.getRequestIdMSB())
-                                        .setStatus(status.name())
-                                        .build();
-                                transportService.process(deviceSessionCtx.getSessionInfo(), msg, TransportServiceCallback.EMPTY);
-                            });
+            deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcRequest).ifPresent(payload -> {
+                PublishResult publishResult = publish(payload, deviceSessionCtx);
+                int msgId = publishResult.getMsgId();
+                ChannelFuture channelFuture = publishResult.getChannelFuture();
+                int requestId = rpcRequest.getRequestId();
+
+                if (rpcRequest.getOneway()) {
+                    if (isAckExpected(payload)) {
+                        context.getScheduler().schedule(() -> {
+                            if (requestsAwaitingAck.containsKey(msgId)) {
+                                context.getApiUsageReportClient().report(transportService.getTenantId(deviceSessionCtx.getSessionInfo()),
+                                        transportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT);
+                            }
+                        }, Math.max(0, rpcRequest.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                    }
+                } else {
+                    rpcRequestsAwaitingResponse.add(requestId);
+                    context.getScheduler().schedule(() -> {
+                        if (requestsAwaitingAck.containsKey(msgId) || rpcRequestsAwaitingResponse.contains(requestId)) {
+                            context.getApiUsageReportClient().report(transportService.getTenantId(deviceSessionCtx.getSessionInfo()),
+                                    transportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                         }
-                    });
+                    }, Math.max(0, rpcRequest.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                }
+
+                channelFuture.addListener(future -> {
+                    if (rpcRequest.getPersisted()) {
+                        RpcStatus status;
+                        Throwable t = future.cause();
+                        if (t != null) {
+                            log.error("Failed delivering RPC command to device!", t);
+                            status = RpcStatus.FAILED;
+                        } else if (rpcRequest.getOneway()) {
+                            status = RpcStatus.SUCCESSFUL;
+                        } else {
+                            status = RpcStatus.DELIVERED;
+                        }
+                        TransportProtos.ToDevicePersistedRpcResponseMsg msg = TransportProtos.ToDevicePersistedRpcResponseMsg.newBuilder()
+                                .setRequestId(requestId)
+                                .setRequestIdLSB(rpcRequest.getRequestIdLSB())
+                                .setRequestIdMSB(rpcRequest.getRequestIdMSB())
+                                .setStatus(status.name())
+                                .build();
+                        transportService.process(deviceSessionCtx.getSessionInfo(), msg, TransportServiceCallback.EMPTY);
+                    }
+                });
+            });
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
         }
@@ -891,21 +919,27 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     public void onToServerRpcResponse(ToServerRpcResponseMsg rpcResponse) {
         log.trace("[{}] Received RPC command to server", sessionId);
         try {
-            publish(deviceSessionCtx, deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcResponse).orElse(null));
+            publish(deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcResponse).orElse(null), deviceSessionCtx);
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
         }
     }
 
-    private void publish(DeviceSessionCtx deviceSessionCtx, MqttMessage message) {
-        deviceSessionCtx.getChannel().writeAndFlush(message);
+    private PublishResult publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
+        ChannelFuture channelFuture = deviceSessionCtx.getChannel().writeAndFlush(message);
 
         context.getApiUsageReportClient().report(transportService.getTenantId(deviceSessionCtx.getSessionInfo()),
                 transportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
-        if (message instanceof MqttPublishMessage && message.fixedHeader().qosLevel().value() > 0) {
-            int msgId = ((MqttPublishMessage) message).variableHeader().packetId();
+        int msgId = ((MqttPublishMessage) message).variableHeader().packetId();
+        if (isAckExpected(message)) {
             requestsAwaitingAck.put(msgId, System.currentTimeMillis());
         }
+
+        return new PublishResult(msgId, channelFuture);
+    }
+
+    private boolean isAckExpected(MqttMessage message) {
+        return message.fixedHeader().qosLevel().value() > 0;
     }
 
     @Override
@@ -933,6 +967,12 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                         transportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT, timedOut.size());
             }
         }, context.getMsgAckTimeout(), 10, TimeUnit.SECONDS);
+    }
+
+    @Data
+    private static class PublishResult {
+        private final int msgId;
+        private final ChannelFuture channelFuture;
     }
 
 }
