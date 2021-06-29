@@ -49,13 +49,13 @@ public class ApiController {
     private final SmppSmsSender smppSmsSender;
 
     @PostMapping
-    public ResponseEntity<SmsSendResponse> sendSmsMessage(@RequestBody SmsSendRequest request) {
+    public ResponseEntity<?> sendSmsMessage(@RequestBody SmsSendRequest request) {
         int messageSegments;
         try {
             messageSegments = smppSmsSender.sendSms(request.getNumberTo(), request.getMessage());
         } catch (Exception e) {
-            log.error("Error occurred while sending SMS message: " + e.toString(), e);
-            return ResponseEntity.badRequest().build();
+            log.error("Error occurred while sending SMS message", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
         return ResponseEntity.ok(new SmsSendResponse(messageSegments));
     }

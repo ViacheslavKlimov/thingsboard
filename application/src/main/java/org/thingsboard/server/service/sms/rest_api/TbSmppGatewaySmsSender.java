@@ -30,6 +30,7 @@
  */
 package org.thingsboard.server.service.sms.rest_api;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,7 @@ import org.thingsboard.server.common.data.sms.exception.SmsException;
 import org.thingsboard.server.common.data.sms.exception.SmsSendException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 public class TbSmppGatewaySmsSender extends AbstractSmsSender {
@@ -74,7 +76,13 @@ public class TbSmppGatewaySmsSender extends AbstractSmsSender {
         @Override
         public void handleError(ClientHttpResponse response) throws IOException {
             HttpStatus httpStatus = response.getStatusCode();
-            throw new SmsSendException(httpStatus.value() + " " + httpStatus.getReasonPhrase());
+            String errorResponse = "";
+            try {
+                errorResponse = IOUtils.toString(response.getBody(), StandardCharsets.UTF_8);
+            } catch (Exception ignored) {
+            }
+
+            throw new SmsSendException(String.format("[%s %s] %s", httpStatus.value(), httpStatus.getReasonPhrase(), errorResponse));
         }
     }
 

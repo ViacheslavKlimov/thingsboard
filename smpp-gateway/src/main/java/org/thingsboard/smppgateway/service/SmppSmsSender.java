@@ -46,23 +46,30 @@ import org.smpp.pdu.SubmitSM;
 import org.smpp.pdu.SubmitSMResp;
 import org.thingsboard.server.common.data.sms.AbstractSmsSender;
 import org.thingsboard.server.common.data.sms.exception.SmsException;
+import org.thingsboard.server.common.data.sms.exception.SmsSendException;
 import org.thingsboard.smppgateway.config.SmppSenderConfig;
 
 import java.io.IOException;
 
 @Slf4j
 public class SmppSmsSender extends AbstractSmsSender {
-    private final Session smppSession;
+    private Session smppSession;
     private final SmppSenderConfig config;
 
     public SmppSmsSender(SmppSenderConfig config) {
         this.config = config;
-        this.smppSession = initSmppSession();
     }
 
     @Override
     public int sendSms(String numberTo, String message) throws SmsException {
         try {
+            if (smppSession == null) {
+                try {
+                    smppSession = initSmppSession();
+                } catch (Exception e) {
+                    throw new SmsSendException("SMPP session cannot be established", e);
+                }
+            }
             checkConnection();
 
             SubmitSM request = new SubmitSM();
@@ -116,15 +123,15 @@ public class SmppSmsSender extends AbstractSmsSender {
             }
 
             BindResponse bindResponse = session.bind(bindRequest);
+            log.info("SMPP bind response: {}", bindResponse.debugString());
 
             if (bindResponse.getCommandStatus() != 0) {
-                throw new IllegalStateException("error status when binding: " + bindResponse.getCommandStatus());
+                throw new IllegalStateException("Error status when binding: " + bindResponse.getCommandStatus());
             }
 
-            log.info("SMPP bind response: {}", bindResponse.debugString());
             return session;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to establish SMPP session with config " + config + ": " + e.toString());
+            throw new IllegalArgumentException("Failed to establish SMPP session with config " + config + ": " + e, e);
         }
     }
 
