@@ -28,12 +28,51 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m.server.log;
+package org.thingsboard.server.transport.lwm2m.server.store;
 
+import org.nustaq.serialization.FSTConfiguration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
 
-public interface LwM2MTelemetryLogService {
+public class TbRedisLwM2MClientStore implements TbLwM2MClientStore {
 
-    void log(LwM2mClient client, String msg);
+    private static final String CLIENT_EP = "CLIENT#EP#";
+    private final RedisConnectionFactory connectionFactory;
+    private final FSTConfiguration serializer;
 
+    public TbRedisLwM2MClientStore(RedisConnectionFactory redisConnectionFactory) {
+        this.connectionFactory = redisConnectionFactory;
+        this.serializer = FSTConfiguration.createDefaultConfiguration();
+    }
+
+    @Override
+    public LwM2mClient get(String endpoint) {
+        try (var connection = connectionFactory.getConnection()) {
+            byte[] data = connection.get(getKey(endpoint));
+            if (data == null) {
+                return null;
+            } else {
+                return (LwM2mClient) serializer.asObject(data);
+            }
+        }
+    }
+
+    @Override
+    public void put(LwM2mClient client) {
+        byte[] clientSerialized = serializer.asByteArray(client);
+        try (var connection = connectionFactory.getConnection()) {
+            connection.getSet(getKey(client.getEndpoint()), clientSerialized);
+        }
+    }
+
+    @Override
+    public void remove(String endpoint) {
+        try (var connection = connectionFactory.getConnection()) {
+            connection.del(getKey(endpoint));
+        }
+    }
+
+    private byte[] getKey(String endpoint) {
+        return (CLIENT_EP + endpoint).getBytes();
+    }
 }

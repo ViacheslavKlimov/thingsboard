@@ -28,12 +28,42 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m.server.log;
+package org.thingsboard.server.transport.lwm2m.server.store;
 
-import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
+import org.eclipse.leshan.server.security.NonUniqueSecurityInfoException;
+import org.eclipse.leshan.server.security.SecurityInfo;
+import org.nustaq.serialization.FSTConfiguration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.integration.redis.util.RedisLockRegistry;
+import org.thingsboard.common.util.JacksonUtil;
+import org.thingsboard.server.common.data.ota.OtaPackageType;
+import org.thingsboard.server.transport.lwm2m.secure.TbLwM2MSecurityInfo;
+import org.thingsboard.server.transport.lwm2m.server.ota.LwM2MClientOtaInfo;
 
-public interface LwM2MTelemetryLogService {
+import java.util.concurrent.locks.Lock;
 
-    void log(LwM2mClient client, String msg);
+public class TbLwM2mRedisClientOtaInfoStore implements TbLwM2MClientOtaInfoStore {
+    private static final String OTA_EP = "OTA#EP#";
+
+    private final RedisConnectionFactory connectionFactory;
+
+    public TbLwM2mRedisClientOtaInfoStore(RedisConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
+    @Override
+    public LwM2MClientOtaInfo get(OtaPackageType type, String endpoint) {
+        try (var connection = connectionFactory.getConnection()) {
+            byte[] data = connection.get((OTA_EP + type + endpoint).getBytes());
+            return JacksonUtil.fromBytes(data, LwM2MClientOtaInfo.class);
+        }
+    }
+
+    @Override
+    public void put(LwM2MClientOtaInfo info) {
+        try (var connection = connectionFactory.getConnection()) {
+            connection.set((OTA_EP + info.getType() + info.getEndpoint()).getBytes(), JacksonUtil.toString(info).getBytes());
+        }
+    }
 
 }

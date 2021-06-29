@@ -28,12 +28,20 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m.server.log;
+package org.thingsboard.server.transport.lwm2m.server.store;
 
-import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
+import org.thingsboard.server.common.data.ota.OtaPackageType;
+import org.thingsboard.server.transport.lwm2m.server.ota.LwM2MClientOtaInfo;
 
-public interface LwM2MTelemetryLogService {
+public class TbDummyLwM2MClientOtaInfoStore implements TbLwM2MClientOtaInfoStore {
 
-    void log(LwM2mClient client, String msg);
+    @Override
+    public LwM2MClientOtaInfo get(OtaPackageType type, String endpoint) {
+        return null;
+    }
 
+    @Override
+    public void put(LwM2MClientOtaInfo info) {
+
+    }
 }
