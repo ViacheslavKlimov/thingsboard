@@ -28,30 +28,44 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m.server.store;
+package org.thingsboard.server.transport.lwm2m.server.ota.firmware;
 
-import org.thingsboard.server.transport.lwm2m.server.ota.firmware.LwM2MClientFwOtaInfo;
-import org.thingsboard.server.transport.lwm2m.server.ota.software.LwM2MClientSwOtaInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.thingsboard.server.common.data.ota.OtaPackageType;
+import org.thingsboard.server.transport.lwm2m.server.ota.LwM2MClientOtaInfo;
 
-public class TbDummyLwM2MClientOtaInfoStore implements TbLwM2MClientOtaInfoStore {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+public class LwM2MClientFwOtaInfo extends LwM2MClientOtaInfo<LwM2MFirmwareUpdateStrategy, FirmwareUpdateState, FirmwareUpdateResult> {
 
-    @Override
-    public LwM2MClientFwOtaInfo getFw(String endpoint) {
-        return null;
+    private Integer deliveryMethod;
+
+    public LwM2MClientFwOtaInfo(String endpoint, String baseUrl, LwM2MFirmwareUpdateStrategy strategy) {
+        super(endpoint, baseUrl, strategy);
     }
 
+    @JsonIgnore
     @Override
-    public LwM2MClientSwOtaInfo getSw(String endpoint) {
-        return null;
+    public OtaPackageType getType() {
+        return OtaPackageType.FIRMWARE;
     }
 
-    @Override
-    public void putFw(LwM2MClientFwOtaInfo info) {
-
+    public void update(FirmwareUpdateResult result) {
+        this.result = result;
+        switch (result) {
+            case INITIAL:
+                break;
+            case UPDATE_SUCCESSFULLY:
+                retryAttempts = 0;
+                break;
+            default:
+                failedPackageId = getPackageId(targetName, targetVersion);
+                break;
+        }
     }
 
-    @Override
-    public void putSw(LwM2MClientSwOtaInfo info) {
-
-    }
 }
