@@ -152,10 +152,10 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                 } else if (operationType.isComposite()) {
                     switch (operationType) {
                         case READ_COMPOSITE:
-                            sendReadCompositeRequest(client, rpcRequst);
+                            sendReadCompositeRequest(client, rpcRequest);
                             break;
                         case WRITE_COMPOSITE:
-                            sendWriteCompositeRequest(client, rpcRequst);
+                            sendWriteCompositeRequest(client, rpcRequest);
                             break;
                         default:
                             throw new IllegalArgumentException("Unsupported operation: " + operationType.name());
