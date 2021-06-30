@@ -31,34 +31,25 @@
 package org.thingsboard.server.transport.lwm2m.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.leshan.core.attributes.Attribute;
 import org.eclipse.leshan.core.attributes.AttributeSet;
 import org.eclipse.leshan.core.model.ObjectModel;
 import org.eclipse.leshan.core.model.ResourceModel;
-import org.eclipse.leshan.core.node.LwM2mMultipleResource;
-import org.eclipse.leshan.core.node.LwM2mNode;
-import org.eclipse.leshan.core.node.LwM2mObject;
-import org.eclipse.leshan.core.node.LwM2mObjectInstance;
 import org.eclipse.leshan.core.node.LwM2mPath;
 import org.eclipse.leshan.core.node.LwM2mResource;
-import org.eclipse.leshan.core.node.LwM2mSingleResource;
 import org.eclipse.leshan.core.node.codec.CodecException;
 import org.eclipse.leshan.core.request.SimpleDownlinkRequest;
 import org.eclipse.leshan.core.request.WriteAttributesRequest;
 import org.eclipse.leshan.core.util.Hex;
 import org.eclipse.leshan.server.registration.Registration;
-import org.nustaq.serialization.FSTConfiguration;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.data.device.data.lwm2m.BootstrapConfiguration;
 import org.thingsboard.server.common.data.device.profile.DeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.device.profile.Lwm2mDeviceProfileTransportConfiguration;
-import org.thingsboard.server.common.transport.TransportServiceCallback;
+import org.thingsboard.server.transport.lwm2m.config.LwM2mVersion;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
 import org.thingsboard.server.transport.lwm2m.server.client.ResourceValue;
 import org.thingsboard.server.transport.lwm2m.server.ota.firmware.FirmwareUpdateResult;
@@ -70,10 +61,8 @@ import org.thingsboard.server.transport.lwm2m.server.uplink.DefaultLwM2MUplinkMs
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.eclipse.leshan.core.attributes.Attribute.DIMENSION;
@@ -95,14 +84,14 @@ import static org.thingsboard.server.common.data.lwm2m.LwM2mConstants.LWM2M_SEPA
 import static org.thingsboard.server.transport.lwm2m.server.ota.DefaultLwM2MOtaUpdateService.FW_RESULT_ID;
 import static org.thingsboard.server.transport.lwm2m.server.ota.DefaultLwM2MOtaUpdateService.FW_STATE_ID;
 import static org.thingsboard.server.transport.lwm2m.server.ota.DefaultLwM2MOtaUpdateService.SW_RESULT_ID;
-import static org.thingsboard.server.transport.lwm2m.server.ota.DefaultLwM2MOtaUpdateService.SW_UPDATE_STATE_ID;
+import static org.thingsboard.server.transport.lwm2m.server.ota.DefaultLwM2MOtaUpdateService.SW_STATE_ID;
 
 @Slf4j
 public class LwM2mTransportUtil {
 
-    public static final String LWM2M_VERSION_DEFAULT = "1.0";
+    public static final String LWM2M_OBJECT_VERSION_DEFAULT = "1.0";
 
-    public static final String LOG_LWM2M_TELEMETRY = "logLwm2m";
+    public static final String LOG_LWM2M_TELEMETRY = "transportLog";
     public static final String LOG_LWM2M_INFO = "info";
     public static final String LOG_LWM2M_ERROR = "error";
     public static final String LOG_LWM2M_WARN = "warn";
@@ -138,7 +127,7 @@ public class LwM2mTransportUtil {
         }
     }
 
-     public static boolean equalsResourceValue(Object valueOld, Object valueNew, ResourceModel.Type type, LwM2mPath
+    public static boolean equalsResourceValue(Object valueOld, Object valueNew, ResourceModel.Type type, LwM2mPath
             resourcePath) throws CodecException {
         switch (type) {
             case BOOLEAN:
@@ -169,7 +158,7 @@ public class LwM2mTransportUtil {
                 lwM2mOtaConvert.setCurrentType(STRING);
                 lwM2mOtaConvert.setValue(FirmwareUpdateResult.fromUpdateResultFwByCode(((Long) value).intValue()).getType());
                 return lwM2mOtaConvert;
-            } else if (SW_UPDATE_STATE_ID.equals(path)) {
+            } else if (SW_STATE_ID.equals(path)) {
                 lwM2mOtaConvert.setCurrentType(STRING);
                 lwM2mOtaConvert.setValue(SoftwareUpdateState.fromUpdateStateSwByCode(((Long) value).intValue()).type);
                 return lwM2mOtaConvert;
@@ -184,87 +173,18 @@ public class LwM2mTransportUtil {
         return lwM2mOtaConvert;
     }
 
-    public static LwM2mNode getLvM2mNodeToObject(LwM2mNode content) {
-        if (content instanceof LwM2mObject) {
-            return (LwM2mObject) content;
-        } else if (content instanceof LwM2mObjectInstance) {
-            return (LwM2mObjectInstance) content;
-        } else if (content instanceof LwM2mSingleResource) {
-            return (LwM2mSingleResource) content;
-        } else if (content instanceof LwM2mMultipleResource) {
-            return (LwM2mMultipleResource) content;
-        }
-        return null;
-    }
-
     public static Lwm2mDeviceProfileTransportConfiguration toLwM2MClientProfile(DeviceProfile deviceProfile) {
         DeviceProfileTransportConfiguration transportConfiguration = deviceProfile.getProfileData().getTransportConfiguration();
         if (transportConfiguration.getType().equals(DeviceTransportType.LWM2M)) {
             return (Lwm2mDeviceProfileTransportConfiguration) transportConfiguration;
         } else {
-            log.warn("[{}] Received profile with invalid transport configuration: {}", deviceProfile.getId(), deviceProfile.getProfileData().getTransportConfiguration());
+            log.info("[{}] Received profile with invalid transport configuration: {}", deviceProfile.getId(), deviceProfile.getProfileData().getTransportConfiguration());
             throw new IllegalArgumentException("Received profile with invalid transport configuration: " + transportConfiguration.getType());
         }
     }
 
     public static BootstrapConfiguration getBootstrapParametersFromThingsboard(DeviceProfile deviceProfile) {
         return toLwM2MClientProfile(deviceProfile).getBootstrap();
-    }
-
-    public static JsonObject validateJson(String jsonStr) {
-        JsonObject object = null;
-        if (jsonStr != null && !jsonStr.isEmpty()) {
-            String jsonValidFlesh = jsonStr.replaceAll("\\\\", "");
-            jsonValidFlesh = jsonValidFlesh.replaceAll("\n", "");
-            jsonValidFlesh = jsonValidFlesh.replaceAll("\t", "");
-            jsonValidFlesh = jsonValidFlesh.replaceAll(" ", "");
-            String jsonValid = (jsonValidFlesh.charAt(0) == '"' && jsonValidFlesh.charAt(jsonValidFlesh.length() - 1) == '"') ? jsonValidFlesh.substring(1, jsonValidFlesh.length() - 1) : jsonValidFlesh;
-            try {
-                object = new JsonParser().parse(jsonValid).getAsJsonObject();
-            } catch (JsonSyntaxException e) {
-                log.error("[{}] Fail validateJson [{}]", jsonStr, e.getMessage());
-            }
-        }
-        return object;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> Optional<T> decode(byte[] byteArray) {
-        try {
-            FSTConfiguration config = FSTConfiguration.createDefaultConfiguration();
-            T msg = (T) config.asObject(byteArray);
-            return Optional.ofNullable(msg);
-        } catch (IllegalArgumentException e) {
-            log.error("Error during deserialization message, [{}]", e.getMessage());
-            return Optional.empty();
-        }
-    }
-
-    public static String splitCamelCaseString(String s) {
-        LinkedList<String> linkedListOut = new LinkedList<>();
-        LinkedList<String> linkedList = new LinkedList<String>((Arrays.asList(s.split(" "))));
-        linkedList.forEach(str -> {
-            String strOut = str.replaceAll("\\W", "").replaceAll("_", "").toUpperCase();
-            if (strOut.length() > 1) linkedListOut.add(strOut.charAt(0) + strOut.substring(1).toLowerCase());
-            else linkedListOut.add(strOut);
-        });
-        linkedListOut.set(0, (linkedListOut.get(0).substring(0, 1).toLowerCase() + linkedListOut.get(0).substring(1)));
-        return StringUtils.join(linkedListOut, "");
-    }
-
-    public static <T> TransportServiceCallback<Void> getAckCallback(LwM2mClient lwM2MClient,
-                                                                    int requestId, String typeTopic) {
-        return new TransportServiceCallback<Void>() {
-            @Override
-            public void onSuccess(Void dummy) {
-                log.trace("[{}] [{}] - requestId [{}] - EndPoint  , Access AckCallback", typeTopic, requestId, lwM2MClient.getEndpoint());
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                log.trace("[{}] Failed to publish msg", e.toString());
-            }
-        };
     }
 
     public static String fromVersionedIdToObjectId(String pathIdVer) {
@@ -280,7 +200,7 @@ public class LwM2mTransportUtil {
                 return pathIdVer;
             }
         } catch (Exception e) {
-            log.warn("Issue converting path with version [{}] to path without version: ", pathIdVer, e);
+            log.debug("Issue converting path with version [{}] to path without version: ", pathIdVer, e);
             throw new RuntimeException(e);
         }
     }
@@ -318,7 +238,7 @@ public class LwM2mTransportUtil {
 
     public static String convertObjectIdToVersionedId(String path, Registration registration) {
         String ver = registration.getSupportedObject().get(new LwM2mPath(path).getObjectId());
-        ver = ver != null ? ver : LWM2M_VERSION_DEFAULT;
+        ver = ver != null ? ver : LwM2mVersion.VERSION_1_0.getVersion().toString();
         try {
             String[] keyArray = path.split(LWM2M_SEPARATOR_PATH);
             if (keyArray.length > 1) {
@@ -465,4 +385,5 @@ public class LwM2mTransportUtil {
         }
         return lwm2mResourceValue;
     }
+
 }

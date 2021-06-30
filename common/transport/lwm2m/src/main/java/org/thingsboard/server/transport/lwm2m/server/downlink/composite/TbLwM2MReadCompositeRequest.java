@@ -28,44 +28,32 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.service.ttl.edge;
+package org.thingsboard.server.transport.lwm2m.server.downlink.composite;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.thingsboard.server.dao.util.PsqlDao;
-import org.thingsboard.server.service.ttl.AbstractCleanUpService;
+import lombok.Builder;
+import lombok.Getter;
+import org.eclipse.leshan.core.request.ContentFormat;
+import org.eclipse.leshan.core.response.ReadCompositeResponse;
+import org.thingsboard.server.transport.lwm2m.server.LwM2mOperationType;
+import org.thingsboard.server.transport.lwm2m.server.downlink.HasContentFormat;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+public class TbLwM2MReadCompositeRequest extends AbstractTbLwM2MTargetedDownlinkCompositeRequest<ReadCompositeResponse> implements HasContentFormat {
 
-@PsqlDao
-@Slf4j
-@Service
-public class EdgeEventsCleanUpService extends AbstractCleanUpService {
+    @Getter
+    private final ContentFormat requestContentFormat;
 
-    @Value("${sql.ttl.edge_events.edge_events_ttl}")
-    private long ttl;
+    @Getter
+    private final ContentFormat responseContentFormat;
 
-    @Value("${sql.ttl.edge_events.enabled}")
-    private boolean ttlTaskExecutionEnabled;
-
-    @Scheduled(initialDelayString = "${sql.ttl.edge_events.execution_interval_ms}", fixedDelayString = "${sql.ttl.edge_events.execution_interval_ms}")
-    public void cleanUp() {
-        if (ttlTaskExecutionEnabled) {
-            try (Connection conn = getConnection()) {
-                doCleanUp(conn);
-            } catch (SQLException e) {
-                log.error("SQLException occurred during TTL task execution ", e);
-            }
-        }
+    @Builder
+    private TbLwM2MReadCompositeRequest(String [] versionedIds, long timeout, ContentFormat requestContentFormat, ContentFormat responseContentFormat) {
+        super(versionedIds, timeout);
+        this.requestContentFormat = requestContentFormat;
+        this.responseContentFormat = responseContentFormat;
     }
 
     @Override
-    protected void doCleanUp(Connection connection) throws SQLException {
-        long totalEdgeEventsRemoved = executeQuery(connection, "call cleanup_edge_events_by_ttl(" + ttl + ", 0);");
-        log.info("Total edge events removed by TTL: [{}]", totalEdgeEventsRemoved);
+    public LwM2mOperationType getType() {
+        return LwM2mOperationType.READ_COMPOSITE;
     }
 }

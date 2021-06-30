@@ -28,35 +28,57 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.service.ttl.timeseries;
+:host {
+  .name-value-map {
+    span.no-data-found {
+      position: relative;
+      display: flex;
+      height: 40px;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.thingsboard.server.service.ttl.AbstractCleanUpService;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
-@Slf4j
-public abstract class AbstractTimeseriesCleanUpService extends AbstractCleanUpService {
-
-    @Value("${sql.ttl.ts.ts_key_value_ttl}")
-    protected long systemTtl;
-
-    @Value("${sql.ttl.ts.enabled}")
-    private boolean ttlTaskExecutionEnabled;
-
-    @Scheduled(initialDelayString = "${sql.ttl.ts.execution_interval_ms}", fixedDelayString = "${sql.ttl.ts.execution_interval_ms}")
-    public void cleanUp() {
-        if (ttlTaskExecutionEnabled) {
-            try (Connection conn = getConnection()) {
-                doCleanUp(conn);
-            } catch (SQLException e) {
-                log.error("SQLException occurred during TTL task execution ", e);
-            }
-        }
+      &.disabled {
+        color: rgba(0, 0, 0, .38);
+      }
     }
 
+    .map-list{
+      height: 45px;
+    }
+  }
+}
+
+:host ::ng-deep {
+  .mat-form-field-wrapper {
+    padding-bottom: 0;
+  }
+  .mat-form-field-infix {
+    border-top: 0;
+  }
+  .mat-form-field-underline {
+    bottom: 0;
+  }
+
+  .button-icon{
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .map-list {
+    mat-form-field {
+      .mat-form-field-wrapper {
+        padding-bottom: 0;
+        .mat-form-field-infix {
+          border-top-width: 0.2em;
+          width: auto;
+          min-width: auto;
+        }
+        .mat-form-field-underline {
+          bottom: 0;
+        }
+        .mat-form-field-subscript-wrapper{
+          margin-top: 1.8em;
+        }
+      }
+    }
+  }
 }

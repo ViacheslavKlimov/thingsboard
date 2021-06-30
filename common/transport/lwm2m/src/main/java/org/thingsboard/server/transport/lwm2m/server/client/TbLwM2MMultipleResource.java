@@ -28,49 +28,20 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-:host {
-  .tb-kv-map {
-    span.no-data-found {
-      position: relative;
-      display: flex;
-      height: 40px;
+package org.thingsboard.server.transport.lwm2m.server.client;
 
-      &.disabled {
-        color: rgba(0, 0, 0, .38);
-      }
+import org.eclipse.leshan.core.model.ResourceModel;
+import org.eclipse.leshan.core.node.LwM2mMultipleResource;
+import org.eclipse.leshan.core.node.LwM2mResourceInstance;
+
+import java.io.Serializable;
+import java.util.Collection;
+
+public class TbLwM2MMultipleResource extends LwM2mMultipleResource implements TbLwM2MResource, Serializable {
+
+    private static final long serialVersionUID = 4658477128628087186L;
+
+    public TbLwM2MMultipleResource(int id, ResourceModel.Type type, TbLwM2MResourceInstance... instances) {
+        super(id, type, instances);
     }
-  }
 }
-
-:host ::ng-deep {
-  .mat-form-field-wrapper {
-    padding-bottom: 0;
-  }
-  .mat-form-field-infix {
-    border-top: 0;
-  }
-  .mat-form-field-underline {
-    bottom: 0;
-  }
-}
-
-.vertical-padding {
-  padding: 0 0 10px 20px;
-}
-
-.resource-name-lw-end{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align:end;
-  //width: 80px;
-  cursor: pointer;
-}
-
-.resource-name-lw{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-

@@ -39,7 +39,6 @@ import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.ResourceType;
-import org.thingsboard.server.common.data.rpc.RpcStatus;
 import org.thingsboard.server.common.transport.SessionMsgListener;
 import org.thingsboard.server.common.transport.TransportService;
 import org.thingsboard.server.common.transport.TransportServiceCallback;
@@ -85,7 +84,7 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
 
     @Override
     public void onToTransportUpdateCredentials(ToTransportUpdateCredentialsProto updateCredentials) {
-        this.handler.onToTransportUpdateCredentials(updateCredentials);
+        this.handler.onToTransportUpdateCredentials(sessionInfo, updateCredentials);
     }
 
     @Override
@@ -106,21 +105,7 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
                     transportService.getCustomerId(sessionInfo), toDeviceRequest.getOneway() ?
                             ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT : ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
         });
-        if (toDeviceRequest.getPersisted()) {
-            RpcStatus status;
-            if (toDeviceRequest.getOneway()) {
-                status = RpcStatus.SUCCESSFUL;
-            } else {
-                status = RpcStatus.DELIVERED;
-            }
-            TransportProtos.ToDevicePersistedRpcResponseMsg responseMsg = TransportProtos.ToDevicePersistedRpcResponseMsg.newBuilder()
-                    .setRequestId(toDeviceRequest.getRequestId())
-                    .setRequestIdLSB(toDeviceRequest.getRequestIdLSB())
-                    .setRequestIdMSB(toDeviceRequest.getRequestIdMSB())
-                    .setStatus(status.name())
-                    .build();
-            transportService.process(sessionInfo, responseMsg, TransportServiceCallback.EMPTY);
-        }
+        transportService.process(sessionInfo, toDeviceRequest, false, TransportServiceCallback.EMPTY);
     }
 
     @Override

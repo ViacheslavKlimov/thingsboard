@@ -68,7 +68,6 @@ import org.thingsboard.server.common.data.TransportPayloadType;
 import org.thingsboard.server.common.data.device.profile.MqttTopics;
 import org.thingsboard.server.common.data.id.OtaPackageId;
 import org.thingsboard.server.common.data.ota.OtaPackageType;
-import org.thingsboard.server.common.data.rpc.RpcStatus;
 import org.thingsboard.server.common.msg.EncryptionUtil;
 import org.thingsboard.server.common.msg.tools.TbRateLimitsException;
 import org.thingsboard.server.common.transport.SessionMsgListener;
@@ -865,8 +864,16 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         try {
             deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcRequest).ifPresent(payload -> {
                 PublishResult publishResult = publish(payload, deviceSessionCtx);
-                int msgId = publishResult.getMsgId();
                 ChannelFuture channelFuture = publishResult.getChannelFuture();
+
+                if (rpcRequest.getPersisted()) {
+                    channelFuture.addListener(future ->
+                            transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest,
+                                    future.cause() != null, TransportServiceCallback.EMPTY)
+                    );
+                }
+
+                int msgId = publishResult.getMsgId();
                 int requestId = rpcRequest.getRequestId();
 
                 if (rpcRequest.getOneway()) {
@@ -887,28 +894,6 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                         }
                     }, Math.max(0, rpcRequest.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
                 }
-
-                channelFuture.addListener(future -> {
-                    if (rpcRequest.getPersisted()) {
-                        RpcStatus status;
-                        Throwable t = future.cause();
-                        if (t != null) {
-                            log.error("Failed delivering RPC command to device!", t);
-                            status = RpcStatus.FAILED;
-                        } else if (rpcRequest.getOneway()) {
-                            status = RpcStatus.SUCCESSFUL;
-                        } else {
-                            status = RpcStatus.DELIVERED;
-                        }
-                        TransportProtos.ToDevicePersistedRpcResponseMsg msg = TransportProtos.ToDevicePersistedRpcResponseMsg.newBuilder()
-                                .setRequestId(requestId)
-                                .setRequestIdLSB(rpcRequest.getRequestIdLSB())
-                                .setRequestIdMSB(rpcRequest.getRequestIdMSB())
-                                .setStatus(status.name())
-                                .build();
-                        transportService.process(deviceSessionCtx.getSessionInfo(), msg, TransportServiceCallback.EMPTY);
-                    }
-                });
             });
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
