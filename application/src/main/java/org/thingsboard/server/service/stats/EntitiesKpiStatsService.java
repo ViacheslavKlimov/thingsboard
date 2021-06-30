@@ -39,6 +39,7 @@ import org.thingsboard.server.dao.device.DeviceDao;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
+import java.util.LinkedList;
 import java.util.List;
 
 @Service
@@ -49,12 +50,12 @@ public class EntitiesKpiStatsService {
     private final AttributesDao attributesDao;
 
     public List<KpiEntry> get(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {
-        return List.of(
-                new KpiEntry(KpiKey.TOTAL_DEVICES, deviceDao.count()),
-                new KpiEntry(KpiKey.ONLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true)), // FIXME: from telemetry?
-                new KpiEntry(KpiKey.OFFLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false)),
-                new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom()))
-        );
+        List<KpiEntry> kpiEntries = new LinkedList<>();
+        kpiEntries.add(new KpiEntry(KpiKey.TOTAL_DEVICES, deviceDao.count()));
+        kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true)));
+        kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false)));
+        kpiEntries.add(new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom())));
+        return kpiEntries;
     }
 
 }

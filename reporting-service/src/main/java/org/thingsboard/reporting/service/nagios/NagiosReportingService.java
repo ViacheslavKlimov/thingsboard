@@ -71,7 +71,7 @@ public class NagiosReportingService {
 
         List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
         snmpAgent.registerVariables(ids, () -> {
-            if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(2)) {
+            if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(5)) {
                 return toValues(kpiStatsService.getRawKpiStats());
             }
 

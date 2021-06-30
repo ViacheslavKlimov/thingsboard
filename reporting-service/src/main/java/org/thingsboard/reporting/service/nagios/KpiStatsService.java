@@ -21,9 +21,9 @@ import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.provider.TbTransportQueueFactory;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,11 +71,11 @@ public class KpiStatsService extends DefaultTransportService {
             log.error("Failed to update entities KPI stats: {}", ExceptionUtils.getRootCauseMessage(e));
         }
 
-        Long allApiCalls = currentKpiStats.getOrDefault(KpiKey.API_CALLS, 0L);
-        Long failedApiCalls = currentKpiStats.getOrDefault(KpiKey.FAILED_API_CALLS, 0L);
-        if (allApiCalls > 0) {
-            currentKpiStats.set(KpiKey.API_CALLS_SUCCESS_RATE, (long) (((double) (allApiCalls - failedApiCalls) / allApiCalls) * 100));
-        }
+        Arrays.stream(KpiKey.values())
+                .filter(KpiKey::isComputed)
+                .forEach(kpiKey -> {
+                    currentKpiStats.set(kpiKey, kpiKey.compute(key -> currentKpiStats.getOrDefault(key, 0L)));
+                });
     }
 
     private void onKpiStatsUpdate(TransportProtos.KpiUpdateMsg kpiUpdateMsg) {

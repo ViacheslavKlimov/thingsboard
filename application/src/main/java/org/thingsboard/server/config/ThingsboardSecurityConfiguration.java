@@ -57,7 +57,6 @@ import org.springframework.web.filter.CorsFilter;
 import org.thingsboard.server.dao.audit.AuditLogLevelFilter;
 import org.thingsboard.server.dao.oauth2.OAuth2Configuration;
 import org.thingsboard.server.exception.ThingsboardErrorResponseHandler;
-import org.thingsboard.server.service.apiusage.RestApiCallsCounter;
 import org.thingsboard.server.service.security.auth.jwt.JwtAuthenticationProvider;
 import org.thingsboard.server.service.security.auth.jwt.JwtTokenAuthenticationProcessingFilter;
 import org.thingsboard.server.service.security.auth.jwt.RefreshTokenAuthenticationProvider;
@@ -131,9 +130,6 @@ public class ThingsboardSecurityConfiguration extends WebSecurityConfigurerAdapt
     @Autowired private ObjectMapper objectMapper;
 
     @Autowired private RateLimitProcessingFilter rateLimitProcessingFilter;
-
-    @Autowired
-    private RestApiCallsCounter restApiCallsCounter;
 
     @Bean
     protected RestLoginProcessingFilter buildRestLoginProcessingFilter() throws Exception {
@@ -228,7 +224,6 @@ public class ThingsboardSecurityConfiguration extends WebSecurityConfigurerAdapt
                 .and()
                 .exceptionHandling().accessDeniedHandler(restAccessDeniedHandler)
                 .and()
-                .addFilterBefore(restApiCallsCounter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(buildRestLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(buildRestPublicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(buildJwtTokenAuthenticationProcessingFilter(), UsernamePasswordAuthenticationFilter.class)

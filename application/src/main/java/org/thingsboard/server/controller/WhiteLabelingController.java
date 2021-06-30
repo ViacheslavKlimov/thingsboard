@@ -89,7 +89,7 @@ public class WhiteLabelingController extends BaseController {
     private Options saasOptions;
     private Compiler saasCompiler;
 
-//    @PostConstruct
+    @PostConstruct
     public void init() throws Exception {
         this.initSaasCompiler();
     }
