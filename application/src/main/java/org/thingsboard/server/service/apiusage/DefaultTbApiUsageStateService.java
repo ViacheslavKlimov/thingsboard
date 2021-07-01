@@ -163,7 +163,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                                          MailService mailService,
                                          OwnersCacheService ownersCacheService,
                                          TbQueueProducerProvider producerProvider
-                                         ) {
+    ) {
         this.clusterService = clusterService;
         this.partitionService = partitionService;
         this.tenantService = tenantService;
@@ -202,9 +202,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         }
 
         processEntityUsageStats(tenantId, entityId, statsMsg.getValuesList());
-        if (tenantId.equals(TenantId.SYS_TENANT_ID)) {
-            publishKpiStats(statsMsg.getValuesList());
-        }
+        publishKpiStats(tenantId, statsMsg.getValuesList());
 
         callback.onSuccess();
     }
@@ -269,7 +267,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         usageStatsMsgProducer.send(partitionInfo, new TbProtoQueueMsg<>(UUID.randomUUID(), newStatsMsg), null);
     }
 
-    private void publishKpiStats(List<UsageStatsKVProto> usageStats) {
+    private void publishKpiStats(TenantId tenantId, List<UsageStatsKVProto> usageStats) {
         List<KpiKV> kpis = usageStats.stream()
                 .filter(usageStatsKVProto -> KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).isPresent())
                 .map(usageStatsKVProto -> KpiKV.newBuilder()
@@ -280,9 +278,11 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         if (kpis.isEmpty()) return;
         log.debug("Reporting KPI updates: {}", kpis);
 
-        TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(TenantId.SYS_TENANT_ID.getId(), ToTransportMsg.newBuilder()
+        TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(tenantId.getId(), ToTransportMsg.newBuilder()
                 .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()
                         .addAllKpiKVs(kpis)
+                        .setTenantIdMSB(tenantId.getId().getMostSignificantBits())
+                        .setTenantIdLSB(tenantId.getId().getLeastSignificantBits())
                         .build())
                 .build());
         kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-reporting-service"), kpiStatsMsg, null);

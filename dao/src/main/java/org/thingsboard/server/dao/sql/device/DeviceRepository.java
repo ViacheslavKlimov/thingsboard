@@ -317,4 +317,6 @@ public interface DeviceRepository extends PagingAndSortingRepository<DeviceEntit
 
     Long countByCreatedTimeAfter(Long time);
 
+    Long countByTenantIdAndCreatedTimeAfter(UUID tenantId, Long time);
+
 }

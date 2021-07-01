@@ -296,7 +296,9 @@ message GetSnmpDevicesResponseMsg {
 }
 
 message GetEntitiesKpiStatsRequestMsg {
-  int64 newCreatedDevicesTimeFrom = 1;
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  int64 newCreatedDevicesTimeFrom = 3;
 }
 
 message GetEntitiesKpiStatsResponseMsg {
@@ -824,7 +826,9 @@ message ToOtaPackageStateServiceMsg {
 }
 
 message KpiUpdateMsg {
-  repeated KpiKV kpiKVs = 1;
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  repeated KpiKV kpiKVs = 3;
 }
 
 message KpiKV {

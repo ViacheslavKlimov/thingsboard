@@ -32,6 +32,7 @@ package org.thingsboard.server.service.stats;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.dao.attributes.AttributesDao;
@@ -41,6 +42,7 @@ import org.thingsboard.server.queue.util.TbCoreComponent;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @TbCoreComponent
@@ -50,11 +52,17 @@ public class EntitiesKpiStatsService {
     private final AttributesDao attributesDao;
 
     public List<KpiEntry> get(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {
+        TenantId tenantId = new TenantId(new UUID(requestMsg.getTenantIdMSB(), requestMsg.getTenantIdLSB()));
+        boolean forSystemTenant = tenantId.equals(TenantId.SYS_TENANT_ID);
+
         List<KpiEntry> kpiEntries = new LinkedList<>();
-        kpiEntries.add(new KpiEntry(KpiKey.TOTAL_DEVICES, deviceDao.count()));
-        kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true)));
-        kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false)));
-        kpiEntries.add(new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom())));
+        kpiEntries.add(new KpiEntry(KpiKey.TOTAL_DEVICES, forSystemTenant ? deviceDao.count() : deviceDao.countByTenantId(tenantId)));
+        kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true) :
+                attributesDao.countDevicesAttributesByTenantIdAndKeyAndBoolValue(tenantId, "active", true)));
+        kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false) :
+                attributesDao.countDevicesAttributesByTenantIdAndKeyAndBoolValue(tenantId, "active", false)));
+        kpiEntries.add(new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, forSystemTenant ? deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom()) :
+                deviceDao.countByTenantIdAndCreatedTimeAfter(tenantId, requestMsg.getNewCreatedDevicesTimeFrom())));
         return kpiEntries;
     }
 

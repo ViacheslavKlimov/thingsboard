@@ -28,14 +28,18 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.service.nagios;
+package org.thingsboard.reporting.service.kpis;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thingsboard.reporting.snmp.SnmpAgent;
+import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiKey;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.AfterStartUp;
 
 import java.util.Arrays;
@@ -62,6 +66,7 @@ public class NagiosReportingService {
 
     private final KpiStatsService kpiStatsService;
 
+    private final KpiStats currentKpiStats = new KpiStats();
     private final AtomicLong lastRequestTime = new AtomicLong();
 
     @AfterStartUp
@@ -72,17 +77,54 @@ public class NagiosReportingService {
         List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
         snmpAgent.registerVariables(ids, () -> {
             if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(5)) {
-                return toValues(kpiStatsService.getRawKpiStats());
+                return toValues(currentKpiStats);
             }
 
-            KpiStats kpiStats = kpiStatsService.getCurrentKpiStats();
+            KpiStats kpiStats = collectKpiStats();
             Map<Integer, Object> values = toValues(kpiStats);
 
             kpiStats.nullify(KpiKey::isAccumulated);
-            lastRequestTime.set(System.currentTimeMillis());
 
             return values;
         }, kpiStatsBaseOid);
+    }
+
+    private KpiStats collectKpiStats() {
+        if (lastRequestTime.get() == 0) {
+            lastRequestTime.set(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(1));
+        }
+
+        TransportProtos.GetEntitiesKpiStatsRequestMsg request = TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
+                .setNewCreatedDevicesTimeFrom(lastRequestTime.get())
+                .setTenantIdMSB(TenantId.SYS_TENANT_ID.getId().getMostSignificantBits())
+                .setTenantIdLSB(TenantId.SYS_TENANT_ID.getId().getLeastSignificantBits())
+                .build();
+        try {
+            kpiStatsService.requestEntitiesKpiStats(request).forEach(kpiEntry -> {
+                currentKpiStats.set(kpiEntry.getKey(), kpiEntry.getValue());
+            });
+        } catch (Exception e) {
+            log.error("Failed to update entities KPI stats", e);
+        }
+
+        Arrays.stream(KpiKey.values())
+                .filter(KpiKey::isComputed)
+                .forEach(kpiKey -> {
+                    currentKpiStats.set(kpiKey, kpiKey.compute(key -> currentKpiStats.getOrDefault(key, 0L)));
+                });
+
+        lastRequestTime.set(System.currentTimeMillis());
+
+        return currentKpiStats;
+    }
+
+    public void onKpiStatsUpdate(TransportProtos.KpiUpdateMsg kpiUpdateMsg) {
+        kpiUpdateMsg.getKpiKVsList().stream()
+                .map(KpiStatsService::toKpiEntry)
+                .forEach(kpiEntry -> {
+                    currentKpiStats.increase(kpiEntry.getKey(), kpiEntry.getValue());
+                });
+        log.info("KPI stats update: {}. Current stats: {}", kpiUpdateMsg.getKpiKVsList().toString().replace(System.lineSeparator(), " "), currentKpiStats);
     }
 
     private Map<Integer, Object> toValues(KpiStats kpiStats) {

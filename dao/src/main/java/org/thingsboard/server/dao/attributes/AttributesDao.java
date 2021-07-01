@@ -62,4 +62,6 @@ public interface AttributesDao {
 
     Long countDevicesAttributesByKeyAndBoolValue(String key, Boolean value);
 
+    Long countDevicesAttributesByTenantIdAndKeyAndBoolValue(TenantId tenantId, String key, Boolean value);
+
 }

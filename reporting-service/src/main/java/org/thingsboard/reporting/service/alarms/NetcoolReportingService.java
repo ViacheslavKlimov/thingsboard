@@ -28,7 +28,7 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.service.netcool;
+package org.thingsboard.reporting.service.alarms;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,6 @@ import org.snmp4j.Target;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import org.thingsboard.common.util.snmp.SnmpUtils;
 import org.thingsboard.server.common.adaptor.JsonConverter;
 
