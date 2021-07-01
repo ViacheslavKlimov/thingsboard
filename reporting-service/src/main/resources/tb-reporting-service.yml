@@ -29,6 +29,9 @@
 # OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 #
 
+server:
+  port: 8086
+
 snmp:
   binding_port: "${SNMP_BINDING_PORT:1610}"
   community: "${SNMP_COMMUNITY:public}"
@@ -37,6 +40,13 @@ nagios:
   kpi_statistics:
     oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats will be hosted on this OID
     updating_period: "${KPI_STATISTICS_UPDATING_PERIOD:5000}" # In milliseconds
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+
 queue:
   type: "${TB_QUEUE_TYPE:kafka}" # kafka (Apache Kafka) or aws-sqs (AWS SQS) or pubsub (PubSub) or service-bus (Azure Service Bus) or rabbitmq (RabbitMQ)
   kafka:

@@ -32,12 +32,11 @@ package org.thingsboard.reporting.service.kpis;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thingsboard.reporting.snmp.SnmpAgent;
-import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.AfterStartUp;
@@ -118,13 +117,11 @@ public class NagiosReportingService {
         return currentKpiStats;
     }
 
-    public void onKpiStatsUpdate(TransportProtos.KpiUpdateMsg kpiUpdateMsg) {
-        kpiUpdateMsg.getKpiKVsList().stream()
-                .map(KpiStatsService::toKpiEntry)
-                .forEach(kpiEntry -> {
-                    currentKpiStats.increase(kpiEntry.getKey(), kpiEntry.getValue());
-                });
-        log.info("KPI stats update: {}. Current stats: {}", kpiUpdateMsg.getKpiKVsList().toString().replace(System.lineSeparator(), " "), currentKpiStats);
+    public void onKpiStatsUpdate(List<KpiEntry> kpiEntries) {
+        kpiEntries.forEach(kpiEntry -> {
+            currentKpiStats.increase(kpiEntry.getKey(), kpiEntry.getValue());
+        });
+        log.info("KPI stats update: {}. Current stats: {}", kpiEntries, currentKpiStats);
     }
 
     private Map<Integer, Object> toValues(KpiStats kpiStats) {

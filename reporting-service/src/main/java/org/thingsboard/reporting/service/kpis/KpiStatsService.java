@@ -32,6 +32,7 @@ package org.thingsboard.reporting.service.kpis;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
@@ -67,7 +68,7 @@ public class KpiStatsService extends DefaultTransportService {
                            TbApiUsageReportClient apiUsageClient, TransportRateLimitService rateLimitService,
                            DataDecodingEncodingService dataDecodingEncodingService, SchedulerComponent scheduler,
                            TransportResourceCache transportResourceCache, ApplicationEventPublisher eventPublisher,
-                           NagiosReportingService nagiosReportingService, PrometheusReportingService prometheusReportingService) {
+                           @Lazy NagiosReportingService nagiosReportingService, @Lazy PrometheusReportingService prometheusReportingService) {
         super(serviceInfoProvider, queueProvider, producerProvider, partitionService, statsFactory,
                 deviceProfileCache, tenantProfileCache, apiUsageClient, rateLimitService,
                 dataDecodingEncodingService, scheduler, transportResourceCache, eventPublisher);
@@ -94,11 +95,16 @@ public class KpiStatsService extends DefaultTransportService {
         super.processToTransportMsg(toSessionMsg);
         if (toSessionMsg.hasKpiUpdateMsg()) {
             TransportProtos.KpiUpdateMsg kpiUpdateMsg = toSessionMsg.getKpiUpdateMsg();
+
             TenantId tenantId = new TenantId(new UUID(kpiUpdateMsg.getTenantIdMSB(), kpiUpdateMsg.getTenantIdLSB()));
+            List<KpiEntry> kpiEntries = kpiUpdateMsg.getKpiKVsList().stream()
+                    .map(KpiStatsService::toKpiEntry)
+                    .collect(Collectors.toList());
+
             if (tenantId.equals(TenantId.SYS_TENANT_ID)) {
-                nagiosReportingService.onKpiStatsUpdate(kpiUpdateMsg);
+                nagiosReportingService.onKpiStatsUpdate(kpiEntries);
             }
-            prometheusReportingService.onKpiStatsUpdate(kpiUpdateMsg);
+            prometheusReportingService.onKpiStatsUpdate(tenantId, kpiEntries);
         }
     }
 
