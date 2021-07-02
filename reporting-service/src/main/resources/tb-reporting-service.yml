@@ -30,7 +30,7 @@
 #
 
 server:
-  port: 8086
+  port: "${HTTP_BIND_PORT:8086}"
 
 snmp:
   binding_port: "${SNMP_BINDING_PORT:1610}"

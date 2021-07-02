@@ -53,11 +53,11 @@
         <pkg.disabled>false</pkg.disabled>
         <pkg.process-resources.phase>process-resources</pkg.process-resources.phase>
         <pkg.package.phase>package</pkg.package.phase>
-        <pkg.name>tb-smpp-sms-rest-api</pkg.name>
+        <pkg.name>tb-reporting-service</pkg.name>
         <pkg.copyInstallScripts>false</pkg.copyInstallScripts>
         <pkg.win.dist>${project.build.directory}/windows</pkg.win.dist>
-        <pkg.implementationTitle>ThingsBoard SMPP SMS REST API</pkg.implementationTitle>
-        <pkg.mainClass>org.thingsboard.smpprestapi.ThingsboardSmppSmsRestApiApplication</pkg.mainClass>
+        <pkg.implementationTitle>ThingsBoard Reporting Service</pkg.implementationTitle>
+        <pkg.mainClass>org.thingsboard.reporting.ThingsboardReportingServiceApplication</pkg.mainClass>
     </properties>
 
     <dependencies>
