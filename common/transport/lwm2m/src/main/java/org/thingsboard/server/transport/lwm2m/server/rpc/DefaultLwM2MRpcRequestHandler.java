@@ -163,7 +163,7 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                                 throw new IllegalArgumentException("Unsupported operation: " + operationType.name());
                         }
                     } else {
-                        this.sendErrorRpcResponse(sessionInfo, rpcRequst.getRequestId(),
+                        this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(),
                                 ResponseCode.INTERNAL_SERVER_ERROR.getName(), "This device does not support Composite Operation");
                     }
                 } else {

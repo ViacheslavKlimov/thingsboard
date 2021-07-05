@@ -43,16 +43,13 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class PrometheusReportingService {
-    private final KpiStatsService kpiStatsService;
     private final CollectorRegistry collectorRegistry;
 
     private final Map<KpiKey, Gauge> gauges = new EnumMap<>(KpiKey.class);
-    private final Map<TenantId, Map<KpiKey, Gauge>> kpiStats = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
@@ -65,19 +62,15 @@ public class PrometheusReportingService {
         });
     }
 
-//    @Scheduled(initialDelay = 60 * 1000, fixedDelay = 60 * 1000)
-//    public void updateEntitiesKpiStats() {
-//        kpiStatsService.requestEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
-//                .setNewCreatedDevicesTimeFrom(0L)
-//                .setTenantIdMSB()
-//                .setTenantIdLSB()
-//                .build());
-//    }
-
     public void onKpiStatsUpdate(TenantId tenantId, List<KpiEntry> kpiEntries) {
         kpiEntries.forEach(kpiEntry -> {
             gauges.get(kpiEntry.getKey()).labels(tenantId.toString()).inc(kpiEntry.getValue());
         });
+
+        Arrays.stream(KpiKey.values())
+                .filter(KpiKey::isComputed)
+                .forEach(kpiKey -> gauges.get(kpiKey).labels(tenantId.toString())
+                        .set(kpiKey.compute(key -> (long) gauges.get(key).labels(tenantId.toString()).get())));
     }
 
 }
