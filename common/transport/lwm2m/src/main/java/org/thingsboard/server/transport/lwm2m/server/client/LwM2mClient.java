@@ -246,7 +246,12 @@ public class LwM2mClient implements Serializable {
     }
 
     public boolean isResourceMultiInstances(String pathIdVer, LwM2mModelProvider modelProvider) {
-        return getResourceModel(pathIdVer, modelProvider).multiple;
+        var resourceModel = getResourceModel(pathIdVer, modelProvider);
+        if (resourceModel != null && resourceModel.multiple != null) {
+            return resourceModel.multiple;
+        } else {
+            return false;
+        }
     }
 
     public ObjectModel getObjectModel(String pathIdVer, LwM2mModelProvider modelProvider) {
