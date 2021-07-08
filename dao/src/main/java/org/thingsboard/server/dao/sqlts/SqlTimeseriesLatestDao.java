@@ -190,6 +190,16 @@ public class SqlTimeseriesLatestDao extends BaseAbstractSqlTimeseriesDao impleme
         return tsKvLatestRepository.findAllKeysByEntityIds(entityIds.stream().map(EntityId::getId).collect(Collectors.toList()));
     }
 
+    @Override
+    public long countDevicesLatestKvByKeyAndBooleanValue(String key, boolean value) {
+        return tsKvLatestRepository.countDevicesLatestKvByKeyAndBooleanValue(key, value);
+    }
+
+    @Override
+    public long countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId(String key, boolean value, TenantId tenantId) {
+        return tsKvLatestRepository.countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId(key, value, tenantId.getId());
+    }
+
     private ListenableFuture<Void> getNewLatestEntryFuture(TenantId tenantId, EntityId entityId, DeleteTsKvQuery query) {
         ListenableFuture<List<TsKvEntry>> future = findNewLatestEntryFuture(tenantId, entityId, query);
         return Futures.transformAsync(future, entryList -> {

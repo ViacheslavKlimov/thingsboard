@@ -52,4 +52,9 @@ public interface TimeseriesLatestDao {
     List<String> findAllKeysByDeviceProfileId(TenantId tenantId, DeviceProfileId deviceProfileId);
 
     List<String> findAllKeysByEntityIds(TenantId tenantId, List<EntityId> entityIds);
+
+    long countDevicesLatestKvByKeyAndBooleanValue(String key, boolean value);
+
+    long countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId(String key, boolean value, TenantId tenantId);
+
 }

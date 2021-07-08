@@ -65,7 +65,6 @@ import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.OtaPackageId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.ota.OtaPackageType;
-import org.thingsboard.server.common.data.ota.OtaPackageUtil;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
@@ -86,6 +85,7 @@ import org.thingsboard.server.dao.device.provision.ProvisionResponse;
 import org.thingsboard.server.dao.ota.OtaPackageService;
 import org.thingsboard.server.dao.relation.RelationService;
 import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
+import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.DeviceInfoProto;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsRequestMsg;
@@ -152,6 +152,7 @@ public class DefaultTransportApiService implements TransportApiService {
     private final OtaPackageService otaPackageService;
     private final OtaPackageDataCache otaPackageDataCache;
     private final EntitiesKpiStatsService entitiesKpiStatsService;
+    private final TenantService tenantService;
 
     private final ConcurrentMap<String, ReentrantLock> deviceCreationLocks = new ConcurrentHashMap<>();
 
@@ -192,6 +193,8 @@ public class DefaultTransportApiService implements TransportApiService {
             result = handle(transportApiRequestMsg.getOtaPackageRequestMsg());
         } else if (transportApiRequestMsg.hasEntitiesKpiStatsRequestMsg()) {
             result = handle(transportApiRequestMsg.getEntitiesKpiStatsRequestMsg());
+        } else if (transportApiRequestMsg.hasTenantsIdsRequestMsg()) {
+            result = handle(transportApiRequestMsg.getTenantsIdsRequestMsg());
         }
 
         return Futures.transform(Optional.ofNullable(result).orElseGet(this::getEmptyTransportApiResponseFuture),
@@ -465,6 +468,22 @@ public class DefaultTransportApiService implements TransportApiService {
                                 .map(kpiEntry -> KpiKV.newBuilder()
                                         .setKey(kpiEntry.getKey().name())
                                         .setValue(kpiEntry.getValue())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
+                .build();
+
+        return Futures.immediateFuture(responseMsg);
+    }
+
+    private ListenableFuture<TransportApiResponseMsg> handle(TransportProtos.GetTenantsIdsRequestMsg tenantsIdsRequestMsg) {
+        List<TenantId> tenantsIds = tenantService.findTenantsIds(new PageLink(10000)).getData();
+        TransportApiResponseMsg responseMsg = TransportApiResponseMsg.newBuilder()
+                .setTenantsIdsResponseMsg(TransportProtos.GetTenantsIdsResponseMsg.newBuilder()
+                        .addAllTenantsIds(tenantsIds.stream()
+                                .map(tenantId -> TransportProtos.Id.newBuilder()
+                                        .setMsb(tenantId.getId().getMostSignificantBits())
+                                        .setLsb(tenantId.getId().getLeastSignificantBits())
                                         .build())
                                 .collect(Collectors.toList()))
                         .build())

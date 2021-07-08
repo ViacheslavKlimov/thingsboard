@@ -67,6 +67,7 @@ import org.thingsboard.server.common.data.security.DeviceTokenCredentials;
 import org.thingsboard.server.common.msg.session.FeatureType;
 import org.thingsboard.server.common.msg.session.SessionMsgType;
 import org.thingsboard.server.common.transport.SessionMsgListener;
+import org.thingsboard.server.common.transport.TransportService;
 import org.thingsboard.server.common.transport.TransportServiceCallback;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.ProvisionDeviceRequestMsg;
@@ -546,17 +547,17 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                 RespondResult respondResult = respond(coapTransportAdaptor.convertToPublish(isConRequest(), msg, rpcRequestDynamicMessageBuilder), exchange, sessionInfo);
                 if (msg.getOneway()) {
                     transportContext.getScheduler().schedule(() -> {
-                        if (requestsAwaitingAck.containsKey(respondResult.getMsgId())) {
-                            transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
-                                    transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT);
+                        if (transportContext.getRequestsAwaitingAck().containsKey(respondResult.getMsgId())) {
+                            transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                                    TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT);
                         }
                     }, Math.max(0, msg.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
                 } else {
                     rpcRequestsAwaitingResponse.add(msg.getRequestId());
                     transportContext.getScheduler().schedule(() -> {
-                        if (requestsAwaitingAck.containsKey(respondResult.getMsgId()) || rpcRequestsAwaitingResponse.contains(msg.getRequestId())) {
-                            transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
-                                    transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
+                        if (transportContext.getRequestsAwaitingAck().containsKey(respondResult.getMsgId()) || rpcRequestsAwaitingResponse.contains(msg.getRequestId())) {
+                            transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                                    TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                         }
                     }, Math.max(0, msg.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
                 }

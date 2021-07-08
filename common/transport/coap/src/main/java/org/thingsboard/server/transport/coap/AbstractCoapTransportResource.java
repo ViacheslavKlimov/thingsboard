@@ -48,13 +48,8 @@ import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsRes
 import org.thingsboard.server.gen.transport.TransportProtos;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 @Slf4j
@@ -63,14 +58,12 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
 
-    protected final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
     protected final Set<Integer> rpcRequestsAwaitingResponse = new HashSet<>();
 
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
         this.transportContext = context;
         this.transportService = context.getTransportService();
-        initMsgAckChecking();
     }
 
     @Override
@@ -108,10 +101,10 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     protected RespondResult respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
         exchange.respond(response);
 
-        transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
-                transportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+        transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
         int msgId = response.getMID();
-        requestsAwaitingAck.put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
+        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
         response.addMessageObserver(new MessageObserver() {
             @Override
             public void onRetransmission() {}
@@ -121,14 +114,16 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
 
             @Override
             public void onAcknowledgement() {
-                requestsAwaitingAck.remove(msgId);
+                transportContext.getRequestsAwaitingAck().remove(msgId);
             }
 
             @Override
             public void onReject() {}
 
             @Override
-            public void onTimeout() {}
+            public void onTimeout() {
+
+            }
 
             @Override
             public void onCancel() {}
@@ -159,20 +154,6 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         return new RespondResult(msgId);
     }
 
-    protected void initMsgAckChecking() {
-        transportContext.getScheduler().scheduleWithFixedDelay(() -> {
-            List<Integer> timedOut = new LinkedList<>();
-            long currentTime = System.currentTimeMillis();
-            requestsAwaitingAck.forEach((requestId, requestInfo) -> {
-                if (currentTime - requestInfo.getRequestTime() >= TimeUnit.SECONDS.toMillis(transportContext.getMsgAckTimeout())) {
-                    timedOut.add(requestId);
-                    transportContext.getApiUsageReportClient().report(transportService.getTenantId(requestInfo.getSessionInfo()),
-                            transportService.getCustomerId(requestInfo.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
-                }
-            });
-            timedOut.forEach(requestsAwaitingAck::remove);
-        }, transportContext.getMsgAckTimeout(), 10, TimeUnit.SECONDS);
-    }
 
     public static class CoapDeviceAuthCallback implements TransportServiceCallback<ValidateDeviceCredentialsResponse> {
         private final TransportContext transportContext;

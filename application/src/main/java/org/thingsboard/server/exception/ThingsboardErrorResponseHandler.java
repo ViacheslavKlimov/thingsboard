@@ -87,9 +87,9 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
     public void handle(Exception exception, HttpServletResponse response) {
         log.debug("Processing exception {}", exception.getMessage(), exception);
         if (!response.isCommitted()) {
-            SecurityUser user = getCurrentUser();
-            apiUsageReportClient.report(Optional.ofNullable(user).map(User::getTenantId).orElse(TenantId.SYS_TENANT_ID),
-                    Optional.ofNullable(user).map(User::getCustomerId).orElse(null), ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT);
+            Optional<SecurityUser> user = getCurrentUser();
+            apiUsageReportClient.report(user.map(User::getTenantId).orElse(TenantId.SYS_TENANT_ID),
+                    user.map(User::getCustomerId).orElse(null), ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT);
 
             try {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -194,11 +194,11 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
         }
     }
 
-    private SecurityUser getCurrentUser() {
-        return (SecurityUser) Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+    private Optional<SecurityUser> getCurrentUser() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
                 .map(Authentication::getPrincipal)
                 .filter(principal -> principal instanceof SecurityUser)
-                .orElse(null);
+                .map(principal -> (SecurityUser) principal);
     }
 
 }

@@ -56,6 +56,8 @@ import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMs
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.LwM2MRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.LwM2MResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.PostAttributeMsg;
@@ -94,6 +96,8 @@ public interface TransportService {
     GetDeviceCredentialsResponseMsg getDeviceCredentials(GetDeviceCredentialsRequestMsg requestMsg);
 
     GetEntitiesKpiStatsResponseMsg getEntitiesKpiStats(GetEntitiesKpiStatsRequestMsg requestMsg);
+
+    GetTenantsIdsResponseMsg getTenantsIds(GetTenantsIdsRequestMsg requestMsg);
 
     void process(DeviceTransportType transportType, ValidateDeviceTokenRequestMsg msg,
                  TransportServiceCallback<ValidateDeviceCredentialsResponse> callback);
@@ -152,7 +156,9 @@ public interface TransportService {
 
     void deregisterSession(SessionInfoProto sessionInfo);
 
-    default TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
+    void reportFailedRpc(SessionInfoProto sessionInfo, boolean isOneWay);
+
+    static TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
         if (sessionInfo != null) {
             return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
         } else {
@@ -160,7 +166,7 @@ public interface TransportService {
         }
     }
 
-    default CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
+    static CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
         if (sessionInfo != null) {
             long msb = sessionInfo.getCustomerIdMSB();
             long lsb = sessionInfo.getCustomerIdLSB();

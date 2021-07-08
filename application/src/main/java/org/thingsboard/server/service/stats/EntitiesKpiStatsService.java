@@ -31,12 +31,14 @@
 package org.thingsboard.server.service.stats;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.dao.attributes.AttributesDao;
 import org.thingsboard.server.dao.device.DeviceDao;
+import org.thingsboard.server.dao.timeseries.TimeseriesLatestDao;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
@@ -50,6 +52,10 @@ import java.util.UUID;
 public class EntitiesKpiStatsService {
     private final DeviceDao deviceDao;
     private final AttributesDao attributesDao;
+    private final TimeseriesLatestDao timeseriesLatestDao;
+
+    @Value("${state.persistToTelemetry}")
+    private boolean activityFlagAsTelemetry;
 
     public List<KpiEntry> get(TransportProtos.GetEntitiesKpiStatsRequestMsg requestMsg) {
         TenantId tenantId = new TenantId(new UUID(requestMsg.getTenantIdMSB(), requestMsg.getTenantIdLSB()));
@@ -57,12 +63,21 @@ public class EntitiesKpiStatsService {
 
         List<KpiEntry> kpiEntries = new LinkedList<>();
         kpiEntries.add(new KpiEntry(KpiKey.TOTAL_DEVICES, forSystemTenant ? deviceDao.count() : deviceDao.countByTenantId(tenantId)));
-        kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBoolValue("active", true) :
-                attributesDao.countDevicesAttributesByTenantIdAndKeyAndBoolValue(tenantId, "active", true)));
-        kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBoolValue("active", false) :
-                attributesDao.countDevicesAttributesByTenantIdAndKeyAndBoolValue(tenantId, "active", false)));
-        kpiEntries.add(new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, forSystemTenant ? deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom()) :
-                deviceDao.countByTenantIdAndCreatedTimeAfter(tenantId, requestMsg.getNewCreatedDevicesTimeFrom())));
+        if (activityFlagAsTelemetry) {
+            kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, forSystemTenant ? timeseriesLatestDao.countDevicesLatestKvByKeyAndBooleanValue("active", true) :
+                    timeseriesLatestDao.countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId("active", true, tenantId)));
+            kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, forSystemTenant ? timeseriesLatestDao.countDevicesLatestKvByKeyAndBooleanValue("active", false) :
+                    timeseriesLatestDao.countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId("active", false, tenantId)));
+        } else {
+            kpiEntries.add(new KpiEntry(KpiKey.ONLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBooleanValue("active", true) :
+                    attributesDao.countDevicesAttributesByTenantIdAndKeyAndBooleanValue(tenantId, "active", true)));
+            kpiEntries.add(new KpiEntry(KpiKey.OFFLINE_DEVICES, forSystemTenant ? attributesDao.countDevicesAttributesByKeyAndBooleanValue("active", false) :
+                    attributesDao.countDevicesAttributesByTenantIdAndKeyAndBooleanValue(tenantId, "active", false)));
+        }
+        if (requestMsg.getNewCreatedDevicesTimeFrom() != -1) {
+            kpiEntries.add(new KpiEntry(KpiKey.NEW_PROVISIONED_DEVICES, forSystemTenant ? deviceDao.countByCreatedTimeAfter(requestMsg.getNewCreatedDevicesTimeFrom()) :
+                    deviceDao.countByTenantIdAndCreatedTimeAfter(tenantId, requestMsg.getNewCreatedDevicesTimeFrom())));
+        }
         return kpiEntries;
     }
 

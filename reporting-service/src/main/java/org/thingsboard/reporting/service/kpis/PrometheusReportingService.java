@@ -31,46 +31,87 @@
 package org.thingsboard.reporting.service.kpis;
 
 import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
+import org.thingsboard.server.common.transport.TransportService;
+import org.thingsboard.server.gen.transport.TransportProtos;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsRequestMsg;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PrometheusReportingService {
     private final CollectorRegistry collectorRegistry;
+    private final KpiStatsService kpiStatsService;
+    private final TransportService transportService;
 
+    private final Map<KpiKey, Counter> counters = new EnumMap<>(KpiKey.class);
     private final Map<KpiKey, Gauge> gauges = new EnumMap<>(KpiKey.class);
 
-    @PostConstruct
-    private void init() {
-        Arrays.stream(KpiKey.values()).forEach(kpiKey -> {
-            gauges.put(kpiKey, Gauge.build()
-                    .name(kpiKey.name().toLowerCase())
-                    .help(kpiKey.name().toLowerCase())
-                    .labelNames("tenantId")
-                    .register(collectorRegistry));
+    @Scheduled(initialDelay = 0, fixedDelay = 60 * 1000)
+    public void updateEntitiesKpiStats() {
+        List<TransportProtos.Id> tenantsIds = transportService.getTenantsIds(GetTenantsIdsRequestMsg.getDefaultInstance()).getTenantsIdsList();
+
+        tenantsIds.forEach(this::updateEntitiesKpiStatsForTenant);
+        updateEntitiesKpiStatsForTenant(TransportProtos.Id.newBuilder()
+                .setMsb(TenantId.SYS_TENANT_ID.getId().getMostSignificantBits())
+                .setLsb(TenantId.SYS_TENANT_ID.getId().getLeastSignificantBits())
+                .build());
+    }
+
+    private void updateEntitiesKpiStatsForTenant(TransportProtos.Id tenantId) {
+        List<KpiEntry> entitiesKpiStats = kpiStatsService.requestEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
+                .setTenantIdMSB(tenantId.getMsb())
+                .setTenantIdLSB(tenantId.getLsb())
+                .setNewCreatedDevicesTimeFrom(-1)
+                .build());
+        entitiesKpiStats.forEach(kpiEntry -> {
+            Gauge gauge = getGauge(kpiEntry.getKey());
+            gauge.labels(new UUID(tenantId.getMsb(), tenantId.getLsb()).toString()).set(kpiEntry.getValue());
         });
     }
 
     public void onKpiStatsUpdate(TenantId tenantId, List<KpiEntry> kpiEntries) {
         kpiEntries.forEach(kpiEntry -> {
-            gauges.get(kpiEntry.getKey()).labels(tenantId.toString()).inc(kpiEntry.getValue());
+            Counter counter = getCounter(kpiEntry.getKey());
+            counter.labels(tenantId.toString()).inc(kpiEntry.getValue());
         });
 
         Arrays.stream(KpiKey.values())
                 .filter(KpiKey::isComputed)
-                .forEach(kpiKey -> gauges.get(kpiKey).labels(tenantId.toString())
-                        .set(kpiKey.compute(key -> (long) gauges.get(key).labels(tenantId.toString()).get())));
+                .forEach(kpiKey -> getGauge(kpiKey).labels(tenantId.toString())
+                        .set(kpiKey.compute(key -> {
+                            return (long) getCounter(key).labels(tenantId.toString()).get();
+                        })));
+    }
+
+    private Counter getCounter(KpiKey kpiKey) {
+        return counters.computeIfAbsent(kpiKey, key -> Counter.build()
+                .name(key.name().toLowerCase())
+                .help(key.name().toLowerCase())
+                .labelNames("tenantId")
+                .register(collectorRegistry));
+    }
+
+    private Gauge getGauge(KpiKey kpiKey) {
+        return gauges.computeIfAbsent(kpiKey, key -> Gauge.build()
+                .name(key.name().toLowerCase())
+                .help(key.name().toLowerCase())
+                .labelNames("tenantId")
+                .register(collectorRegistry));
     }
 
 }

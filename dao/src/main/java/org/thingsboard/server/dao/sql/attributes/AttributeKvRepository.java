@@ -78,11 +78,11 @@ public interface AttributeKvRepository extends CrudRepository<AttributeKvEntity,
     @Query("SELECT COUNT(attr) FROM AttributeKvEntity attr " +
             "WHERE attr.id.attributeKey = :key AND attr.id.entityType = 'DEVICE' AND attr.booleanValue = :value " +
             "AND EXISTS (SELECT 1 FROM DeviceEntity d WHERE d.id = attr.id.entityId)")
-    Long countDevicesAttributesByKeyAndBoolValue(@Param("key") String key, @Param("value") boolean value);
+    Long countDevicesAttributesByKeyAndBoolranValue(@Param("key") String key, @Param("value") boolean value);
 
     @Query("SELECT COUNT(attr) FROM AttributeKvEntity attr " +
             "WHERE attr.id.attributeKey = :key AND attr.id.entityType = 'DEVICE' AND attr.booleanValue = :value " +
             "AND EXISTS (SELECT 1 FROM DeviceEntity d WHERE d.id = attr.id.entityId AND d.tenantId = :tenantId)")
-    Long countDevicesAttributesByTenantIdAndKeyAndBoolValue(@Param("tenantId") UUID tenantId,
-                                                            @Param("key") String key, @Param("value") boolean value);
+    Long countDevicesAttributesByTenantIdAndKeyAndBooleanValue(@Param("tenantId") UUID tenantId,
+                                                               @Param("key") String key, @Param("value") boolean value);
 }

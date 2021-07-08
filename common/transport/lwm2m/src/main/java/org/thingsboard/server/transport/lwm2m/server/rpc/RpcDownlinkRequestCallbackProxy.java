@@ -66,6 +66,7 @@ public abstract class RpcDownlinkRequestCallbackProxy<R, T> implements DownlinkR
         if (callback != null) {
             callback.onValidationError(params, msg);
         }
+        transportService.reportFailedRpc(client.getSession(), request.getOneway());
     }
 
     @Override
@@ -74,6 +75,7 @@ public abstract class RpcDownlinkRequestCallbackProxy<R, T> implements DownlinkR
         if (callback != null) {
             callback.onError(params, e);
         }
+        transportService.reportFailedRpc(client.getSession(), request.getOneway());
     }
 
     protected void reply(LwM2MRpcResponseBody response) {

@@ -77,9 +77,9 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceM
 import org.thingsboard.server.gen.transport.TransportProtos.UsageStatsKVProto;
 import org.thingsboard.server.queue.TbQueueProducer;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
-import org.thingsboard.server.queue.discovery.event.PartitionChangeEvent;
 import org.thingsboard.server.queue.discovery.PartitionService;
 import org.thingsboard.server.queue.discovery.TbApplicationEventListener;
+import org.thingsboard.server.queue.discovery.event.PartitionChangeEvent;
 import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
 import org.thingsboard.server.service.queue.TbClusterService;
@@ -276,7 +276,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                         .build())
                 .collect(Collectors.toList());
         if (kpis.isEmpty()) return;
-        log.debug("Reporting KPI updates: {}", kpis);
+        log.info("Reporting KPI updates for tenant {}: {}", tenantId, kpis.toString().replaceAll("\\s+", " "));
 
         TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(tenantId.getId(), ToTransportMsg.newBuilder()
                 .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()

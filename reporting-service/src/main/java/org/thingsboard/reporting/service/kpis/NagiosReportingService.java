@@ -75,7 +75,7 @@ public class NagiosReportingService {
 
         List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
         snmpAgent.registerVariables(ids, () -> {
-            if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(5)) {
+            if (System.currentTimeMillis() - lastRequestTime.get() <= TimeUnit.SECONDS.toMillis(2)) {
                 return toValues(currentKpiStats);
             }
 
@@ -121,7 +121,6 @@ public class NagiosReportingService {
         kpiEntries.forEach(kpiEntry -> {
             currentKpiStats.increase(kpiEntry.getKey(), kpiEntry.getValue());
         });
-        log.info("KPI stats update: {}. Current stats: {}", kpiEntries, currentKpiStats);
     }
 
     private Map<Integer, Object> toValues(KpiStats kpiStats) {

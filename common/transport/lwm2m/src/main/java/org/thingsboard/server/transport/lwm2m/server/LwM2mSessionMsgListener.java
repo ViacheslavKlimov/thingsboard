@@ -35,7 +35,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.ResourceType;
@@ -101,9 +100,7 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
     public void onToDeviceRpcRequest(UUID sessionId, ToDeviceRpcRequestMsg toDeviceRequest) {
         log.trace("[{}] Received RPC command to device", sessionId);
         this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo, () -> {
-            transportContext.getApiUsageReportClient().report(transportService.getTenantId(sessionInfo),
-                    transportService.getCustomerId(sessionInfo), toDeviceRequest.getOneway() ?
-                            ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT : ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
+            transportService.reportFailedRpc(sessionInfo, toDeviceRequest.getOneway());
         });
         transportService.process(sessionInfo, toDeviceRequest, false, TransportServiceCallback.EMPTY);
     }
