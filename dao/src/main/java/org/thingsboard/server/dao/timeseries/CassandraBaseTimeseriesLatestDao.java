@@ -107,6 +107,16 @@ public class CassandraBaseTimeseriesLatestDao extends AbstractCassandraBaseTimes
     }
 
     @Override
+    public long countDevicesLatestKvByKeyAndBooleanValue(String key, boolean value) {
+        throw new UnsupportedOperationException("Not supported for Cassandra");
+    }
+
+    @Override
+    public long countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId(String key, boolean value, TenantId tenantId) {
+        throw new UnsupportedOperationException("Not supported for Cassandra");
+    }
+
+    @Override
     public ListenableFuture<Void> saveLatest(TenantId tenantId, EntityId entityId, TsKvEntry tsKvEntry) {
         BoundStatementBuilder stmtBuilder = new BoundStatementBuilder(getLatestStmt().bind());
         stmtBuilder.setString(0, entityId.getEntityType().name())

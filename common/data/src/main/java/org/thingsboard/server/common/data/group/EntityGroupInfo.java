@@ -31,11 +31,13 @@
 package org.thingsboard.server.common.data.group;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 
 import java.util.Set;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class EntityGroupInfo extends EntityGroup {
 

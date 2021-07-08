@@ -32,15 +32,21 @@ package org.thingsboard.server.common.transport;
 
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceTransportType;
+import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.transport.auth.GetOrCreateDeviceFromGatewayResponse;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.common.transport.service.SessionMetaData;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.ClaimDeviceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetAttributeRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceCredentialsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetDeviceResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetEntitiesKpiStatsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetEntityProfileResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetOrCreateDeviceFromGatewayRequestMsg;
@@ -50,6 +56,8 @@ import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMs
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.LwM2MRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.LwM2MResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.PostAttributeMsg;
@@ -70,6 +78,8 @@ import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceLwM2MC
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceTokenRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceX509CertRequestMsg;
 
+import java.util.UUID;
+
 /**
  * Created by ashvayka on 04.10.18.
  */
@@ -84,6 +94,10 @@ public interface TransportService {
     GetDeviceResponseMsg getDevice(GetDeviceRequestMsg requestMsg);
 
     GetDeviceCredentialsResponseMsg getDeviceCredentials(GetDeviceCredentialsRequestMsg requestMsg);
+
+    GetEntitiesKpiStatsResponseMsg getEntitiesKpiStats(GetEntitiesKpiStatsRequestMsg requestMsg);
+
+    GetTenantsIdsResponseMsg getTenantsIds(GetTenantsIdsRequestMsg requestMsg);
 
     void process(DeviceTransportType transportType, ValidateDeviceTokenRequestMsg msg,
                  TransportServiceCallback<ValidateDeviceCredentialsResponse> callback);
@@ -141,4 +155,26 @@ public interface TransportService {
     SessionMetaData reportActivity(SessionInfoProto sessionInfo);
 
     void deregisterSession(SessionInfoProto sessionInfo);
+
+    void reportFailedRpc(SessionInfoProto sessionInfo, boolean isOneWay);
+
+    static TenantId getTenantId(TransportProtos.SessionInfoProto sessionInfo) {
+        if (sessionInfo != null) {
+            return new TenantId(new UUID(sessionInfo.getTenantIdMSB(), sessionInfo.getTenantIdLSB()));
+        } else {
+            return TenantId.SYS_TENANT_ID;
+        }
+    }
+
+    static CustomerId getCustomerId(TransportProtos.SessionInfoProto sessionInfo) {
+        if (sessionInfo != null) {
+            long msb = sessionInfo.getCustomerIdMSB();
+            long lsb = sessionInfo.getCustomerIdLSB();
+            if (msb != 0 && lsb != 0) {
+                return new CustomerId(new UUID(msb, lsb));
+            }
+        }
+        return new CustomerId(EntityId.NULL_UUID);
+    }
+
 }

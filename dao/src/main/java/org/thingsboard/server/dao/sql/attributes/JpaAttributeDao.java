@@ -168,6 +168,16 @@ public class JpaAttributeDao extends JpaAbstractDaoListeningExecutorService impl
     }
 
     @Override
+    public Long countDevicesAttributesByKeyAndBooleanValue(String key, Boolean value) {
+        return attributeKvRepository.countDevicesAttributesByKeyAndBoolranValue(key, value);
+    }
+
+    @Override
+    public Long countDevicesAttributesByTenantIdAndKeyAndBooleanValue(TenantId tenantId, String key, Boolean value) {
+        return attributeKvRepository.countDevicesAttributesByTenantIdAndKeyAndBooleanValue(tenantId.getId(), key, value);
+    }
+
+    @Override
     public ListenableFuture<Void> save(TenantId tenantId, EntityId entityId, String attributeType, AttributeKvEntry attribute) {
         AttributeKvEntity entity = new AttributeKvEntity();
         entity.setId(new AttributeKvCompositeKey(entityId.getEntityType(), entityId.getId(), attributeType, attribute.getKey()));

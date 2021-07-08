@@ -63,6 +63,7 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
     private final LwM2MRpcRequestHandler rpcHandler;
     private final TransportProtos.SessionInfoProto sessionInfo;
     private final TransportService transportService;
+    private final LwM2mTransportContext transportContext;
 
     @Override
     public void onGetAttributesResponse(GetAttributeResponseMsg getAttributesResponse) {
@@ -98,7 +99,9 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
     @Override
     public void onToDeviceRpcRequest(UUID sessionId, ToDeviceRpcRequestMsg toDeviceRequest) {
         log.trace("[{}] Received RPC command to device", sessionId);
-        this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo);
+        this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo, () -> {
+            transportService.reportFailedRpc(sessionInfo, toDeviceRequest.getOneway());
+        });
         transportService.process(sessionInfo, toDeviceRequest, false, TransportServiceCallback.EMPTY);
     }
 

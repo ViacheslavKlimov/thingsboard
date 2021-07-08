@@ -34,13 +34,13 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.snmp4j.PDU;
 import org.snmp4j.ScopedPDU;
-import org.snmp4j.smi.Integer32;
 import org.snmp4j.smi.Null;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.Variable;
 import org.snmp4j.smi.VariableBinding;
 import org.springframework.stereotype.Service;
+import org.thingsboard.common.util.snmp.SnmpUtils;
 import org.thingsboard.server.common.data.device.data.SnmpDeviceTransportConfiguration;
 import org.thingsboard.server.common.data.kv.DataType;
 import org.thingsboard.server.common.data.transport.snmp.SnmpMapping;
@@ -70,7 +70,7 @@ public class PduService {
                 .filter(mapping -> values.isEmpty() || values.containsKey(mapping.getKey()))
                 .map(mapping -> Optional.ofNullable(values.get(mapping.getKey()))
                         .map(value -> {
-                            Variable variable = toSnmpVariable(value, mapping.getDataType());
+                            Variable variable = SnmpUtils.toSnmpVariable(value, mapping.getDataType());
                             return new VariableBinding(new OID(mapping.getOid()), variable);
                         })
                         .orElseGet(() -> new VariableBinding(new OID(mapping.getOid()))))
@@ -83,30 +83,10 @@ public class PduService {
         PDU pdu = setUpPdu(sessionContext);
         pdu.setType(snmpMethod.getCode());
 
-        Variable variable = value == null ? Null.instance : toSnmpVariable(value, dataType);
+        Variable variable = value == null ? Null.instance : SnmpUtils.toSnmpVariable(value, dataType);
         pdu.add(new VariableBinding(new OID(oid), variable));
 
         return pdu;
-    }
-
-    private Variable toSnmpVariable(String value, DataType dataType) {
-        dataType = dataType == null ? DataType.STRING : dataType;
-        Variable variable;
-        switch (dataType) {
-            case LONG:
-                try {
-                    variable = new Integer32(Integer.parseInt(value));
-                    break;
-                } catch (NumberFormatException ignored) {
-                }
-            case DOUBLE:
-            case BOOLEAN:
-            case STRING:
-            case JSON:
-            default:
-                variable = new OctetString(value);
-        }
-        return variable;
     }
 
     private PDU setUpPdu(DeviceSessionContext sessionContext) {
@@ -131,7 +111,7 @@ public class PduService {
     }
 
 
-    public JsonObject processPdu(PDU pdu, List<SnmpMapping> responseMappings) {
+    public JsonObject mapPdu(PDU pdu, List<SnmpMapping> responseMappings) {
         Map<OID, String> values = processPdu(pdu);
 
         Map<OID, SnmpMapping> mappings = new HashMap<>();

@@ -36,11 +36,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.EntityType;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.tools.TbRateLimits;
 import org.thingsboard.server.common.msg.tools.TbRateLimitsException;
+import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.exception.ThingsboardErrorResponseHandler;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
@@ -50,6 +53,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -67,13 +71,17 @@ public class RateLimitProcessingFilter extends GenericFilterBean {
 
     @Autowired
     private ThingsboardErrorResponseHandler errorResponseHandler;
+    @Autowired
+    private TbApiUsageReportClient apiUsageReportClient;
 
-    private ConcurrentMap<TenantId, TbRateLimits> perTenantLimits = new ConcurrentHashMap<>();
-    private ConcurrentMap<CustomerId, TbRateLimits> perCustomerLimits = new ConcurrentHashMap<>();
+    private final ConcurrentMap<TenantId, TbRateLimits> perTenantLimits = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CustomerId, TbRateLimits> perCustomerLimits = new ConcurrentHashMap<>();
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         SecurityUser user = getCurrentUser();
+        apiUsageReportClient.report(Optional.ofNullable(user).map(User::getTenantId).orElse(TenantId.SYS_TENANT_ID),
+                Optional.ofNullable(user).map(User::getCustomerId).orElse(null), ApiUsageRecordKey.REST_API_CALLS_COUNT);
         if (user != null && !user.isSystemAdmin()) {
             if (perTenantLimitsEnabled) {
                 TbRateLimits rateLimits = perTenantLimits.computeIfAbsent(user.getTenantId(), id -> new TbRateLimits(perTenantLimitsConfiguration));

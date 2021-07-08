@@ -30,11 +30,15 @@
  */
 package org.thingsboard.server.transport.coap;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.elements.EndpointContext;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.transport.TransportContext;
 import org.thingsboard.server.common.transport.TransportService;
@@ -43,6 +47,8 @@ import org.thingsboard.server.common.transport.auth.SessionInfoCreator;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.gen.transport.TransportProtos;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -51,6 +57,8 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
 
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
+
+    protected final Set<Integer> rpcRequestsAwaitingResponse = new HashSet<>();
 
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
@@ -89,6 +97,63 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
                 .setSessionType(TransportProtos.SessionType.ASYNC)
                 .setEvent(event).build();
     }
+
+    protected RespondResult respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        exchange.respond(response);
+
+        transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+        int msgId = response.getMID();
+        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
+        response.addMessageObserver(new MessageObserver() {
+            @Override
+            public void onRetransmission() {}
+
+            @Override
+            public void onResponse(Response response) {}
+
+            @Override
+            public void onAcknowledgement() {
+                transportContext.getRequestsAwaitingAck().remove(msgId);
+            }
+
+            @Override
+            public void onReject() {}
+
+            @Override
+            public void onTimeout() {
+
+            }
+
+            @Override
+            public void onCancel() {}
+
+            @Override
+            public void onReadyToSend() {}
+
+            @Override
+            public void onConnecting() {}
+
+            @Override
+            public void onDtlsRetransmission(int flight) {}
+
+            @Override
+            public void onSent(boolean retransmission) {}
+
+            @Override
+            public void onSendError(Throwable error) {}
+
+            @Override
+            public void onContextEstablished(EndpointContext endpointContext) {}
+
+            @Override
+            public void onComplete() {}
+
+        });
+
+        return new RespondResult(msgId);
+    }
+
 
     public static class CoapDeviceAuthCallback implements TransportServiceCallback<ValidateDeviceCredentialsResponse> {
         private final TransportContext transportContext;
@@ -163,4 +228,16 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
             exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Data
+    static class RequestInfo {
+        private final TransportProtos.SessionInfoProto sessionInfo;
+        private final long requestTime;
+    }
+
+    @Data
+    static class RespondResult {
+        private final int msgId;
+    }
+
 }

@@ -39,21 +39,29 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.tools.TbRateLimitsException;
+import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.service.security.exception.AuthMethodNotSupportedException;
 import org.thingsboard.server.service.security.exception.JwtExpiredTokenException;
 import org.thingsboard.server.service.security.exception.UserPasswordExpiredException;
+import org.thingsboard.server.service.security.model.SecurityUser;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -61,11 +69,12 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
 
     @Autowired
     private ObjectMapper mapper;
+    @Autowired
+    private TbApiUsageReportClient apiUsageReportClient;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException,
-            ServletException {
+                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
         if (!response.isCommitted()) {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpStatus.FORBIDDEN.value());
@@ -78,6 +87,10 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
     public void handle(Exception exception, HttpServletResponse response) {
         log.debug("Processing exception {}", exception.getMessage(), exception);
         if (!response.isCommitted()) {
+            Optional<SecurityUser> user = getCurrentUser();
+            apiUsageReportClient.report(user.map(User::getTenantId).orElse(TenantId.SYS_TENANT_ID),
+                    user.map(User::getCustomerId).orElse(null), ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT);
+
             try {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
@@ -158,7 +171,6 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
         mapper.writeValue(response.getWriter(),
                 ThingsboardErrorResponse.of("You don't have permission to perform this operation!",
                         ThingsboardErrorCode.PERMISSION_DENIED, HttpStatus.FORBIDDEN));
-
     }
 
     private void handleAuthenticationException(AuthenticationException authenticationException, HttpServletResponse response) throws IOException {
@@ -174,12 +186,19 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
         } else if (authenticationException instanceof AuthMethodNotSupportedException) {
             mapper.writeValue(response.getWriter(), ThingsboardErrorResponse.of(authenticationException.getMessage(), ThingsboardErrorCode.AUTHENTICATION, HttpStatus.UNAUTHORIZED));
         } else if (authenticationException instanceof UserPasswordExpiredException) {
-            UserPasswordExpiredException expiredException = (UserPasswordExpiredException)authenticationException;
+            UserPasswordExpiredException expiredException = (UserPasswordExpiredException) authenticationException;
             String resetToken = expiredException.getResetToken();
             mapper.writeValue(response.getWriter(), ThingsboardCredentialsExpiredResponse.of(expiredException.getMessage(), resetToken));
         } else {
             mapper.writeValue(response.getWriter(), ThingsboardErrorResponse.of("Authentication failed", ThingsboardErrorCode.AUTHENTICATION, HttpStatus.UNAUTHORIZED));
         }
+    }
+
+    private Optional<SecurityUser> getCurrentUser() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(Authentication::getPrincipal)
+                .filter(principal -> principal instanceof SecurityUser)
+                .map(principal -> (SecurityUser) principal);
     }
 
 }
