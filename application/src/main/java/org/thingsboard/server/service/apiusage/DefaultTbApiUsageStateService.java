@@ -276,7 +276,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                         .build())
                 .collect(Collectors.toList());
         if (kpis.isEmpty()) return;
-        log.info("Reporting KPI updates for tenant {}: {}", tenantId, kpis.toString().replaceAll("\\s+", " "));
+        log.info("Reporting KPI updates for tenant {}", tenantId);
 
         TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(tenantId.getId(), ToTransportMsg.newBuilder()
                 .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()
