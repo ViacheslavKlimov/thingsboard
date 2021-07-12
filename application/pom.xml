@@ -35,7 +35,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.thingsboard</groupId>
-        <version>3.3.0PE-MG2</version>
+        <version>3.3.0PE-MG3</version>
         <artifactId>thingsboard</artifactId>
     </parent>
     <artifactId>application</artifactId>
