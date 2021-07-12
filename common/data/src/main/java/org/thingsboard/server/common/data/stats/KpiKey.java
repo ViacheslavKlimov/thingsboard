@@ -46,7 +46,7 @@ public enum KpiKey {
     NEW_PROVISIONED_DEVICES(2_1),
 
     API_CALLS(3_1, ApiUsageRecordKey.REST_API_CALLS_COUNT),
-    FAILED_API_CALLS(ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT),
+    FAILED_API_CALLS(3_2, ApiUsageRecordKey.FAILED_REST_API_CALLS_COUNT),
     API_CALLS_SUCCESS_RATE(3_3, 100L, true) {
         @Override
         public long compute(Function<KpiKey, Long> kpiValueProvider) {
@@ -64,9 +64,19 @@ public enum KpiKey {
     },
 
     DOWNLINK_MESSAGES(5_1, ApiUsageRecordKey.DOWNLINK_MSG_COUNT), // responses from core to devices (server rpc, etc.)
-    SUCCESSFUL_DOWNLINK_MESSAGES(5_2),
-    FAILED_DOWNLINK_MESSAGES(ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT), // no ack in 3 minutes
-    DOWNLINK_MESSAGES_SUCCESS_RATE(5_4),
+    SUCCESSFUL_DOWNLINK_MESSAGES(5_2, 0L, true) {
+        @Override
+        public long compute(Function<KpiKey, Long> kpiValueProvider) {
+            return kpiValueProvider.apply(DOWNLINK_MESSAGES) - kpiValueProvider.apply(FAILED_DOWNLINK_MESSAGES);
+        }
+    },
+    FAILED_DOWNLINK_MESSAGES(5_3, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT), // no ack in 3 minutes
+    DOWNLINK_MESSAGES_SUCCESS_RATE(5_4, 100L, true) {
+        @Override
+        public long compute(Function<KpiKey, Long> kpiValueProvider) {
+            return calculateSuccessRate(kpiValueProvider.apply(DOWNLINK_MESSAGES), kpiValueProvider.apply(FAILED_DOWNLINK_MESSAGES));
+        }
+    },
 
     ONE_WAY_RPC_REQUESTS(6_1, ApiUsageRecordKey.ONE_WAY_RPC_REQUEST_COUNT),
     FAILED_ONE_WAY_RPC_REQUESTS(6_2, ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT),

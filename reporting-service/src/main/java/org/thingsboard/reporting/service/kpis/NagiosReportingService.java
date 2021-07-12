@@ -54,7 +54,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class NagiosReportingService {
-    private SnmpAgent snmpAgent;
 
     @Value("${snmp.binding_port}")
     private int snmpPort;
@@ -70,7 +69,7 @@ public class NagiosReportingService {
 
     @AfterStartUp
     public void run() throws Exception {
-        snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
+        SnmpAgent snmpAgent = new SnmpAgent(snmpPort, snmpCommunity);
         snmpAgent.start();
 
         List<Integer> ids = Arrays.stream(KpiKey.values()).map(KpiKey::getId).filter(Objects::nonNull).collect(Collectors.toList());
@@ -126,7 +125,7 @@ public class NagiosReportingService {
     private Map<Integer, Object> toValues(KpiStats kpiStats) {
         Map<Integer, Object> values = new HashMap<>();
         getKpiKeysToReport().forEach(kpiKey -> {
-            values.put(kpiKey.getId(), kpiKey + "=" + kpiStats.getOrDefault(kpiKey, kpiKey.getDefaultValue()));
+            values.put(kpiKey.getId(), kpiStats.getOrDefault(kpiKey, kpiKey.getDefaultValue()));
         });
         return values;
     }
