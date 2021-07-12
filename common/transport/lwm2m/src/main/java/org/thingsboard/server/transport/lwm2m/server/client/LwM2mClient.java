@@ -108,6 +108,8 @@ public class LwM2mClient implements Serializable {
     @Getter
     private PowerMode powerMode;
     @Getter
+    private Long edrxCycle;
+    @Getter
     @Setter
     private Registration registration;
 
@@ -130,6 +132,7 @@ public class LwM2mClient implements Serializable {
         this.deviceId = new UUID(session.getDeviceIdMSB(), session.getDeviceIdLSB());
         this.profileId = new UUID(session.getDeviceProfileIdMSB(), session.getDeviceProfileIdLSB());
         this.powerMode = credentials.getDeviceInfo().getPowerMode();
+        this.edrxCycle = credentials.getDeviceInfo().getEdrxCycle();
     }
 
     public void lock() {
