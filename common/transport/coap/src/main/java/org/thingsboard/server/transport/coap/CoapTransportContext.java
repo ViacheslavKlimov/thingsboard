@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.transport.TransportContext;
 import org.thingsboard.server.common.transport.TransportService;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.transport.coap.adaptors.JsonCoapAdaptor;
 import org.thingsboard.server.transport.coap.adaptors.ProtoCoapAdaptor;
 import org.thingsboard.server.transport.coap.efento.adaptor.EfentoCoapAdaptor;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+
 
 
 /**
@@ -71,6 +73,8 @@ public class CoapTransportContext extends TransportContext {
 
     @Autowired
     private EfentoCoapAdaptor efentoCoapAdaptor;
+
+    private final ConcurrentMap<Integer, TransportProtos.ToDeviceRpcRequestMsg> rpcAwaitingAck = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<Integer, AbstractCoapTransportResource.RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
 

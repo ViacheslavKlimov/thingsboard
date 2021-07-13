@@ -50,7 +50,11 @@ import org.thingsboard.server.gen.transport.TransportProtos;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+
+import static org.eclipse.californium.core.coap.Message.MAX_MID;
+import static org.eclipse.californium.core.coap.Message.NONE;
 
 @Slf4j
 public abstract class AbstractCoapTransportResource extends CoapResource {
@@ -98,60 +102,16 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
                 .setEvent(event).build();
     }
 
-    protected RespondResult respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
-        exchange.respond(response);
-
+    protected void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        int msgId = getNextMsgId();
+        response.setMID(msgId);
+        response.addMessageObserver(new TbCoapMessageObserver(msgId, id -> {
+            transportContext.getRequestsAwaitingAck().remove(id);
+        }));
+        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
         transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
                 TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
-        int msgId = response.getMID();
-        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
-        response.addMessageObserver(new MessageObserver() {
-            @Override
-            public void onRetransmission() {}
-
-            @Override
-            public void onResponse(Response response) {}
-
-            @Override
-            public void onAcknowledgement() {
-                transportContext.getRequestsAwaitingAck().remove(msgId);
-            }
-
-            @Override
-            public void onReject() {}
-
-            @Override
-            public void onTimeout() {
-
-            }
-
-            @Override
-            public void onCancel() {}
-
-            @Override
-            public void onReadyToSend() {}
-
-            @Override
-            public void onConnecting() {}
-
-            @Override
-            public void onDtlsRetransmission(int flight) {}
-
-            @Override
-            public void onSent(boolean retransmission) {}
-
-            @Override
-            public void onSendError(Throwable error) {}
-
-            @Override
-            public void onContextEstablished(EndpointContext endpointContext) {}
-
-            @Override
-            public void onComplete() {}
-
-        });
-
-        return new RespondResult(msgId);
+        exchange.respond(response);
     }
 
 
@@ -238,6 +198,10 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
     @Data
     static class RespondResult {
         private final int msgId;
+    }
+
+    protected int getNextMsgId() {
+        return ThreadLocalRandom.current().nextInt(NONE, MAX_MID + 1);
     }
 
 }
