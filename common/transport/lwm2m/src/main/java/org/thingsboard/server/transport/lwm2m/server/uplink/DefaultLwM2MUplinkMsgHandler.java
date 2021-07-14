@@ -228,7 +228,7 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
                     log.info("[{}] Closing old session: {}", registration.getEndpoint(), new UUID(oldSessionInfo.get().getSessionIdMSB(), oldSessionInfo.get().getSessionIdLSB()));
                     sessionManager.deregister(oldSessionInfo.get());
                 }
-                logService.log(lwM2MClient, LOG_LWM2M_INFO + ": Client registered with registration id: " + registration.getId());
+                logService.log(lwM2MClient, LOG_LWM2M_INFO + ": Client registered with registration id: " + registration.getId() + " version: " + registration.getLwM2mVersion() + " and modes: " + registration.getQueueMode() + ", " + registration.getBindingMode());
                 sessionManager.register(lwM2MClient.getSession());
                 this.initClientTelemetry(lwM2MClient);
                 this.initAttributes(lwM2MClient);
