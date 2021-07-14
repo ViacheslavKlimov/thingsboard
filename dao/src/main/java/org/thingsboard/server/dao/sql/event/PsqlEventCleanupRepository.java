@@ -28,44 +28,39 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.mqtt.telemetry.attributes;
+package org.thingsboard.server.dao.sql.event;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.thingsboard.server.common.data.TransportPayloadType;
+import org.springframework.stereotype.Repository;
+import org.thingsboard.server.dao.sql.JpaAbstractDaoListeningExecutorService;
+import org.thingsboard.server.dao.util.PsqlDao;
 
-import java.util.Arrays;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 @Slf4j
-public abstract class AbstractMqttAttributesJsonIntegrationTest extends AbstractMqttAttributesIntegrationTest {
+@PsqlDao
+@Repository
+public class PsqlEventCleanupRepository extends JpaAbstractDaoListeningExecutorService implements EventCleanupRepository {
 
-    private static final String POST_DATA_ATTRIBUTES_TOPIC = "data/attributes";
-
-    @Before
-    public void beforeTest() throws Exception {
-        processBeforeTest("Test Post Attributes device", "Test Post Attributes gateway", TransportPayloadType.JSON, null, POST_DATA_ATTRIBUTES_TOPIC);
+    @Override
+    public void cleanupEvents(long otherEventsTtl, long debugEventsTtl) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement stmt = connection.prepareStatement("call cleanup_events_by_ttl(?,?,?)")) {
+            stmt.setLong(1, otherEventsTtl);
+            stmt.setLong(2, debugEventsTtl);
+            stmt.setLong(3, 0);
+            stmt.execute();
+            printWarnings(stmt);
+            try (ResultSet resultSet = stmt.getResultSet()){
+                resultSet.next();
+                log.info("Total events removed by TTL: [{}]", resultSet.getLong(1));
+            }
+        } catch (SQLException e) {
+            log.error("SQLException occurred during events TTL task execution ", e);
+        }
     }
 
-    @After
-    public void afterTest() throws Exception {
-        processAfterTest();
-    }
-
-    @Test
-    public void testPushAttributes() throws Exception {
-        List<String> expectedKeys = Arrays.asList("key1", "key2", "key3", "key4", "key5");
-        processJsonPayloadAttributesTest(POST_DATA_ATTRIBUTES_TOPIC, expectedKeys, PAYLOAD_VALUES_STR.getBytes());
-    }
-
-    @Test
-    public void testPushAttributesGateway() throws Exception {
-        List<String> expectedKeys = Arrays.asList("key1", "key2", "key3", "key4", "key5");
-        String deviceName1 = "Device A";
-        String deviceName2 = "Device B";
-        String payload = getGatewayAttributesJsonPayload(deviceName1, deviceName2);
-        processGatewayAttributesTest(expectedKeys, payload.getBytes(), deviceName1, deviceName2);
-    }
 }

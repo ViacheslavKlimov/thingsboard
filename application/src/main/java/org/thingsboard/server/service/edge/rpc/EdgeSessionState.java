@@ -28,44 +28,20 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.mqtt.telemetry.attributes;
+package org.thingsboard.server.service.edge.rpc;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.thingsboard.server.common.data.TransportPayloadType;
+import com.google.common.util.concurrent.SettableFuture;
+import lombok.Data;
+import org.thingsboard.server.gen.edge.v1.DownlinkMsg;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 
-@Slf4j
-public abstract class AbstractMqttAttributesJsonIntegrationTest extends AbstractMqttAttributesIntegrationTest {
+@Data
+public class EdgeSessionState {
 
-    private static final String POST_DATA_ATTRIBUTES_TOPIC = "data/attributes";
-
-    @Before
-    public void beforeTest() throws Exception {
-        processBeforeTest("Test Post Attributes device", "Test Post Attributes gateway", TransportPayloadType.JSON, null, POST_DATA_ATTRIBUTES_TOPIC);
-    }
-
-    @After
-    public void afterTest() throws Exception {
-        processAfterTest();
-    }
-
-    @Test
-    public void testPushAttributes() throws Exception {
-        List<String> expectedKeys = Arrays.asList("key1", "key2", "key3", "key4", "key5");
-        processJsonPayloadAttributesTest(POST_DATA_ATTRIBUTES_TOPIC, expectedKeys, PAYLOAD_VALUES_STR.getBytes());
-    }
-
-    @Test
-    public void testPushAttributesGateway() throws Exception {
-        List<String> expectedKeys = Arrays.asList("key1", "key2", "key3", "key4", "key5");
-        String deviceName1 = "Device A";
-        String deviceName2 = "Device B";
-        String payload = getGatewayAttributesJsonPayload(deviceName1, deviceName2);
-        processGatewayAttributesTest(expectedKeys, payload.getBytes(), deviceName1, deviceName2);
-    }
+    private final Map<Integer, DownlinkMsg> pendingMsgsMap = new LinkedHashMap<>();
+    private SettableFuture<Void> sendDownlinkMsgsFuture;
+    private ScheduledFuture<?> scheduledSendDownlinkTask;
 }
