@@ -538,17 +538,14 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
         @Override
         public void onToDeviceRpcRequest(UUID sessionId, TransportProtos.ToDeviceRpcRequestMsg msg) {
             log.trace("[{}] Received RPC command to device", sessionId);
+            boolean sent = false;
             try {
                 Response response = coapTransportAdaptor.convertToPublish(isConRequest(), msg, rpcRequestDynamicMessageBuilder);
                 int requestId = getNextMsgId();
                 response.setMID(requestId);
 
-                if (msg.getPersisted()) {
-                    if (isConRequest()) {
-                        transportContext.getRpcAwaitingAck().put(requestId, msg);
-                    } else {
-                        transportService.process(sessionInfo, msg, false, TransportServiceCallback.EMPTY);
-                    }
+                if (msg.getPersisted() && isConRequest()) {
+                    transportContext.getRpcAwaitingAck().put(requestId, msg);
                 }
 
                 if (msg.getOneway()) {
@@ -569,10 +566,15 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                 transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
                         TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
                 exchange.respond(response);
+                sent = true;
             } catch (AdaptorException e) {
                 log.trace("Failed to reply due to error", e);
                 closeObserveRelationAndNotify(sessionId, CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
                 closeAndDeregister();
+            } finally {
+                if (msg.getPersisted() && !isConRequest()) {
+                    transportService.process(sessionInfo, msg, sent, TransportServiceCallback.EMPTY);
+                }
             }
         }
 

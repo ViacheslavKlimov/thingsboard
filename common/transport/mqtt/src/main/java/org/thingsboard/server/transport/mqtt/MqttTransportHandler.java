@@ -32,6 +32,7 @@ package org.thingsboard.server.transport.mqtt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonParseException;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.mqtt.MqttConnAckMessage;
@@ -868,12 +869,8 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 int msgId = getMsgId(payload);
                 int requestId = rpcRequest.getRequestId();
 
-                if (rpcRequest.getPersisted()) {
-                    if(isAckExpected(payload)) {
-                        rpcAwaitingAck.put(msgId, rpcRequest);
-                    } else {
-                        transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, false, TransportServiceCallback.EMPTY);
-                    }
+                if (rpcRequest.getPersisted() && isAckExpected(payload)) {
+                    rpcAwaitingAck.put(msgId, rpcRequest);
                 }
                 if (rpcRequest.getOneway()) {
                     if (isAckExpected(payload)) {
@@ -883,7 +880,10 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                     rpcRequestsAwaitingResponse.add(requestId);
                     scheduleRpcRequestTimeout(rpcRequest, msgId, ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                 }
-                publish(payload, deviceSessionCtx);
+                var cf = publish(payload, deviceSessionCtx);
+                if (rpcRequest.getPersisted() && !isAckExpected(payload)) {
+                    cf.addListener(result -> transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, result.cause() != null, TransportServiceCallback.EMPTY));
+                }
             });
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
@@ -915,7 +915,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         }
     }
 
-    private void publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
+    private ChannelFuture publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
         context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
                 TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
         int msgId = getMsgId(message);
@@ -924,7 +924,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         if (isAckExpected(message)) {
             context.getRequestsAwaitingAck().put(msgId, requestInfo);
         }
-        deviceSessionCtx.getChannel().writeAndFlush(message);
+        return deviceSessionCtx.getChannel().writeAndFlush(message);
     }
 
     private int getMsgId(MqttMessage message) {
