@@ -28,9 +28,11 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.service.kpis;
+package org.thingsboard.reporting.kpis;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.thingsboard.server.common.data.stats.KpiKey;
 
 import java.io.Serializable;
@@ -38,9 +40,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
 public class KpiStats implements Serializable {
-    private final Map<KpiKey, Long> entries = new ConcurrentHashMap<>();
+    private Map<KpiKey, Long> entries = new ConcurrentHashMap<>();
 
     public void set(KpiKey key, Long value) {
         entries.put(key, value);
@@ -60,6 +64,10 @@ public class KpiStats implements Serializable {
 
     public void nullify(Predicate<KpiKey> selector) {
         entries.keySet().removeIf(selector);
+    }
+
+    public KpiStats clone() {
+        return new KpiStats(Map.copyOf(entries));
     }
 
 }
