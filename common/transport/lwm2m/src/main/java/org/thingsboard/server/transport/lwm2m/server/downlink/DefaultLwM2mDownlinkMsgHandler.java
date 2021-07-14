@@ -67,6 +67,7 @@ import org.eclipse.leshan.core.response.WriteResponse;
 import org.eclipse.leshan.core.util.Hex;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.registration.Registration;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.common.data.ApiUsageRecordKey;
@@ -252,10 +253,10 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                         path.getObjectId(), path.getObjectInstanceId(), path.getResourceId(), request.getValue());
                 sendSimpleRequest(client, downlink, request.getTimeout(), callback);
             } catch (Exception e) {
-                callback.onError(JacksonUtil.toString(request), e);
+                callback.onError(toString(request), e);
             }
         } else {
-            callback.onValidationError(JacksonUtil.toString(request), "Resource " + request.getVersionedId() + " is not configured in the device profile!");
+            callback.onValidationError(toString(request), "Resource " + request.getVersionedId() + " is not configured in the device profile!");
         }
     }
 
@@ -267,7 +268,7 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
             //TODO: replace config.getTimeout();
             sendWriteCompositeRequest(client, downlink, config.getTimeout(), callback);
         } catch (Exception e) {
-            callback.onError(JacksonUtil.toString(rpcWriteCompositeRequest), e);
+            callback.onError(toString(rpcWriteCompositeRequest), e);
         }
     }
 
@@ -297,13 +298,12 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                 WriteRequest downlink = new WriteRequest(WriteRequest.Mode.UPDATE, contentFormat, resultIds.getObjectId(), resultIds.getObjectInstanceId(), resources);
                 sendSimpleRequest(client, downlink, request.getTimeout(), callback);
             } else {
-                callback.onValidationError(JacksonUtil.toString(request), "No resources to update!");
+                callback.onValidationError(toString(request), "No resources to update!");
             }
         } else {
-            callback.onValidationError(JacksonUtil.toString(request), "Update of the root level object is not supported yet!");
+            callback.onValidationError(toString(request), "Update of the root level object is not supported yet!");
         }
     }
-
 
     private <R extends SimpleDownlinkRequest<T>, T extends LwM2mResponse> void sendSimpleRequest(LwM2mClient client, R request, long timeoutInMs, DownlinkRequestCallback<R, T> callback) {
         sendRequest(client, request, timeoutInMs, callback, r -> request.getPath().toString());
@@ -327,11 +327,11 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                 });
             }, e -> {
                 executor.submit(() -> {
-                    callback.onError(JacksonUtil.toString(request), e);
+                    callback.onError(toString(request), e);
                 });
             });
         } catch (Exception e) {
-            callback.onError(JacksonUtil.toString(request), e);
+            callback.onError(toString(request), e);
         }
     }
 
@@ -354,12 +354,12 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                 });
             }, e -> {
                 executor.submit(() -> {
-                    callback.onError(JacksonUtil.toString(request), e);
+                    callback.onError(toString(request), e);
                 });
                 context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
             });
         } catch (Exception e) {
-            callback.onError(JacksonUtil.toString(request), e);
+            callback.onError(toString(request), e);
             context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
         }
         context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
@@ -403,11 +403,11 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
 //                });
 //            }, e -> {
 //                executor.submit(() -> {
-//                    callback.onError(JacksonUtil.toString(request), e);
+//                    callback.onError(toString(request), e);
 //                });
 //            });
 //        } catch (Exception e) {
-//            callback.onError(JacksonUtil.toString(request), e);
+//            callback.onError(toString(request), e);
 //        }
 //    }
 
@@ -502,10 +502,23 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
             String id = fromVersionedIdToObjectId(versionedId);
             if (id != null && new LwM2mPath(id).isResource() && !client.isResourceMultiInstances(versionedId, modelProvider)) {
                 return client.getDefaultContentFormat();
-            }
-            else {
+            } else {
                 return ContentFormat.DEFAULT;
             }
         }
     }
+
+    private <R> String toString(R request) {
+        try {
+            try {
+                return JacksonUtil.toString(request);
+            } catch (Exception e) {
+                return request.toString();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to convert request to string");
+            return request != null ? request.getClass().getSimpleName() : "";
+        }
+    }
+
 }
