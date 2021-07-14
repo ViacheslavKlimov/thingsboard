@@ -126,7 +126,6 @@ public class EntityGroup extends BaseData<EntityGroupId> implements HasName, Has
         if (getAdditionalInfo() != null && getAdditionalInfo().has("isPublic")) {
             return getAdditionalInfo().get("isPublic").asBoolean();
         }
-
         return false;
     }
 }

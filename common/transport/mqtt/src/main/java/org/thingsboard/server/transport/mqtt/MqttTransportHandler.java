@@ -865,13 +865,15 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         log.trace("[{}] Received RPC command to device", sessionId);
         try {
             deviceSessionCtx.getPayloadAdaptor().convertToPublish(deviceSessionCtx, rpcRequest).ifPresent(payload -> {
-                RequestInfo requestInfo = publish(payload, deviceSessionCtx);
-
-                int msgId = requestInfo.getMsgId();
+                int msgId = getMsgId(payload);
                 int requestId = rpcRequest.getRequestId();
 
-                if (rpcRequest.getPersisted() && isAckExpected(payload)) {
-                    rpcAwaitingAck.put(msgId, rpcRequest);
+                if (rpcRequest.getPersisted()) {
+                    if(isAckExpected(payload)) {
+                        rpcAwaitingAck.put(msgId, rpcRequest);
+                    } else {
+                        transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, false, TransportServiceCallback.EMPTY);
+                    }
                 }
                 if (rpcRequest.getOneway()) {
                     if (isAckExpected(payload)) {
@@ -881,6 +883,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                     rpcRequestsAwaitingResponse.add(requestId);
                     scheduleRpcRequestTimeout(rpcRequest, msgId, ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                 }
+                publish(payload, deviceSessionCtx);
             });
         } catch (Exception e) {
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
@@ -912,18 +915,20 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         }
     }
 
-    private RequestInfo publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
+    private void publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
         context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
                 TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
-        int msgId = ((MqttPublishMessage) message).variableHeader().packetId();
+        int msgId = getMsgId(message);
         RequestInfo requestInfo = new RequestInfo(msgId, System.currentTimeMillis(), deviceSessionCtx.getSessionInfo());
 
         if (isAckExpected(message)) {
             context.getRequestsAwaitingAck().put(msgId, requestInfo);
         }
         deviceSessionCtx.getChannel().writeAndFlush(message);
+    }
 
-        return requestInfo;
+    private int getMsgId(MqttMessage message) {
+        return ((MqttPublishMessage) message).variableHeader().packetId();
     }
 
     private boolean isAckExpected(MqttMessage message) {

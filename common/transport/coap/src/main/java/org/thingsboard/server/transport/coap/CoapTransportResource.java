@@ -542,8 +542,13 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                 Response response = coapTransportAdaptor.convertToPublish(isConRequest(), msg, rpcRequestDynamicMessageBuilder);
                 int requestId = getNextMsgId();
                 response.setMID(requestId);
-                if (msg.getPersisted() && isConRequest()) {
-                    transportContext.getRpcAwaitingAck().put(requestId, msg);
+
+                if (msg.getPersisted()) {
+                    if (isConRequest()) {
+                        transportContext.getRpcAwaitingAck().put(requestId, msg);
+                    } else {
+                        transportService.process(sessionInfo, msg, false, TransportServiceCallback.EMPTY);
+                    }
                 }
 
                 if (msg.getOneway()) {
