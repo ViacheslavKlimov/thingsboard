@@ -43,8 +43,9 @@ import java.util.Map;
 public class Lwm2mDeviceTransportConfiguration implements DeviceTransportConfiguration {
 
     private PowerMode powerMode;
-
     private Long edrxCycle;
+    private Long psmActivityTimer;
+    private Long pagingTransmissionWindow;
 
     @JsonIgnore
     private Map<String, Object> properties = new HashMap<>();

@@ -144,6 +144,8 @@ public class LwM2mClient implements Serializable {
         this.profileId = new UUID(session.getDeviceProfileIdMSB(), session.getDeviceProfileIdLSB());
         this.powerMode = credentials.getDeviceInfo().getPowerMode();
         this.edrxCycle = credentials.getDeviceInfo().getEdrxCycle();
+        this.psmActivityTimer = credentials.getDeviceInfo().getPsmActivityTimer();
+        this.pagingTransmissionWindow = credentials.getDeviceInfo().getPagingTransmissionWindow();
     }
 
     public void lock() {
@@ -165,6 +167,8 @@ public class LwM2mClient implements Serializable {
         Lwm2mDeviceTransportConfiguration transportConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
         this.powerMode = transportConfiguration.getPowerMode();
         this.edrxCycle = transportConfiguration.getEdrxCycle();
+        this.psmActivityTimer = transportConfiguration.getEdrxCycle();
+        this.pagingTransmissionWindow = transportConfiguration.getPagingTransmissionWindow();
     }
 
     public void onDeviceProfileUpdate(DeviceProfile deviceProfile) {

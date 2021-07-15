@@ -520,16 +520,6 @@ public class DefaultTransportApiService implements TransportApiService {
     }
 
     private DeviceInfoProto getDeviceInfoProto(Device device) throws JsonProcessingException {
-        PowerMode powerMode = null;
-        Long edrxCycle = null;
-        switch (device.getDeviceData().getTransportConfiguration().getType()) {
-            case LWM2M:
-                Lwm2mDeviceTransportConfiguration transportConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
-                powerMode = transportConfiguration.getPowerMode();
-                edrxCycle = transportConfiguration.getEdrxCycle();
-                break;
-        }
-
         DeviceInfoProto.Builder builder = DeviceInfoProto.newBuilder()
                 .setTenantIdMSB(device.getTenantId().getId().getMostSignificantBits())
                 .setTenantIdLSB(device.getTenantId().getId().getLeastSignificantBits())
@@ -542,10 +532,23 @@ public class DefaultTransportApiService implements TransportApiService {
                 .setDeviceProfileIdMSB(device.getDeviceProfileId().getId().getMostSignificantBits())
                 .setDeviceProfileIdLSB(device.getDeviceProfileId().getId().getLeastSignificantBits())
                 .setAdditionalInfo(mapper.writeValueAsString(device.getAdditionalInfo()));
-        if (powerMode != null) {
-            builder.setPowerMode(powerMode.name());
-            builder.setEdrxCycle(edrxCycle);
+
+        switch (device.getDeviceData().getTransportConfiguration().getType()) {
+            case LWM2M:
+                Lwm2mDeviceTransportConfiguration transportConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
+                PowerMode powerMode = transportConfiguration.getPowerMode();
+                if (powerMode != null) {
+                    builder.setPowerMode(powerMode.name());
+                    if (powerMode.equals(PowerMode.PSM)) {
+                        builder.setPsmActivityTimer(checkLong(transportConfiguration.getPsmActivityTimer()));
+                    } else if (powerMode.equals(PowerMode.E_DRX)) {
+                        builder.setEdrxCycle(checkLong(transportConfiguration.getEdrxCycle()));
+                        builder.setPagingTransmissionWindow(checkLong(transportConfiguration.getPagingTransmissionWindow()));
+                    }
+                }
+                break;
         }
+
         return builder.build();
     }
 
@@ -633,5 +636,9 @@ public class DefaultTransportApiService implements TransportApiService {
         } finally {
             deviceCreationLock.unlock();
         }
+    }
+
+    private Long checkLong(Long l) {
+        return l != null ? l : 0;
     }
 }

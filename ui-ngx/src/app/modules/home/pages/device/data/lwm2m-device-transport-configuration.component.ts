@@ -139,10 +139,10 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
     if (isDefinedAndNotNull(value)) {
       this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').patchValue(value.powerMode, {emitEvent: false, onlySelf: true});
       this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').patchValue(value.edrxCycle || 0, {emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').patchValue(value.edrxCycle || 0, {emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').patchValue(value.edrxCycle || 0, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').patchValue(value.pagingTransmissionWindow || 0, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').patchValue(value.psmActivityTimer || 0, {emitEvent: false});
     } else {
-      this.lwm2mDeviceTransportConfigurationFormGroup.patchValue({powerMode: null, edrxCycle: 0}, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.patchValue({powerMode: null, edrxCycle: 0, psmActivityTimer: 0, pagingTransmissionWindow: 0}, {emitEvent: false});
     }
   }
 

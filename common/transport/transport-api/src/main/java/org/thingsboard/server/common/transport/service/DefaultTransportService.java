@@ -498,6 +498,8 @@ public class DefaultTransportService implements TransportService {
         if (StringUtils.isNotEmpty(di.getPowerMode())) {
             tdi.setPowerMode(PowerMode.valueOf(di.getPowerMode()));
             tdi.setEdrxCycle(di.getEdrxCycle());
+            tdi.setPsmActivityTimer(di.getPsmActivityTimer());
+            tdi.setPagingTransmissionWindow(di.getPagingTransmissionWindow());
         }
         return tdi;
     }
