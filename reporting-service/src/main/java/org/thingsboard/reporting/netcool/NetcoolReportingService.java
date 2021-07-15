@@ -55,9 +55,10 @@ public class NetcoolReportingService {
     @Value("${netcool.snmp.port}")
     private Integer snmpPort;
     @Value("${netcool.snmp.community}")
-    private String snmpCommunity = "public";
+    private String snmpCommunity;
 
-    private static final String alarmOidTemplate = "1.3.6.1.2.3.4.%d.%d"; // FIXME: to config
+    @Value("${netcool.alarms.trap_base_oid}")
+    private String alarmTrapBaseOid;
 
     private Target target;
 
@@ -65,7 +66,7 @@ public class NetcoolReportingService {
 
     @PostConstruct
     private void init() {
-        target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
+        this.target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
     }
 
     public void onAlarm(NetcoolAlarm alarm) {
@@ -88,7 +89,7 @@ public class NetcoolReportingService {
     }
 
     private String getAlarmOid(NetcoolAlarm alarm) {
-        return String.format(alarmOidTemplate, alarm.getSeverity().getId(), alarm.getCategory().getId());
+        return String.format("%s.%d.%d", alarmTrapBaseOid, alarm.getSeverity().getId(), alarm.getCategory().getId());
     }
 
     private String mapToString(NetcoolAlarm alarm) {

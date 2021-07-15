@@ -44,6 +44,8 @@ nagios:
 
 netcool:
   snmp:
-    host:
-    port:
-    community:
+    host: "${NETCOOL_SNMP_HOST:localhost}"
+    port: "${NETCOOL_SNMP_PORT:162}"
+    community: "${NETCOOL_SNMP_COMMUNITY:public}"
+  alarms:
+    trap_base_oid: "${NETCOOL_ALARM_TRAP_BASE_OID:1.3.6.1.2.3.4}"

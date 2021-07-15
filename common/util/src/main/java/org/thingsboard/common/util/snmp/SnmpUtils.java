@@ -30,7 +30,6 @@
  */
 package org.thingsboard.common.util.snmp;
 
-import org.apache.commons.lang3.math.NumberUtils;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.Target;
 import org.snmp4j.security.SecurityLevel;
