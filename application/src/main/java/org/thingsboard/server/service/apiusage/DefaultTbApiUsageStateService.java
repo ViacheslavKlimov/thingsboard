@@ -285,7 +285,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                         .setTenantIdLSB(tenantId.getId().getLeastSignificantBits())
                         .build())
                 .build());
-        kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-reporting-service"), kpiStatsMsg, null);
+        kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-monitoring-service"), kpiStatsMsg, null);
     }
 
     @Override

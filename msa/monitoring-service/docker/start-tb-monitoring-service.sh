@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 #
@@ -29,21 +30,19 @@
 # OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 #
 
-monitoring_service_url: "${MONITORING_SERVICE_URL:http://localhost:8081}"
+CONF_FOLDER="/config"
+jarfile=${pkg.installFolder}/bin/${pkg.name}.jar
+configfile=${pkg.name}.conf
 
-server:
-  port: "${HTTP_BIND_PORT:8081}"
+source "${CONF_FOLDER}/${configfile}"
 
-snmp:
-  binding_port: "${SNMP_BINDING_PORT:1610}"
-  community: "${SNMP_COMMUNITY:public}"
+export LOADER_PATH=/config,${LOADER_PATH}
 
-nagios:
-  kpi_statistics:
-    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats will be hosted on this OID
+echo "Starting '${project.name}' ..."
 
-netcool:
-  snmp:
-    host:
-    port:
-    community:
+cd ${pkg.installFolder}/bin
+
+exec java -cp ${jarfile} $JAVA_OPTS -Dloader.main=org.thingsboard.monitoring.ThingsboardMonitoringServiceApplication \
+                    -Dspring.jpa.hibernate.ddl-auto=none \
+                    -Dlogging.config=/config/logback.xml \
+                    org.springframework.boot.loader.PropertiesLauncher

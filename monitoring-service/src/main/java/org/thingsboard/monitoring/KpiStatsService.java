@@ -28,15 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.kpis;
+package org.thingsboard.monitoring;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import org.thingsboard.reporting.util.MonitoringComponent;
-import org.thingsboard.reporting.kpis.nagios.NagiosKpisHolder;
-import org.thingsboard.reporting.kpis.prometheus.PrometheusReportingService;
+import org.thingsboard.monitoring.nagios.NagiosKpisService;
+import org.thingsboard.monitoring.prometheus.PrometheusReportingService;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
@@ -49,13 +48,12 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@MonitoringComponent
 public class KpiStatsService { // TODO: don't reuse transport service, use own queues
-    private final NagiosKpisHolder nagiosReportingService;
+    private final NagiosKpisService nagiosReportingService;
     private final PrometheusReportingService prometheusReportingService;
     private final TransportService transportService;
 
-    public KpiStatsService(@Lazy NagiosKpisHolder nagiosReportingService,
+    public KpiStatsService(@Lazy NagiosKpisService nagiosReportingService,
                            @Lazy PrometheusReportingService prometheusReportingService,
                            TransportService transportService) {
         this.nagiosReportingService = nagiosReportingService;

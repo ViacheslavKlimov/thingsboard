@@ -28,11 +28,9 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.service.alarms;
+package org.thingsboard.reporting.netcool;
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.snmp4j.PDU;
@@ -41,12 +39,14 @@ import org.snmp4j.Target;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.common.util.snmp.SnmpUtils;
 import org.thingsboard.server.common.adaptor.JsonConverter;
 
+import javax.annotation.PostConstruct;
 import java.text.ParseException;
 
-//@Service
+@RestController
 @RequiredArgsConstructor
 @Slf4j
 public class NetcoolReportingService {
@@ -56,19 +56,23 @@ public class NetcoolReportingService {
     private Integer snmpPort;
     @Value("${netcool.snmp.community}")
     private String snmpCommunity = "public";
-    private static final String alarmOidTemplate = "1.3.6.1.2.3.4.%d.%d";
+
+    private static final String alarmOidTemplate = "1.3.6.1.2.3.4.%d.%d"; // FIXME: to config
 
     private Target target;
 
     private final Snmp snmp = new Snmp();
 
-//    @PostConstruct
+    @PostConstruct
     private void init() {
         target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
     }
 
-    @SneakyThrows()
-    public void report(NetcoolAlarm alarm) {
+    public void onAlarm(NetcoolAlarm alarm) {
+        report(alarm);
+    }
+
+    private void report(NetcoolAlarm alarm) {
         try {
             snmp.send(toTrapPdu(alarm), target);
         } catch (Exception e) {
@@ -79,59 +83,16 @@ public class NetcoolReportingService {
     private PDU toTrapPdu(NetcoolAlarm alarm) throws ParseException {
         PDU pdu = new PDU();
         pdu.setType(PDU.TRAP);
-        pdu.add(new VariableBinding(getOidForAlarm(alarm), mapToString(alarm)));
+        pdu.add(new VariableBinding(new OID(getAlarmOid(alarm)), mapToString(alarm)));
         return pdu;
     }
 
-    private OID getOidForAlarm(NetcoolAlarm alarm) {
-        return new OID(String.format(alarmOidTemplate, alarm.getSeverity().getId(), alarm.getType().getId()));
+    private String getAlarmOid(NetcoolAlarm alarm) {
+        return String.format(alarmOidTemplate, alarm.getSeverity().getId(), alarm.getCategory().getId());
     }
 
     private String mapToString(NetcoolAlarm alarm) {
         return JsonConverter.toJson(alarm);
-    }
-
-    @Data
-    public static class NetcoolAlarm {
-        private Severity severity;
-        private Type type;
-        private String description;
-
-        public enum Severity {
-            CLEARED(1),
-            MINOR(2),
-            WARNING(3),
-            MAJOR(4),
-            CRITICAL(5);
-
-            private final int id;
-
-            Severity(int id) {
-                this.id = id;
-            }
-
-            public int getId() {
-                return id;
-            }
-        }
-
-        public enum Type {
-            COMMUNICATION(1),
-            QUALITY_OF_SERVICE(2),
-            PROCESSING(3),
-            EQUIPMENT(4),
-            ENVIRONMENTAL(5);
-
-            private final int id;
-
-            Type(int id) {
-                this.id = id;
-            }
-
-            public int getId() {
-                return id;
-            }
-        }
     }
 
 }

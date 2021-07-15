@@ -61,6 +61,7 @@
         <module>black-box-tests</module>
         <module>integration</module>
         <module>smpp-gateway</module>
+        <module>monitoring-service</module>
         <module>reporting-service</module>
     </modules>
 

@@ -28,15 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.kpis.nagios;
+package org.thingsboard.monitoring.nagios;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.thingsboard.reporting.kpis.KpiStats;
-import org.thingsboard.reporting.kpis.KpiStatsService;
-import org.thingsboard.reporting.util.MonitoringComponent;
+import org.thingsboard.server.common.data.stats.KpiStats;
+import org.thingsboard.monitoring.KpiStatsService;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
@@ -50,8 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@MonitoringComponent
-public class NagiosKpisHolder {
+public class NagiosKpisService {
     private final KpiStatsService kpiStatsService;
 
     private final KpiStats currentKpiStats = new KpiStats();

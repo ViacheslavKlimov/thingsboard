@@ -29,21 +29,21 @@
 # OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 #
 
-monitoring_service_url: "${MONITORING_SERVICE_URL:http://localhost:8081}"
+FROM thingsboard/openjdk11
 
-server:
-  port: "${HTTP_BIND_PORT:8081}"
+COPY start-tb-monitoring-service.sh ${pkg.name}.deb /tmp/
+COPY conf/* /config/
 
-snmp:
-  binding_port: "${SNMP_BINDING_PORT:1610}"
-  community: "${SNMP_COMMUNITY:public}"
+RUN chmod a+x /tmp/*.sh \
+    && mv /tmp/start-tb-monitoring-service.sh /usr/bin
 
-nagios:
-  kpi_statistics:
-    oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats will be hosted on this OID
+RUN yes | dpkg -i /tmp/${pkg.name}.deb
+RUN rm /tmp/${pkg.name}.deb
 
-netcool:
-  snmp:
-    host:
-    port:
-    community:
+RUN systemctl --no-reload disable --now ${pkg.name}.service > /dev/null 2>&1 || :
+
+RUN chmod 555 ${pkg.installFolder}/bin/${pkg.name}.jar
+
+USER ${pkg.user}
+
+CMD ["start-tb-monitoring-service.sh"]
