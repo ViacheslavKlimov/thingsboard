@@ -591,6 +591,8 @@ export interface CoapDeviceTransportConfiguration {
 export interface Lwm2mDeviceTransportConfiguration {
   powerMode?: PowerMode | null;
   edrxCycle?: number;
+  pagingTransmissionWindow?: number;
+  psmActivityTimer?: number;
   [key: string]: any;
 }
 

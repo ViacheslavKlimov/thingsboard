@@ -40,15 +40,39 @@
       </mat-option>
     </mat-select>
   </mat-form-field>
-  <mat-form-field class="mat-block" fxFlex *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').value === 'E_DRX'">
-    <mat-label>{{ 'device-profile.edrx-cycle' | translate }}</mat-label>
-    <input matInput type="number" min="0" formControlName="edrxCycle" required>
-    <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('required')">
-      {{ 'device-profile.edrx-cycle-required' | translate }}
+  <section class="mat-block" fxFlex *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').value === 'E_DRX'">
+    <mat-form-field class="mat-block" fxFlex>
+      <mat-label>{{ 'device-profile.edrx-cycle' | translate }}</mat-label>
+      <input matInput type="number" min="0" formControlName="edrxCycle" required>
+      <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('required')">
+        {{ 'device-profile.edrx-cycle-required' | translate }}
+      </mat-error>
+      <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('pattern') ||
+                                        lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('min')">
+        {{ 'device-profile.edrx-cycle-pattern' | translate }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field class="mat-block" fxFlex>
+      <mat-label>{{ 'device-profile.paging-transmission-window' | translate }}</mat-label>
+      <input matInput type="number" min="0" formControlName="pagingTransmissionWindow" required>
+      <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').hasError('required')">
+        {{ 'device-profile.paging-transmission-window-required' | translate }}
+      </mat-error>
+      <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').hasError('pattern') ||
+                                        lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').hasError('min')">
+        {{ 'device-profile.paging-transmission-window-pattern' | translate }}
+      </mat-error>
+    </mat-form-field>
+  </section>
+  <mat-form-field class="mat-block" fxFlex *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').value === 'PSM'">
+    <mat-label>{{ 'device-profile.psm-activity-timer' | translate }}</mat-label>
+    <input matInput type="number" min="0" formControlName="psmActivityTimer" required>
+    <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').hasError('required')">
+      {{ 'device-profile.psm-activity-timer-required' | translate }}
     </mat-error>
-    <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('pattern') ||
-                        lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').hasError('min')">
-      {{ 'device-profile.edrx-cycle-pattern' | translate }}
+    <mat-error *ngIf="lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').hasError('pattern') ||
+                                        lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').hasError('min')">
+      {{ 'device-profile.psm-activity-timer-pattern' | translate }}
     </mat-error>
   </mat-form-field>
 </form>

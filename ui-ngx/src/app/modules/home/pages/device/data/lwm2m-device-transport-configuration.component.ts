@@ -85,21 +85,33 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
   ngOnInit() {
     this.lwm2mDeviceTransportConfigurationFormGroup = this.fb.group({
       powerMode: [null],
-      edrxCycle: [0]
+      edrxCycle: [{disabled: true, value: 0}],
+      psmActivityTimer: [{disabled: true, value: 0}],
+      pagingTransmissionWindow: [{disabled: true, value: 0}]
     });
     this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').valueChanges.pipe(
       takeUntil(this.destroy$)
     ).subscribe((powerMode: PowerMode) => {
       if (powerMode === PowerMode.E_DRX) {
         this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').enable({emitEvent: false});
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').patchValue(0, {emitEvent: false});
+        this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').enable({emitEvent: false});
         this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle')
           .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
+        this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow')
+          .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
+        this.clearValidatorsPSKMode();
+      } else if (powerMode === PowerMode.PSM) {
+        this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').enable({emitEvent: false});
+        this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer')
+          .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
+        this.clearValidatorsEdrxMode();
       } else {
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').disable({emitEvent: false});
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').clearValidators();
+        this.clearValidatorsEdrxMode();
+        this.clearValidatorsPSKMode();
       }
       this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').updateValueAndValidity({emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').updateValueAndValidity({emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').updateValueAndValidity({emitEvent: false});
     });
     this.lwm2mDeviceTransportConfigurationFormGroup.valueChanges.pipe(
       takeUntil(this.destroy$)
@@ -119,6 +131,7 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
       this.lwm2mDeviceTransportConfigurationFormGroup.disable({emitEvent: false});
     } else {
       this.lwm2mDeviceTransportConfigurationFormGroup.enable({emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').updateValueAndValidity({onlySelf: true});
     }
   }
 
@@ -126,6 +139,8 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
     if (isDefinedAndNotNull(value)) {
       this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').patchValue(value.powerMode, {emitEvent: false, onlySelf: true});
       this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').patchValue(value.edrxCycle || 0, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').patchValue(value.edrxCycle || 0, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').patchValue(value.edrxCycle || 0, {emitEvent: false});
     } else {
       this.lwm2mDeviceTransportConfigurationFormGroup.patchValue({powerMode: null, edrxCycle: 0}, {emitEvent: false});
     }
@@ -138,5 +153,20 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
       // configuration.type = DeviceTransportType.LWM2M;
     }
     this.propagateChange(configuration);
+  }
+
+  private clearValidatorsPSKMode() {
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').disable({emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').reset(0, {emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').clearValidators();
+  }
+
+  private clearValidatorsEdrxMode() {
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').disable({emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').reset(0, {emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').clearValidators();
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').disable({emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').reset(0, {emitEvent: false});
+    this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').clearValidators();
   }
 }
