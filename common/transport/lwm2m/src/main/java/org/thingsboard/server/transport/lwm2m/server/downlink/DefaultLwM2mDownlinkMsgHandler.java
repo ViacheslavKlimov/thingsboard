@@ -326,12 +326,10 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                     }
                 });
             }, e -> {
-                executor.submit(() -> {
-                    callback.onError(toString(request), e);
-                });
+                handleDownlinkError(client, request, callback, e);
             });
         } catch (Exception e) {
-            callback.onError(toString(request), e);
+            handleDownlinkError(client, request, (DownlinkRequestCallback<R, T>) callback, e);
         }
         context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
@@ -354,63 +352,20 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                     }
                 });
             }, e -> {
-                executor.submit(() -> {
-                    callback.onError(toString(request), e);
-                });
-                context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+                handleDownlinkError(client, request, callback, e);
             });
         } catch (Exception e) {
-            callback.onError(toString(request), e);
-            context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+            handleDownlinkError(client, request, callback, e);
         }
         context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
 
-//    private <R extends DownlinkRequest<T>, T extends LwM2mResponse> void sendReadRequestComposite(LwM2mClient client, ReadCompositeRequest request, long timeoutInMs,
-//                                                                                                        DownlinkRequestCallback<ReadCompositeRequest, ReadCompositeResponse> callback) {
-//        Registration registration = client.getRegistration();
-//        try {
-//            logService.log(client, String.format("[%s][%s] Sending request: %s to %s", registration.getId(), registration.getSocketAddress(), request.getClass().getSimpleName(), request.getPaths()));
-//            context.getServer().send(registration, request, timeoutInMs, response -> {
-//                executor.submit(() -> {
-//                    try {
-//                        /**
-//                         * [{"bn":"/3/0/","n":"0","vs":"Thingsboard Test Device"},
-//                         *               {"n":"1","vs":"Model 500"},
-//                         *               {"n":"2","vs":"TH-500-000-0001"},
-//                         *               {"n":"3","vs":"TestThingsboard@TestMore1024_2.04"},
-//                         *               {"n":"6","v":1},{"n":"7","v":56},
-//                         *               {"n":"8","v":42},{"n":"9","v":16},
-//                         *               {"n":"10","v":127619},{"n":"13","v":1624520988},
-//                         *               {"n":"14","vs":"+03"},{"n":"15","vs":"Europe/Kiev"},
-//                         *               {"n":"16","vs":"U"},{"n":"17","vs":"smart meters"},
-//                         *               {"n":"18","vs":"1.01"},{"n":"19","vs":"1.02"},
-//                         *               {"n":"20","v":3},{"n":"21","v":256000},
-//                         *  {"bn":"/5/0/","n":"1","vs":""},
-//                         *               {"n":"3","v":0},{"n":"5","v":0},
-//                         *               {"n":"6","vs":""},{"n":"7","vs":""},
-//                         *               {"n":"8/0","v":0},{"n":"8/1","v":1},
-//                         *               {"n":"9","v":2},
-//                         *  {"bn":"/1/0/","n":"0","v":123},
-//                         *               {"n":"1","v":300},
-//                         *               {"n":"6","vb":false},
-//                         *               {"n":"22","vs":"U"},
-//                         *               {"n":"7","vs":"U"}]
-//                         */
-//                        callback.onSuccess(request, response);
-//                    } catch (Exception e) {
-//                        log.error("[{}] failed to process successful response [{}] ", registration.getEndpoint(), response, e);
-//                    }
-//                });
-//            }, e -> {
-//                executor.submit(() -> {
-//                    callback.onError(toString(request), e);
-//                });
-//            });
-//        } catch (Exception e) {
-//            callback.onError(toString(request), e);
-//        }
-//    }
+    private <R extends DownlinkRequest<T>, T extends LwM2mResponse> void handleDownlinkError(LwM2mClient client, R request, DownlinkRequestCallback<R, T> callback, Exception e) {
+        executor.submit(() -> {
+            callback.onError(toString(request), e);
+        });
+        context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+    }
 
     private WriteRequest getWriteRequestSingleResource(ResourceModel.Type type, ContentFormat contentFormat, int objectId, int instanceId, int resourceId, Object value) {
         switch (type) {
