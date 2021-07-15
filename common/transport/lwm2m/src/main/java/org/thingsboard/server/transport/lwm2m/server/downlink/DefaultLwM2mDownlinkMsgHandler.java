@@ -333,6 +333,7 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
         } catch (Exception e) {
             callback.onError(toString(request), e);
         }
+        context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
 
     private <R extends SimpleDownlinkRequest<T>, T extends LwM2mResponse> void sendWriteCompositeRequest(LwM2mClient client, WriteCompositeRequest request, long timeoutInMs,
