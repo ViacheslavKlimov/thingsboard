@@ -42,7 +42,9 @@ public class OtherConfiguration {
     private Integer swUpdateStrategy;
     private Integer clientOnlyObserveAfterConnect;
     private PowerMode powerMode;
+    private Long psmActivityTimer;
     private Long edrxCycle;
+    private Long pagingTransmissionWindow;
     private String fwUpdateResource;
     private String swUpdateResource;
     private boolean compositeOperationsSupport;

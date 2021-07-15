@@ -54,6 +54,9 @@ import org.eclipse.leshan.core.request.SimpleDownlinkRequest;
 import org.eclipse.leshan.core.request.WriteAttributesRequest;
 import org.eclipse.leshan.core.request.WriteCompositeRequest;
 import org.eclipse.leshan.core.request.WriteRequest;
+import org.eclipse.leshan.core.request.exception.ClientSleepingException;
+import org.eclipse.leshan.core.request.exception.SendFailedException;
+import org.eclipse.leshan.core.request.exception.TimeoutException;
 import org.eclipse.leshan.core.response.DeleteResponse;
 import org.eclipse.leshan.core.response.DiscoverResponse;
 import org.eclipse.leshan.core.response.ExecuteResponse;
@@ -76,6 +79,7 @@ import org.thingsboard.server.queue.util.TbLwM2mTransportComponent;
 import org.thingsboard.server.transport.lwm2m.config.LwM2MTransportServerConfig;
 import org.thingsboard.server.transport.lwm2m.server.LwM2mTransportContext;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
+import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClientContext;
 import org.thingsboard.server.transport.lwm2m.server.common.LwM2MExecutorAwareService;
 import org.thingsboard.server.transport.lwm2m.server.downlink.composite.TbLwM2MReadCompositeRequest;
 import org.thingsboard.server.transport.lwm2m.server.log.LwM2MTelemetryLogService;
@@ -112,6 +116,7 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
     private final LwM2mTransportContext context;
     private final LwM2MTransportServerConfig config;
     private final LwM2MTelemetryLogService logService;
+    private final LwM2mClientContext clientContext;
 
     @PostConstruct
     public void init() {
@@ -314,34 +319,41 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
     }
 
     private <R extends DownlinkRequest<T>, T extends LwM2mResponse> void sendRequest(LwM2mClient client, R request, long timeoutInMs, DownlinkRequestCallback<R, T> callback, Function<R, String> pathToStringFunction) {
+        if (!clientContext.isDownlinkAllowed(client)) {
+            log.trace("[{}] ignore downlink request cause client is sleeping.", client.getEndpoint());
+            return;
+        }
         Registration registration = client.getRegistration();
         try {
             logService.log(client, String.format("[%s][%s] Sending request: %s to %s", registration.getId(), registration.getSocketAddress(), request.getClass().getSimpleName(), pathToStringFunction.apply(request)));
             context.getServer().send(registration, request, timeoutInMs, response -> {
                 executor.submit(() -> {
                     try {
+                        clientContext.awake(client);
                         callback.onSuccess(request, response);
                     } catch (Exception e) {
                         log.error("[{}] failed to process successful response [{}] ", registration.getEndpoint(), response, e);
                     }
                 });
-            }, e -> {
-                handleDownlinkError(client, request, callback, e);
-            });
+            }, e -> handleDownlinkError(client, request, callback, e));
         } catch (Exception e) {
-            handleDownlinkError(client, request, (DownlinkRequestCallback<R, T>) callback, e);
+            handleDownlinkError(client, request, callback, e);
         }
         context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
     }
 
-    private <R extends SimpleDownlinkRequest<T>, T extends LwM2mResponse> void sendWriteCompositeRequest(LwM2mClient client, WriteCompositeRequest request, long timeoutInMs,
-                                                                                                         DownlinkRequestCallback<WriteCompositeRequest, WriteCompositeResponse> callback) {
+    private <R extends SimpleDownlinkRequest<T>, T extends LwM2mResponse> void sendWriteCompositeRequest(LwM2mClient client, WriteCompositeRequest request, long timeoutInMs, DownlinkRequestCallback<WriteCompositeRequest, WriteCompositeResponse> callback) {
+        if (!clientContext.isDownlinkAllowed(client)) {
+            log.trace("[{}] ignore downlink request cause client is sleeping.", client.getEndpoint());
+            return;
+        }
         Registration registration = client.getRegistration();
         try {
             logService.log(client, String.format("[%s][%s] Sending request: %s to %s", registration.getId(), registration.getSocketAddress(), request.getClass().getSimpleName(), request.getPaths()));
             context.getServer().send(registration, request, timeoutInMs, response -> {
                 executor.submit(() -> {
                     try {
+                        clientContext.awake(client);
                         if (response.isSuccess()) {
                             callback.onSuccess(request, response);
                         } else {
@@ -351,9 +363,7 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                         log.error("[{}] failed to process successful response [{}] ", registration.getEndpoint(), response, e);
                     }
                 });
-            }, e -> {
-                handleDownlinkError(client, request, callback, e);
-            });
+            }, e -> handleDownlinkError(client, request, callback, e));
         } catch (Exception e) {
             handleDownlinkError(client, request, callback, e);
         }
@@ -361,7 +371,14 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
     }
 
     private <R extends DownlinkRequest<T>, T extends LwM2mResponse> void handleDownlinkError(LwM2mClient client, R request, DownlinkRequestCallback<R, T> callback, Exception e) {
+        log.trace("[{}] Received downlink error: {}.", client.getEndpoint(), e);
         executor.submit(() -> {
+            if (e instanceof TimeoutException || e instanceof ClientSleepingException) {
+                log.trace("[{}] Received {}, client is probably sleeping", client.getEndpoint(), e.getClass().getSimpleName());
+                clientContext.asleep(client);
+            } else {
+                log.trace("[{}] Received {}", client.getEndpoint(), e.getClass().getSimpleName());
+            }
             callback.onError(toString(request), e);
         });
         context.getApiUsageReportClient().report(client.getTenantId(), null, ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
@@ -472,7 +489,7 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                 return request.toString();
             }
         } catch (Exception e) {
-            log.warn("Failed to convert request to string");
+            log.warn("Failed to convert request to string", e);
             return request != null ? request.getClass().getSimpleName() : "";
         }
     }

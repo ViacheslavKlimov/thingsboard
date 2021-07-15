@@ -303,9 +303,8 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
 
     @Override
     public void onSleepingDev(Registration registration) {
-        log.info("[{}] [{}] Received endpoint Sleeping version event", registration.getId(), registration.getEndpoint());
-        logService.log(clientContext.getClientByEndpoint(registration.getEndpoint()), LOG_LWM2M_INFO + ": Client is sleeping!");
-        //TODO: associate endpointId with device information.
+        log.debug("[{}] [{}] Received endpoint sleeping event", registration.getId(), registration.getEndpoint());
+        clientContext.asleep(clientContext.getClientByEndpoint(registration.getEndpoint()));
     }
 
     /**
@@ -332,7 +331,13 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
                     this.updateResourcesValue(lwM2MClient, lwM2mResource, path);
                 }
             }
-            clientContext.update(lwM2MClient);
+            lwM2MClient.onUplink();
+            if (clientContext.awake(lwM2MClient)) {
+                // clientContext.awake calls clientContext.update
+                log.debug("[{}] Device is awake", lwM2MClient.getEndpoint());
+            } else {
+                clientContext.update(lwM2MClient);
+            }
         }
     }
 
@@ -405,10 +410,8 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
      */
     @Override
     public void onAwakeDev(Registration registration) {
-        log.trace("[{}] [{}] Received endpoint Awake version event", registration.getId(), registration.getEndpoint());
-        LwM2mClient client = this.clientContext.getClientByEndpoint(registration.getEndpoint());
-        logService.log(client, LOG_LWM2M_INFO + ": Client is awake!");
-        clientContext.sendMsgsAfterSleeping(client);
+        log.debug("[{}] [{}] Received endpoint awake event", registration.getId(), registration.getEndpoint());
+        clientContext.awake(clientContext.getClientByEndpoint(registration.getEndpoint()));
     }
 
     /**

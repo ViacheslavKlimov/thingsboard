@@ -108,10 +108,21 @@ public class LwM2mClient implements Serializable {
     @Getter
     private PowerMode powerMode;
     @Getter
+    private Long psmActivityTimer;
+    @Getter
     private Long edrxCycle;
+    @Getter
+    private Long pagingTransmissionWindow;
     @Getter
     @Setter
     private Registration registration;
+    @Getter
+    @Setter
+    private boolean asleep;
+    @Getter
+    private long lastUplinkTime;
+
+    private boolean firstEdrxDownlink = true;
 
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
@@ -364,5 +375,15 @@ public class LwM2mClient implements Serializable {
         this.lock = new ReentrantLock();
     }
 
+    public void onUplink(){
+        this.lastUplinkTime = System.currentTimeMillis();
+        this.firstEdrxDownlink = true;
+    }
+
+    public boolean checkFirstDownlink() {
+        boolean result = firstEdrxDownlink;
+        firstEdrxDownlink = false;
+        return result;
+    }
 }
 
