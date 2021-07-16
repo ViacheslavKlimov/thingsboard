@@ -924,7 +924,14 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         if (isAckExpected(message)) {
             context.getRequestsAwaitingAck().put(msgId, requestInfo);
         }
-        return deviceSessionCtx.getChannel().writeAndFlush(message);
+        ChannelFuture channelFuture = deviceSessionCtx.getChannel().writeAndFlush(message);
+        channelFuture.addListener(future -> {
+            if (context.getRequestsAwaitingAck().remove(msgId) != null && future.cause() != null) {
+                context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
+                        TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+            }
+        });
+        return channelFuture;
     }
 
     private int getMsgId(MqttMessage message) {

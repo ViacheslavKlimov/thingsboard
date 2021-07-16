@@ -81,9 +81,6 @@ import org.thingsboard.server.gen.transport.TransportProtos.SubscribeToRPCMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToDeviceRpcResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceTokenRequestMsg;
 import org.thingsboard.server.transport.coap.adaptors.CoapTransportAdaptor;
-import org.thingsboard.server.transport.coap.callback.CoapDeviceAuthCallback;
-import org.thingsboard.server.transport.coap.callback.CoapNoOpCallback;
-import org.thingsboard.server.transport.coap.callback.CoapOkCallback;
 
 import java.util.Collection;
 import java.util.List;
@@ -557,15 +554,21 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                     scheduleRpcRequestTimeout(msg, requestId, ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                 }
                 response.addMessageObserver(new TbCoapMessageObserver(requestId, id -> {
-                    transportContext.getRequestsAwaitingAck().remove(requestId);
                     TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(id);
                     if (rpcRequestMsg != null) {
                         transportService.process(sessionInfo, rpcRequestMsg, false, TransportServiceCallback.EMPTY);
                     }
                 }));
-                transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
-                        TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
-                exchange.respond(response);
+                response.addMessageObserver(new CoapRequestFailureMessageObserver(() -> {
+                    TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(requestId);
+                    if (rpcRequestMsg != null) {
+                        transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                                TransportService.getCustomerId(sessionInfo), msg.getOneway() ?
+                                        ApiUsageRecordKey.FAILED_ONE_WAY_RPC_REQUEST_COUNT : ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
+                    }
+                }));
+
+                respond(response, requestId, exchange, sessionInfo);
                 sent = true;
             } catch (AdaptorException e) {
                 log.trace("Failed to reply due to error", e);

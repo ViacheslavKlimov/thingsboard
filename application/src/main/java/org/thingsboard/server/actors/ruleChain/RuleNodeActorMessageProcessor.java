@@ -128,7 +128,6 @@ public class RuleNodeActorMessageProcessor extends ComponentMsgProcessor<RuleNod
             try {
                 tbNode.onMsg(defaultCtx, msg.getMsg());
             } catch (Exception e) {
-                apiUsageClient.report(tenantId,tbMsg.getCustomerId(), ApiUsageRecordKey.FAILED_RE_EXEC_COUNT);
                 defaultCtx.tellFailure(msg.getMsg(), e);
             }
         } else {
@@ -150,7 +149,6 @@ public class RuleNodeActorMessageProcessor extends ComponentMsgProcessor<RuleNod
             try {
                 tbNode.onMsg(msg.getCtx(), msg.getMsg());
             } catch (Exception e) {
-                apiUsageClient.report(tenantId,tbMsg.getCustomerId(), ApiUsageRecordKey.FAILED_RE_EXEC_COUNT);
                 msg.getCtx().tellFailure(msg.getMsg(), e);
             }
         } else {

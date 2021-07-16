@@ -33,6 +33,7 @@ package org.thingsboard.monitoring.prometheus;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.SimpleCollector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -55,10 +56,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class PrometheusReportingService {
-    private final CollectorRegistry collectorRegistry;
     private final KpiStatsService kpiStatsService;
     private final TransportService transportService;
 
+    private final CollectorRegistry collectorRegistry;
     private final Map<KpiKey, Counter> counters = new EnumMap<>(KpiKey.class);
     private final Map<KpiKey, Gauge> gauges = new EnumMap<>(KpiKey.class);
 
@@ -66,7 +67,13 @@ public class PrometheusReportingService {
     public void updateEntitiesKpiStats() {
         List<TransportProtos.Id> tenantsIds = transportService.getTenantsIds(GetTenantsIdsRequestMsg.getDefaultInstance()).getTenantsIdsList();
 
-        tenantsIds.forEach(this::updateEntitiesKpiStatsForTenant);
+        tenantsIds.forEach(tenantId -> {
+            try {
+                updateEntitiesKpiStatsForTenant(tenantId);
+            } catch (Exception e) {
+                log.error("Failed to update entities KPI stats for tenant {}", tenantId, e);
+            }
+        });
         updateEntitiesKpiStatsForTenant(TransportProtos.Id.newBuilder()
                 .setMsb(TenantId.SYS_TENANT_ID.getId().getMostSignificantBits())
                 .setLsb(TenantId.SYS_TENANT_ID.getId().getLeastSignificantBits())
