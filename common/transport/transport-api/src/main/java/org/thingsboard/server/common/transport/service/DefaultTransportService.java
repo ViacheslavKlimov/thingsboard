@@ -128,6 +128,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by ashvayka on 17.10.18.
@@ -135,7 +137,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Service
 @TbTransportComponent
-//@ConditionalOnMissingBean(type = "transportService")
 public class DefaultTransportService implements TransportService {
 
     public static final String OVERWRITE_ACTIVITY_TIME = "overwriteActivityTime";
@@ -603,7 +604,6 @@ public class DefaultTransportService implements TransportService {
         if (checkLimits(sessionInfo, msg, callback)) {
             SessionMetaData sessionMetaData = reportActivityInternal(sessionInfo);
             sessionMetaData.setSubscribedToAttributes(!msg.getUnsubscribe());
-            reportUplinkMsg(TransportService.getTenantId(sessionInfo));
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo).setSubscribeToAttributes(msg).build(),
                     new ApiStatsProxyCallback<>(TransportService.getTenantId(sessionInfo), TransportService.getCustomerId(sessionInfo), 1, callback));
         }
@@ -614,7 +614,6 @@ public class DefaultTransportService implements TransportService {
         if (checkLimits(sessionInfo, msg, callback)) {
             SessionMetaData sessionMetaData = reportActivityInternal(sessionInfo);
             sessionMetaData.setSubscribedToRPC(!msg.getUnsubscribe());
-            reportUplinkMsg(TransportService.getTenantId(sessionInfo));
             sendToDeviceActor(sessionInfo, TransportToDeviceActorMsg.newBuilder().setSessionInfo(sessionInfo).setSubscribeToRPC(msg).build(),
                     new ApiStatsProxyCallback<>(TransportService.getTenantId(sessionInfo), TransportService.getCustomerId(sessionInfo), 1, callback));
         }

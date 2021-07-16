@@ -68,7 +68,7 @@ public class GrafanaAlarmController {
     @Data
     public static class GrafanaAlarm {
         private String ruleName;
-        private Integer ruleId;
+        private Long ruleId;
         private String state;
         private Tags tags;
 
