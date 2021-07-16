@@ -69,6 +69,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static org.eclipse.leshan.core.SecurityMode.NO_SEC;
@@ -178,8 +180,10 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
             client.setRegistration(registration);
             this.lwM2mClientsByRegistrationId.put(registration.getId(), client);
             client.setState(LwM2MClientState.REGISTERED);
-            client.onUplink();
-            clientStore.put(client);
+            onUplink(client);
+            if(!compareAndSetSleepFlag(client, false)){
+                clientStore.put(client);
+            }
         } finally {
             client.unlock();
         }
@@ -198,7 +202,7 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
 
     @Override
     public boolean awake(LwM2mClient client) {
-        client.onUplink();
+        onUplink(client);
         boolean changed = compareAndSetSleepFlag(client, false);
         if (changed) {
             log.debug("[{}] client is awake", client.getEndpoint());
@@ -242,9 +246,8 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
                 throw new LwM2MClientStateException(client.getState(), "Client is in invalid state.");
             }
             client.setRegistration(registration);
-            client.onUplink();
+            onUplink(client);
             if (compareAndSetSleepFlag(client, false)) {
-                logService.log(client, LOG_LWM2M_INFO + ": Client is awake!");
                 sendMsgsAfterSleeping(client);
             } else {
                 clientStore.put(client);
@@ -463,12 +466,70 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
                     pagingTransmissionWindow = config.getPagingTransmissionWindow();
                 }
                 boolean allowed = timeSinceLastUplink <= pagingTransmissionWindow;
-                if(!allowed){
+                if (!allowed) {
                     return client.checkFirstDownlink();
                 } else {
                     return true;
                 }
             }
+        } finally {
+            client.unlock();
+        }
+    }
+
+    @Override
+    public void onUplink(LwM2mClient client) {
+        PowerMode powerMode = client.getPowerMode();
+        OtherConfiguration profileSettings = null;
+        if (powerMode == null) {
+            var clientProfile = getProfile(client.getProfileId());
+            profileSettings = clientProfile.getClientLwM2mSettings();
+            powerMode = profileSettings.getPowerMode();
+            if (powerMode == null) {
+                powerMode = PowerMode.DRX;
+            }
+        }
+        if (PowerMode.DRX.equals(powerMode)) {
+            client.updateLastUplinkTime();
+            return;
+        }
+        client.lock();
+        try {
+            long uplinkTime = client.updateLastUplinkTime();
+            long timeout;
+            if (PowerMode.PSM.equals(powerMode)) {
+                Long psmActivityTimer = client.getPsmActivityTimer();
+                if (psmActivityTimer == null && profileSettings != null) {
+                    psmActivityTimer = profileSettings.getPsmActivityTimer();
+
+                }
+                if (psmActivityTimer == null || psmActivityTimer == 0L) {
+                    psmActivityTimer = config.getPsmActivityTimer();
+                }
+
+                timeout = psmActivityTimer;
+            } else {
+                Long pagingTransmissionWindow = client.getPagingTransmissionWindow();
+                if (pagingTransmissionWindow == null && profileSettings != null) {
+                    pagingTransmissionWindow = profileSettings.getPagingTransmissionWindow();
+
+                }
+                if (pagingTransmissionWindow == null || pagingTransmissionWindow == 0L) {
+                    pagingTransmissionWindow = config.getPagingTransmissionWindow();
+                }
+                timeout = pagingTransmissionWindow;
+            }
+            Future<Void> sleepTask = client.getSleepTask();
+            if (sleepTask != null) {
+                sleepTask.cancel(false);
+            }
+            Future<Void> task = context.getScheduler().schedule(() -> {
+                if (uplinkTime == client.getLastUplinkTime()) {
+                    asleep(client);
+                }
+                return null;
+            }, timeout, TimeUnit.MILLISECONDS);
+            client.setSleepTask(task);
         } finally {
             client.unlock();
         }

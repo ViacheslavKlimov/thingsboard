@@ -78,6 +78,8 @@ public interface LwM2mClientContext {
 
     boolean isComposite(LwM2mClient client);
 
+    void onUplink(LwM2mClient client);
+
     Long getRequestTimeout(LwM2mClient client);
 
     boolean asleep(LwM2mClient client);

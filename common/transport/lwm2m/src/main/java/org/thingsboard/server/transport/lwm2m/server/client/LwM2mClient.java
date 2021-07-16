@@ -65,6 +65,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -121,6 +122,9 @@ public class LwM2mClient implements Serializable {
     private boolean asleep;
     @Getter
     private long lastUplinkTime;
+    @Getter
+    @Setter
+    private Future<Void> sleepTask;
 
     private boolean firstEdrxDownlink = true;
 
@@ -379,9 +383,10 @@ public class LwM2mClient implements Serializable {
         this.lock = new ReentrantLock();
     }
 
-    public void onUplink(){
+    public long updateLastUplinkTime(){
         this.lastUplinkTime = System.currentTimeMillis();
         this.firstEdrxDownlink = true;
+        return lastUplinkTime;
     }
 
     public boolean checkFirstDownlink() {
