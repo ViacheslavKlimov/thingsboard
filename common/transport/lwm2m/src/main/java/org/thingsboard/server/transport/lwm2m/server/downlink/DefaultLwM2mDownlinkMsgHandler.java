@@ -329,10 +329,11 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
             context.getServer().send(registration, request, timeoutInMs, response -> {
                 executor.submit(() -> {
                     try {
-                        clientContext.awake(client);
                         callback.onSuccess(request, response);
                     } catch (Exception e) {
                         log.error("[{}] failed to process successful response [{}] ", registration.getEndpoint(), response, e);
+                    } finally {
+                        clientContext.awake(client);
                     }
                 });
             }, e -> handleDownlinkError(client, request, callback, e));
