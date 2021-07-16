@@ -171,7 +171,7 @@ public class LwM2mClient implements Serializable {
         Lwm2mDeviceTransportConfiguration transportConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
         this.powerMode = transportConfiguration.getPowerMode();
         this.edrxCycle = transportConfiguration.getEdrxCycle();
-        this.psmActivityTimer = transportConfiguration.getEdrxCycle();
+        this.psmActivityTimer = transportConfiguration.getPsmActivityTimer();
         this.pagingTransmissionWindow = transportConfiguration.getPagingTransmissionWindow();
     }
 
