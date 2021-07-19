@@ -124,7 +124,7 @@ public class LwM2mClient implements Serializable {
     private long lastUplinkTime;
     @Getter
     @Setter
-    private Future<Void> sleepTask;
+    private transient Future<Void> sleepTask;
 
     private boolean firstEdrxDownlink = true;
 
