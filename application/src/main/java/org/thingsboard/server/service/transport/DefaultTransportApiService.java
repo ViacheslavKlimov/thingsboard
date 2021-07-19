@@ -53,6 +53,7 @@ import org.thingsboard.server.common.data.OtaPackage;
 import org.thingsboard.server.common.data.OtaPackageInfo;
 import org.thingsboard.server.common.data.ResourceType;
 import org.thingsboard.server.common.data.TbResource;
+import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantProfile;
 import org.thingsboard.server.common.data.device.credentials.BasicMqttCredentials;
 import org.thingsboard.server.common.data.device.credentials.ProvisionDeviceCredentialsData;
@@ -195,6 +196,8 @@ public class DefaultTransportApiService implements TransportApiService {
             result = handle(transportApiRequestMsg.getEntitiesKpiStatsRequestMsg());
         } else if (transportApiRequestMsg.hasTenantsIdsRequestMsg()) {
             result = handle(transportApiRequestMsg.getTenantsIdsRequestMsg());
+        } else if (transportApiRequestMsg.hasTenantRequestMsg()) {
+            result = handle(transportApiRequestMsg.getTenantRequestMsg());
         }
 
         return Futures.transform(Optional.ofNullable(result).orElseGet(this::getEmptyTransportApiResponseFuture),
@@ -490,6 +493,16 @@ public class DefaultTransportApiService implements TransportApiService {
                 .build();
 
         return Futures.immediateFuture(responseMsg);
+    }
+
+    private ListenableFuture<TransportApiResponseMsg> handle(TransportProtos.GetTenantRequestMsg requestMsg) {
+        TenantId tenantId = new TenantId(new UUID(requestMsg.getTenantId().getMsb(), requestMsg.getTenantId().getLsb()));
+        Tenant tenant = tenantService.findTenantById(tenantId);
+
+        return Futures.immediateFuture(TransportApiResponseMsg.newBuilder()
+                .setTenantResponseMsg(TransportProtos.GetTenantResponseMsg.newBuilder()
+                        .setData(ByteString.copyFrom(dataDecodingEncodingService.encode(tenant))))
+                .build());
     }
 
     private ListenableFuture<TransportApiResponseMsg> getDeviceInfo(DeviceId deviceId, DeviceCredentials credentials) {

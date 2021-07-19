@@ -385,6 +385,24 @@ public class DefaultTransportService implements TransportService {
         }
     }
 
+    @Override
+    public TransportProtos.GetTenantResponseMsg getTenant(TransportProtos.GetTenantRequestMsg requestMsg) {
+        return sendRequest(request -> request.setTenantRequestMsg(requestMsg), TransportApiResponseMsg::getTenantResponseMsg);
+    }
+
+    private <R> R sendRequest(Consumer<TransportApiRequestMsg.Builder> requestMsgSetter, Function<TransportApiResponseMsg, R> responseMsgGetter) {
+        TransportApiRequestMsg.Builder requestMsg = TransportApiRequestMsg.newBuilder();
+        requestMsgSetter.accept(requestMsg);
+
+        TbProtoQueueMsg<TransportApiRequestMsg> request = new TbProtoQueueMsg<>(UUID.randomUUID(), requestMsg.build());
+
+        try {
+            TbProtoQueueMsg<TransportApiResponseMsg> response = transportApiRequestTemplate.send(request).get();
+            return responseMsgGetter.apply(response.getValue());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void process(DeviceTransportType transportType, TransportProtos.ValidateDeviceTokenRequestMsg msg,

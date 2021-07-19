@@ -221,7 +221,7 @@ zk:
 
 service:
   type: tb-transport
-  id: tb-monitoring-service
+  id: "${TB_SERVICE_ID:tb-monitoring-service}"
 
 transport:
   sessions:

@@ -320,6 +320,14 @@ message Id {
   int64 lsb = 2;
 }
 
+message GetTenantRequestMsg {
+  Id tenantId = 1;
+}
+
+message GetTenantResponseMsg {
+  bytes data = 1;
+}
+
 message EntityUpdateMsg {
   string entityType = 1;
   bytes data = 2;
@@ -745,6 +753,7 @@ message TransportApiRequestMsg {
   GetDeviceCredentialsRequestMsg deviceCredentialsRequestMsg = 13;
   GetEntitiesKpiStatsRequestMsg entitiesKpiStatsRequestMsg = 14;
   GetTenantsIdsRequestMsg tenantsIdsRequestMsg = 15;
+  GetTenantRequestMsg tenantRequestMsg = 16;
 }
 
 /* Response from ThingsBoard Core Service to Transport Service */
@@ -761,6 +770,7 @@ message TransportApiResponseMsg {
   GetDeviceCredentialsResponseMsg deviceCredentialsResponseMsg = 10;
   GetEntitiesKpiStatsResponseMsg entitiesKpiStatsResponseMsg = 11;
   GetTenantsIdsResponseMsg tenantsIdsResponseMsg = 12;
+  GetTenantResponseMsg tenantResponseMsg = 13;
 }
 
 /* Messages that are handled by ThingsBoard Core Service */

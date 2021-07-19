@@ -56,6 +56,8 @@ import org.thingsboard.server.gen.transport.TransportProtos.GetResourceRequestMs
 import org.thingsboard.server.gen.transport.TransportProtos.GetResourceResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetSnmpDevicesResponseMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantRequestMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.GetTenantResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsResponseMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.LwM2MRequestMsg;
@@ -98,6 +100,8 @@ public interface TransportService {
     GetEntitiesKpiStatsResponseMsg getEntitiesKpiStats(GetEntitiesKpiStatsRequestMsg requestMsg);
 
     GetTenantsIdsResponseMsg getTenantsIds(GetTenantsIdsRequestMsg requestMsg);
+
+    GetTenantResponseMsg getTenant(GetTenantRequestMsg requestMsg);
 
     void process(DeviceTransportType transportType, ValidateDeviceTokenRequestMsg msg,
                  TransportServiceCallback<ValidateDeviceCredentialsResponse> callback);
