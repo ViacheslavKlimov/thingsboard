@@ -45,10 +45,7 @@ import {
   DEFAULT_NOTIF_IF_DESIBLED,
   DEFAULT_SW_UPDATE_RESOURCE,
   getDefaultBootstrapServerSecurityConfig,
-  getDefaultBootstrapServersSecurityConfig,
   getDefaultLwM2MServerSecurityConfig,
-  getDefaultProfileClientLwM2mSettingsConfig,
-  getDefaultProfileObserveAttrConfig,
   Instance,
   INSTANCES,
   KEY_NAME,
@@ -232,20 +229,19 @@ export class Lwm2mDeviceProfileTransportConfigurationComponent implements Contro
   }
 
   async writeValue(value: Lwm2mProfileConfigModels | null) {
-    if (isDefinedAndNotNull(value)) {
-      if (value?.clientLwM2mSettings || value?.observeAttr || value?.bootstrap) {
-        this.configurationValue = value;
-      } else {
-        this.configurationValue = await this.defaultProfileConfig();
-      }
+    if (isDefinedAndNotNull(value) && (value?.clientLwM2mSettings || value?.observeAttr || value?.bootstrap)) {
+      this.configurationValue = value;
       this.lwm2mDeviceConfigFormGroup.patchValue({
         configurationJson: this.configurationValue
       }, {emitEvent: false});
+      if (!this.configurationValue.bootstrap.bootstrapServer || !this.configurationValue.bootstrap.lwm2mServer) {
+        await this.defaultProfileConfig();
+      }
       this.initWriteValue();
     }
   }
 
-  private async defaultProfileConfig(): Promise<Lwm2mProfileConfigModels> {
+  private async defaultProfileConfig(): Promise<void> {
     let bootstrap: ServerSecurityConfig;
     let lwm2m: ServerSecurityConfig;
     try {
@@ -257,15 +253,15 @@ export class Lwm2mDeviceProfileTransportConfigurationComponent implements Contro
       bootstrap = getDefaultBootstrapServerSecurityConfig();
       lwm2m = getDefaultLwM2MServerSecurityConfig();
     }
-    return {
-      observeAttr: getDefaultProfileObserveAttrConfig(),
-      bootstrap: {
-        servers: getDefaultBootstrapServersSecurityConfig(),
-        bootstrapServer: bootstrap,
-        lwm2mServer: lwm2m
-      },
-      clientLwM2mSettings: getDefaultProfileClientLwM2mSettingsConfig()
-    };
+
+    this.configurationValue.bootstrap.bootstrapServer = bootstrap;
+    this.configurationValue.bootstrap.lwm2mServer = lwm2m;
+    this.lwm2mDeviceConfigFormGroup.patchValue({
+      configurationJson: this.configurationValue
+    }, {emitEvent: false});
+    this.lwm2mDeviceProfileFormGroup.patchValue({
+      bootstrap: this.configurationValue.bootstrap
+    }, {emitEvent: false});
   }
 
   private initWriteValue = (): void => {
@@ -309,13 +305,18 @@ export class Lwm2mDeviceProfileTransportConfigurationComponent implements Contro
       },
       {emitEvent: false});
     this.lwm2mDeviceProfileFormGroup.get('clientLwM2mSettings.powerMode')
-      .patchValue(this.configurationValue.clientLwM2mSettings.powerMode || PowerMode.DRX, {emitEvent: false, onlySelf: true});
+      .patchValue(this.configurationValue.clientLwM2mSettings.powerMode || PowerMode.DRX, {emitEvent: false});
     this.configurationValue.clientLwM2mSettings.fwUpdateResource = fwResource;
     this.configurationValue.clientLwM2mSettings.swUpdateResource = swResource;
     this.isFwUpdateStrategy = this.configurationValue.clientLwM2mSettings.fwUpdateStrategy === 2;
     this.isSwUpdateStrategy = this.configurationValue.clientLwM2mSettings.swUpdateStrategy === 2;
     this.otaUpdateSwStrategyValidate();
     this.otaUpdateFwStrategyValidate();
+    if (!this.disabled) {
+      this.lwm2mDeviceProfileFormGroup.get('clientLwM2mSettings.powerMode').updateValueAndValidity({onlySelf: true});
+      this.lwm2mDeviceProfileFormGroup.get('clientLwM2mSettings.fwUpdateStrategy').updateValueAndValidity({onlySelf: true});
+      this.lwm2mDeviceProfileFormGroup.get('clientLwM2mSettings.swUpdateStrategy').updateValueAndValidity({onlySelf: true});
+    }
   }
 
   private updateModel = (): void => {

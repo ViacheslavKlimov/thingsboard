@@ -45,7 +45,12 @@ import { AbstractControl, ValidationErrors } from '@angular/forms';
 import { OtaPackageId } from '@shared/models/id/ota-package-id';
 import { DashboardId } from '@shared/models/id/dashboard-id';
 import { DataType } from '@shared/models/constants';
-import { PowerMode } from '@home/components/profile/device/lwm2m/lwm2m-profile-config.models';
+import {
+  getDefaultBootstrapServersSecurityConfig,
+  getDefaultProfileClientLwM2mSettingsConfig,
+  getDefaultProfileObserveAttrConfig,
+  PowerMode
+} from '@home/components/profile/device/lwm2m/lwm2m-profile-config.models';
 
 export enum DeviceProfileType {
   DEFAULT = 'DEFAULT',
@@ -373,7 +378,13 @@ export function createDeviceProfileTransportConfiguration(type: DeviceTransportT
         transportConfiguration = {...coapTransportConfiguration, type: DeviceTransportType.COAP};
         break;
       case DeviceTransportType.LWM2M:
-        const lwm2mTransportConfiguration: Lwm2mDeviceProfileTransportConfiguration = {};
+        const lwm2mTransportConfiguration: Lwm2mDeviceProfileTransportConfiguration = {
+          observeAttr: getDefaultProfileObserveAttrConfig(),
+          bootstrap: {
+            servers: getDefaultBootstrapServersSecurityConfig()
+          },
+          clientLwM2mSettings: getDefaultProfileClientLwM2mSettingsConfig()
+        };
         transportConfiguration = {...lwm2mTransportConfiguration, type: DeviceTransportType.LWM2M};
         break;
       case DeviceTransportType.SNMP:
@@ -406,7 +417,9 @@ export function createDeviceTransportConfiguration(type: DeviceTransportType): D
         transportConfiguration = {...coapTransportConfiguration, type: DeviceTransportType.COAP};
         break;
       case DeviceTransportType.LWM2M:
-        const lwm2mTransportConfiguration: Lwm2mDeviceTransportConfiguration = {};
+        const lwm2mTransportConfiguration: Lwm2mDeviceTransportConfiguration = {
+          powerMode: null
+        };
         transportConfiguration = {...lwm2mTransportConfiguration, type: DeviceTransportType.LWM2M};
         break;
       case DeviceTransportType.SNMP:
