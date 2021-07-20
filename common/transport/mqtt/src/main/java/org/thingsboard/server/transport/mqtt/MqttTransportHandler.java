@@ -113,7 +113,6 @@ import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -916,21 +915,26 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     }
 
     private ChannelFuture publish(MqttMessage message, DeviceSessionCtx deviceSessionCtx) {
-        context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
-                TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
         int msgId = getMsgId(message);
         RequestInfo requestInfo = new RequestInfo(msgId, System.currentTimeMillis(), deviceSessionCtx.getSessionInfo());
 
         if (isAckExpected(message)) {
             context.getRequestsAwaitingAck().put(msgId, requestInfo);
         }
+
         ChannelFuture channelFuture = deviceSessionCtx.getChannel().writeAndFlush(message);
         channelFuture.addListener(future -> {
-            if (context.getRequestsAwaitingAck().remove(msgId) != null && future.cause() != null) {
-                context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
-                        TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+            if (future.cause() != null) {
+                if (!isAckExpected(message) || context.getRequestsAwaitingAck().remove(msgId) != null) {
+                    context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
+                            TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+                }
             }
         });
+
+        context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
+                TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+
         return channelFuture;
     }
 

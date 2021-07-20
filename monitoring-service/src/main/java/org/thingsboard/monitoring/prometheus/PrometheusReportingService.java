@@ -33,7 +33,6 @@ package org.thingsboard.monitoring.prometheus;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
-import io.prometheus.client.SimpleCollector;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -87,7 +86,7 @@ public class PrometheusReportingService {
         tenantsIds.forEach(tenantId -> {
             try {
                 updateEntitiesKpiStatsForTenant(tenantId);
-                setDefaultValuesForTenant(tenantId);
+                setDefaultValuesForTenant(new UUID(tenantId.getMsb(), tenantId.getLsb()));
                 updateTenantInfo(new TenantId(new UUID(tenantId.getMsb(), tenantId.getLsb())));
             } catch (Exception e) {
                 log.error("Failed to update entities KPI stats for tenant {}", tenantId, e);
@@ -98,6 +97,7 @@ public class PrometheusReportingService {
                 .setLsb(TenantId.SYS_TENANT_ID.getId().getLeastSignificantBits())
                 .build());
         createTenantGaugeValue(TenantId.SYS_TENANT_ID, new TenantInfo("System", "System"));
+        setDefaultValuesForTenant(TenantId.SYS_TENANT_ID.getId());
     }
 
     private void updateTenantInfo(TenantId tenantId) { // TODO: if tenant was deleted, then remove from prometheus
@@ -109,11 +109,9 @@ public class PrometheusReportingService {
         if (oldTenantInfo == null) {
             createTenantGaugeValue(tenantId, newTenantInfo);
             tenants.put(tenantId, newTenantInfo);
-        } else {
-            if (!newTenantInfo.equals(oldTenantInfo)) {
-                remoteTenantGaugeValue(tenantId, oldTenantInfo);
-                createTenantGaugeValue(tenantId, newTenantInfo);
-            }
+        } else if (!newTenantInfo.equals(oldTenantInfo)) {
+            removeTenantGaugeValue(tenantId, oldTenantInfo);
+            createTenantGaugeValue(tenantId, newTenantInfo);
         }
     }
 
@@ -163,7 +161,7 @@ public class PrometheusReportingService {
         return tenantsGauge.labels(tenantId.toString(), tenantInfo.getName(), tenantInfo.getDisplayText());
     }
 
-    private void remoteTenantGaugeValue(TenantId tenantId, TenantInfo tenantInfo) {
+    private void removeTenantGaugeValue(TenantId tenantId, TenantInfo tenantInfo) {
         tenantsGauge.remove(tenantId.toString(), tenantInfo.getName(), tenantInfo.getDisplayText());
     }
 
@@ -175,7 +173,7 @@ public class PrometheusReportingService {
                 .build()).getData().toByteArray()).orElseThrow();
     }
 
-    private void setDefaultValuesForTenant(TransportProtos.Id tenantId) {
+    private void setDefaultValuesForTenant(UUID tenantId) {
         getCounter(KpiKey.CREATED_ALARMS).labels(tenantId.toString()).get();
     }
 
