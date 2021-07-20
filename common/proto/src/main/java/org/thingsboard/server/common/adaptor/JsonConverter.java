@@ -30,6 +30,9 @@
  */
 package org.thingsboard.server.common.adaptor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -87,6 +90,7 @@ public class JsonConverter {
 
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
+    private static final JsonMapper JACKSON_JSON_MAPPER = new JsonMapper();
     private static final String CAN_T_PARSE_VALUE = "Can't parse value: ";
     private static final String DEVICE_PROPERTY = "device";
 
@@ -591,8 +595,20 @@ public class JsonConverter {
         return JSON_PARSER.parse(json);
     }
 
+    public static <T> T fromJson(String json, Class<T> type) {
+        return GSON.fromJson(json, type);
+    }
+
+    public static <T> T fromJson(JsonNode jsonNode, Class<T> type) throws JsonProcessingException {
+        return JACKSON_JSON_MAPPER.treeToValue(jsonNode, type);
+    }
+
     public static String toJson(JsonElement element) {
         return GSON.toJson(element);
+    }
+
+    public static String toJson(Object o) {
+        return GSON.toJson(o);
     }
 
     public static void setTypeCastEnabled(boolean enabled) {

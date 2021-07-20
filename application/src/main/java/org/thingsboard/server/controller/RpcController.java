@@ -194,6 +194,7 @@ public class RpcController extends BaseController {
             UUID rpcRequestUUID = rpcRequestBody.has("requestUUID") ? UUID.fromString(rpcRequestBody.get("requestUUID").asText()) : UUID.randomUUID();
             boolean persisted = rpcRequestBody.has(DataConstants.PERSISTENT) && rpcRequestBody.get(DataConstants.PERSISTENT).asBoolean();
             accessValidator.validate(currentUser, Operation.RPC_CALL, deviceId, new HttpValidationCallback(response, new FutureCallback<>() {
+
                 @Override
                 public void onSuccess(@Nullable DeferredResult<ResponseEntity> result) {
                     ToDeviceRpcRequest rpcRequest = new ToDeviceRpcRequest(rpcRequestUUID,

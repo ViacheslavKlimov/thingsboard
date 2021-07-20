@@ -34,11 +34,10 @@ import org.thingsboard.server.gen.transport.TransportProtos;
 
 public interface LwM2MRpcRequestHandler {
 
-    void onToDeviceRpcRequest(TransportProtos.ToDeviceRpcRequestMsg toDeviceRequest, TransportProtos.SessionInfoProto sessionInfo);
+    void onToDeviceRpcRequest(TransportProtos.ToDeviceRpcRequestMsg toDeviceRequest, TransportProtos.SessionInfoProto sessionInfo, Runnable onError);
 
     void onToDeviceRpcResponse(TransportProtos.ToDeviceRpcResponseMsg toDeviceRpcResponse, TransportProtos.SessionInfoProto sessionInfo);
 
     void onToServerRpcResponse(TransportProtos.ToServerRpcResponseMsg toServerResponse);
-
 
 }

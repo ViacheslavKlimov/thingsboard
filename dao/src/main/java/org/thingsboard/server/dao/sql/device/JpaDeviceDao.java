@@ -154,6 +154,16 @@ public class JpaDeviceDao extends JpaAbstractSearchTextDao<DeviceEntity, Device>
     }
 
     @Override
+    public Long countByCreatedTimeAfter(Long time) {
+        return deviceRepository.countByCreatedTimeAfter(time);
+    }
+
+    @Override
+    public Long countByTenantIdAndCreatedTimeAfter(TenantId tenantId, Long time) {
+        return deviceRepository.countByTenantIdAndCreatedTimeAfter(tenantId.getId(), time);
+    }
+
+    @Override
     public ListenableFuture<List<Device>> findDevicesByTenantIdCustomerIdAndIdsAsync(UUID tenantId, UUID customerId, List<UUID> deviceIds) {
         return DaoUtil.getEntitiesByTenantIdAndIdIn(deviceIds, ids ->
                 deviceRepository.findDevicesByTenantIdAndCustomerIdAndIdIn(tenantId, customerId, ids), service);

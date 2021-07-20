@@ -48,7 +48,7 @@ public class DefaultSchedulerComponent implements SchedulerComponent{
 
     @PostConstruct
     public void init(){
-        this.schedulerExecutor = Executors.newSingleThreadScheduledExecutor(ThingsBoardThreadFactory.forName("queue-scheduler"));
+        this.schedulerExecutor = Executors.newScheduledThreadPool(3, ThingsBoardThreadFactory.forName("queue-scheduler"));
     }
 
     @PreDestroy

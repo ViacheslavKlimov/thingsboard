@@ -252,6 +252,11 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
     }
 
     @Override
+    public PageData<TenantId> findTenantsIds(PageLink pageLink) {
+        return tenantDao.findTenantsIds(pageLink);
+    }
+
+    @Override
     public void deleteTenants() {
         log.trace("Executing deleteTenants");
         tenantsRemover.removeEntities(new TenantId(EntityId.NULL_UUID), DEFAULT_TENANT_REGION);

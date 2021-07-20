@@ -31,7 +31,6 @@
 package org.thingsboard.server.service.apiusage;
 
 import com.google.common.util.concurrent.FutureCallback;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -60,24 +59,27 @@ import org.thingsboard.server.common.data.kv.LongDataEntry;
 import org.thingsboard.server.common.data.kv.StringDataEntry;
 import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.page.PageDataIterable;
+import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.common.data.tenant.profile.TenantProfileConfiguration;
 import org.thingsboard.server.common.data.tenant.profile.TenantProfileData;
 import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.common.msg.queue.TbCallback;
 import org.thingsboard.server.common.msg.queue.TopicPartitionInfo;
 import org.thingsboard.server.common.msg.tools.SchedulerUtils;
-import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
+import org.thingsboard.server.gen.transport.TransportProtos.KpiKV;
+import org.thingsboard.server.gen.transport.TransportProtos.KpiUpdateMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.UsageStatsKVProto;
 import org.thingsboard.server.queue.TbQueueProducer;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
-import org.thingsboard.server.queue.discovery.event.PartitionChangeEvent;
 import org.thingsboard.server.queue.discovery.PartitionService;
 import org.thingsboard.server.queue.discovery.TbApplicationEventListener;
+import org.thingsboard.server.queue.discovery.event.PartitionChangeEvent;
 import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
 import org.thingsboard.server.service.queue.TbClusterService;
@@ -128,7 +130,8 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
     private final MailService mailService;
     private final OwnersCacheService ownersCacheService;
     private final TbQueueProducerProvider producerProvider;
-    private TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> msgProducer;
+    private TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> usageStatsMsgProducer;
+    private TbQueueProducer<TbProtoQueueMsg<ToTransportMsg>> kpiStatsMsgProducer;
     @Lazy
     @Autowired
     private InternalTelemetryService tsWsService;
@@ -160,7 +163,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                                          MailService mailService,
                                          OwnersCacheService ownersCacheService,
                                          TbQueueProducerProvider producerProvider
-                                         ) {
+    ) {
         this.clusterService = clusterService;
         this.partitionService = partitionService;
         this.tenantService = tenantService;
@@ -178,7 +181,8 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
     public void init() {
         if (enabled) {
             log.info("Starting api usage service.");
-            msgProducer = producerProvider.getTbUsageStatsMsgProducer();
+            usageStatsMsgProducer = producerProvider.getTbUsageStatsMsgProducer();
+            kpiStatsMsgProducer = producerProvider.getTransportNotificationsMsgProducer();
             scheduler.scheduleAtFixedRate(this::checkStartOfNextCycle, nextCycleCheckInterval, nextCycleCheckInterval, TimeUnit.MILLISECONDS);
             log.info("Started api usage service.");
         }
@@ -198,6 +202,8 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         }
 
         processEntityUsageStats(tenantId, entityId, statsMsg.getValuesList());
+        publishKpiStats(tenantId, statsMsg.getValuesList());
+
         callback.onSuccess();
     }
 
@@ -217,15 +223,21 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
             if (newHourTs != hourTs) {
                 usageState.setHour(newHourTs);
             }
+
             updatedEntries = new ArrayList<>(ApiUsageRecordKey.values().length);
             Set<ApiFeature> apiFeatures = new HashSet<>();
             for (UsageStatsKVProto kvProto : values) {
                 ApiUsageRecordKey recordKey = ApiUsageRecordKey.valueOf(kvProto.getKey());
+
                 long newValue = usageState.add(recordKey, kvProto.getValue());
                 updatedEntries.add(new BasicTsKvEntry(ts, new LongDataEntry(recordKey.getApiCountKey(), newValue)));
+
                 long newHourlyValue = usageState.addToHourly(recordKey, kvProto.getValue());
                 updatedEntries.add(new BasicTsKvEntry(newHourTs, new LongDataEntry(recordKey.getApiCountKey() + HOURLY, newHourlyValue)));
-                apiFeatures.add(recordKey.getApiFeature());
+
+                if (recordKey.getApiFeature() != null) {
+                    apiFeatures.add(recordKey.getApiFeature());
+                }
             }
             if (usageState.getEntityType() == EntityType.TENANT && !usageState.getEntityId().equals(TenantId.SYS_TENANT_ID)) {
                 result = ((TenantApiUsageState) usageState).checkStateUpdatedDueToThreshold(apiFeatures);
@@ -251,8 +263,29 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
                 .setCustomerIdLSB(owner.getId().getLeastSignificantBits())
                 .build();
 
-        TopicPartitionInfo partitionInfo = partitionService.resolve(ServiceType.TB_CORE, tenantId, owner).newByTopic(msgProducer.getDefaultTopic());
-        msgProducer.send(partitionInfo, new TbProtoQueueMsg<>(UUID.randomUUID(), newStatsMsg), null);
+        TopicPartitionInfo partitionInfo = partitionService.resolve(ServiceType.TB_CORE, tenantId, owner).newByTopic(usageStatsMsgProducer.getDefaultTopic());
+        usageStatsMsgProducer.send(partitionInfo, new TbProtoQueueMsg<>(UUID.randomUUID(), newStatsMsg), null);
+    }
+
+    private void publishKpiStats(TenantId tenantId, List<UsageStatsKVProto> usageStats) {
+        List<KpiKV> kpis = usageStats.stream()
+                .filter(usageStatsKVProto -> KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).isPresent())
+                .map(usageStatsKVProto -> KpiKV.newBuilder()
+                        .setKey(KpiKey.forApiUsageRecordKey(usageStatsKVProto.getKey()).get().name())
+                        .setValue(usageStatsKVProto.getValue())
+                        .build())
+                .collect(Collectors.toList());
+        if (kpis.isEmpty()) return;
+        log.info("Reporting KPI updates for tenant {}", tenantId);
+
+        TbProtoQueueMsg<ToTransportMsg> kpiStatsMsg = new TbProtoQueueMsg<>(tenantId.getId(), ToTransportMsg.newBuilder()
+                .setKpiUpdateMsg(KpiUpdateMsg.newBuilder()
+                        .addAllKpiKVs(kpis)
+                        .setTenantIdMSB(tenantId.getId().getMostSignificantBits())
+                        .setTenantIdLSB(tenantId.getId().getLeastSignificantBits())
+                        .build())
+                .build());
+        kpiStatsMsgProducer.send(partitionService.getNotificationsTopic(ServiceType.TB_TRANSPORT, "tb-monitoring-service"), kpiStatsMsg, null);
     }
 
     @Override
@@ -355,6 +388,7 @@ public class DefaultTbApiUsageStateService extends TbApplicationEventListener<Pa
         long ts = System.currentTimeMillis();
         List<TsKvEntry> profileThresholds = new ArrayList<>();
         for (ApiUsageRecordKey key : ApiUsageRecordKey.values()) {
+            if (key.getApiLimitKey() == null) continue;
             long newProfileThreshold = newData.getProfileThreshold(key);
             if (oldData == null || oldData.getProfileThreshold(key) != newProfileThreshold) {
                 log.info("[{}] Updating profile threshold [{}]:[{}]", tenantId, key, newProfileThreshold);

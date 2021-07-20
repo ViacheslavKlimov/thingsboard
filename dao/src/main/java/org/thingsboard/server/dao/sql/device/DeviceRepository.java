@@ -314,4 +314,9 @@ public interface DeviceRepository extends PagingAndSortingRepository<DeviceEntit
             nativeQuery = true)
     Long countByDeviceProfileIdAndSoftwareIdIsNull(@Param("tenantId") UUID tenantId,
                                                    @Param("deviceProfileId") UUID deviceProfileId);
+
+    Long countByCreatedTimeAfter(Long time);
+
+    Long countByTenantIdAndCreatedTimeAfter(UUID tenantId, Long time);
+
 }

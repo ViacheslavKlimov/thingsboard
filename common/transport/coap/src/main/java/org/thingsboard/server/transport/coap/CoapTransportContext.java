@@ -36,10 +36,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.transport.TransportContext;
+import org.thingsboard.server.common.transport.TransportService;
+import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.transport.coap.adaptors.JsonCoapAdaptor;
 import org.thingsboard.server.transport.coap.adaptors.ProtoCoapAdaptor;
 import org.thingsboard.server.transport.coap.efento.adaptor.EfentoCoapAdaptor;
+
+import javax.annotation.PostConstruct;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+
 
 
 /**
@@ -48,22 +59,39 @@ import org.thingsboard.server.transport.coap.efento.adaptor.EfentoCoapAdaptor;
 @Slf4j
 @ConditionalOnExpression("'${service.type:null}'=='tb-transport' || ('${service.type:null}'=='monolith' && '${transport.api_enabled:true}'=='true' && '${transport.coap.enabled}'=='true')")
 @Component
+@Getter
 public class CoapTransportContext extends TransportContext {
 
-    @Getter
     @Value("${transport.sessions.report_timeout}")
     private long sessionReportTimeout;
 
-    @Getter
     @Autowired
     private JsonCoapAdaptor jsonCoapAdaptor;
 
-    @Getter
     @Autowired
     private ProtoCoapAdaptor protoCoapAdaptor;
 
-    @Getter
     @Autowired
     private EfentoCoapAdaptor efentoCoapAdaptor;
+
+    private final ConcurrentMap<Integer, TransportProtos.ToDeviceRpcRequestMsg> rpcAwaitingAck = new ConcurrentHashMap<>();
+
+    private final ConcurrentMap<Integer, AbstractCoapTransportResource.RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    private void initMsgAckTimeoutCheck() {
+        getScheduler().scheduleWithFixedDelay(() -> {
+            List<Integer> timedOut = new LinkedList<>();
+            long currentTime = System.currentTimeMillis();
+            requestsAwaitingAck.forEach((requestId, requestInfo) -> {
+                if (currentTime - requestInfo.getRequestTime() >= TimeUnit.SECONDS.toMillis(getMsgAckTimeout())) {
+                    timedOut.add(requestId);
+                    getApiUsageReportClient().report(TransportService.getTenantId(requestInfo.getSessionInfo()),
+                            TransportService.getCustomerId(requestInfo.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+                }
+            });
+            timedOut.forEach(requestsAwaitingAck::remove);
+        }, getMsgAckTimeout(), 10, TimeUnit.SECONDS);
+    }
 
 }

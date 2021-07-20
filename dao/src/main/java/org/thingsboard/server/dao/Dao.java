@@ -51,4 +51,6 @@ public interface Dao<T> {
 
     void removeAllByIds(Collection<UUID> ids);
 
+    Long count();
+
 }

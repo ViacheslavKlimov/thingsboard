@@ -183,4 +183,9 @@ public interface DeviceDao extends Dao<Device>, TenantEntityDao {
     Long countByEntityGroupAndEmptyOtaPackage(UUID groupId, UUID otaPackageId, OtaPackageType type);
 
     Long countByDeviceProfileAndEmptyOtaPackage(UUID tenantId, UUID deviceProfileId, OtaPackageType type);
+
+    Long countByCreatedTimeAfter(Long time);
+
+    Long countByTenantIdAndCreatedTimeAfter(TenantId tenantId, Long time);
+
 }

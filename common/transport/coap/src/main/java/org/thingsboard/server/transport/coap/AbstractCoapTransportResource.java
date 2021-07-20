@@ -30,11 +30,16 @@
  */
 package org.thingsboard.server.transport.coap;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.elements.EndpointContext;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.transport.TransportContext;
 import org.thingsboard.server.common.transport.TransportService;
@@ -43,14 +48,22 @@ import org.thingsboard.server.common.transport.auth.SessionInfoCreator;
 import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.gen.transport.TransportProtos;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+
+import static org.eclipse.californium.core.coap.Message.MAX_MID;
+import static org.eclipse.californium.core.coap.Message.NONE;
 
 @Slf4j
 public abstract class AbstractCoapTransportResource extends CoapResource {
 
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
+
+    protected final Set<Integer> rpcRequestsAwaitingResponse = new HashSet<>();
 
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
@@ -88,6 +101,30 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         return TransportProtos.SessionEventMsg.newBuilder()
                 .setSessionType(TransportProtos.SessionType.ASYNC)
                 .setEvent(event).build();
+    }
+
+    protected void respond(Response response, int msgId, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        response.setMID(msgId);
+        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
+
+        response.addMessageObserver(new TbCoapMessageObserver(msgId, id -> {
+            transportContext.getRequestsAwaitingAck().remove(id);
+        }));
+        response.addMessageObserver(new CoapRequestFailureMessageObserver(() -> {
+            RequestInfo requestInfo = transportContext.getRequestsAwaitingAck().remove(msgId);
+            if (requestInfo != null) {
+                transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                        TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+            }
+        }));
+
+        transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+        exchange.respond(response);
+    }
+
+    protected void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        respond(response, getNextMsgId(), exchange, sessionInfo);
     }
 
     public static class CoapDeviceAuthCallback implements TransportServiceCallback<ValidateDeviceCredentialsResponse> {
@@ -161,6 +198,91 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         @Override
         public void onError(Throwable e) {
             exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Data
+    static class RequestInfo {
+        private final TransportProtos.SessionInfoProto sessionInfo;
+        private final long requestTime;
+    }
+
+    @Data
+    static class RespondResult {
+        private final int msgId;
+    }
+
+    protected int getNextMsgId() {
+        return ThreadLocalRandom.current().nextInt(NONE, MAX_MID + 1);
+    }
+
+    @RequiredArgsConstructor
+    static class CoapRequestFailureMessageObserver implements MessageObserver {
+        private final Runnable onError;
+
+        @Override
+        public void onRetransmission() {
+
+        }
+
+        @Override
+        public void onResponse(Response response) {
+
+        }
+
+        @Override
+        public void onAcknowledgement() {
+
+        }
+
+        @Override
+        public void onReject() {
+            onError.run();
+        }
+
+        @Override
+        public void onTimeout() {
+            onError.run();
+        }
+
+        @Override
+        public void onCancel() {
+            onError.run();
+        }
+
+        @Override
+        public void onReadyToSend() {
+
+        }
+
+        @Override
+        public void onConnecting() {
+
+        }
+
+        @Override
+        public void onDtlsRetransmission(int flight) {
+
+        }
+
+        @Override
+        public void onSent(boolean retransmission) {
+
+        }
+
+        @Override
+        public void onSendError(Throwable error) {
+            onError.run();
+        }
+
+        @Override
+        public void onContextEstablished(EndpointContext endpointContext) {
+
+        }
+
+        @Override
+        public void onComplete() {
+
         }
     }
 }

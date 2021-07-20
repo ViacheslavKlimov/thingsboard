@@ -228,7 +228,7 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
                     log.info("[{}] Closing old session: {}", registration.getEndpoint(), new UUID(oldSessionInfo.get().getSessionIdMSB(), oldSessionInfo.get().getSessionIdLSB()));
                     sessionManager.deregister(oldSessionInfo.get());
                 }
-                logService.log(lwM2MClient, LOG_LWM2M_INFO + ": Client registered with registration id: " + registration.getId());
+                logService.log(lwM2MClient, LOG_LWM2M_INFO + ": Client registered with registration id: " + registration.getId() + " version: " + registration.getLwM2mVersion() + " and modes: " + registration.getQueueMode() + ", " + registration.getBindingMode());
                 sessionManager.register(lwM2MClient.getSession());
                 this.initClientTelemetry(lwM2MClient);
                 this.initAttributes(lwM2MClient);
@@ -303,9 +303,8 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
 
     @Override
     public void onSleepingDev(Registration registration) {
-        log.info("[{}] [{}] Received endpoint Sleeping version event", registration.getId(), registration.getEndpoint());
-        logService.log(clientContext.getClientByEndpoint(registration.getEndpoint()), LOG_LWM2M_INFO + ": Client is sleeping!");
-        //TODO: associate endpointId with device information.
+        log.debug("[{}] [{}] Received endpoint sleeping event", registration.getId(), registration.getEndpoint());
+        clientContext.asleep(clientContext.getClientByEndpoint(registration.getEndpoint()));
     }
 
     /**
@@ -332,7 +331,12 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
                     this.updateResourcesValue(lwM2MClient, lwM2mResource, path);
                 }
             }
-            clientContext.update(lwM2MClient);
+            if (clientContext.awake(lwM2MClient)) {
+                // clientContext.awake calls clientContext.update
+                log.debug("[{}] Device is awake", lwM2MClient.getEndpoint());
+            } else {
+                clientContext.update(lwM2MClient);
+            }
         }
     }
 
@@ -405,10 +409,8 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
      */
     @Override
     public void onAwakeDev(Registration registration) {
-        log.trace("[{}] [{}] Received endpoint Awake version event", registration.getId(), registration.getEndpoint());
-        LwM2mClient client = this.clientContext.getClientByEndpoint(registration.getEndpoint());
-        logService.log(client, LOG_LWM2M_INFO + ": Client is awake!");
-        clientContext.sendMsgsAfterSleeping(client);
+        log.debug("[{}] [{}] Received endpoint awake event", registration.getId(), registration.getEndpoint());
+        clientContext.awake(clientContext.getClientByEndpoint(registration.getEndpoint()));
     }
 
     /**
@@ -438,6 +440,7 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
         try {
             Set<String> targetIds = new HashSet<>(profile.getObserveAttr().getAttribute());
             targetIds.addAll(profile.getObserveAttr().getTelemetry());
+            targetIds = diffSets(profile.getObserveAttr().getObserve(), targetIds);
             targetIds = targetIds.stream().filter(target -> isSupportedTargetId(supportedObjects, target)).collect(Collectors.toSet());
 
             CountDownLatch latch = new CountDownLatch(targetIds.size());

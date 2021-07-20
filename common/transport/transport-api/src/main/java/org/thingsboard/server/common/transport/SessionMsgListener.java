@@ -73,4 +73,5 @@ public interface SessionMsgListener {
     default void onResourceUpdate(Optional<ResourceUpdateMsg> resourceUpdateMsgOpt) {}
 
     default void onResourceDelete(Optional<ResourceDeleteMsg> resourceUpdateMsgOpt) {}
+
 }

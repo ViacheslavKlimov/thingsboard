@@ -185,6 +185,8 @@ export interface ClientLwM2mSettings {
   swUpdateResource: string;
   powerMode: PowerMode;
   edrxCycle?: number;
+  pagingTransmissionWindow?: number;
+  psmActivityTimer?: number;
   compositeOperationsSupport: boolean;
 }
 

@@ -112,6 +112,8 @@ transport:
     timeout: "${CLIENT_SIDE_RPC_TIMEOUT:60000}"
   # Enable/disable http/mqtt/coap transport protocols (has higher priority than certain protocol's 'enabled' property)
   api_enabled: "${TB_TRANSPORT_API_ENABLED:true}"
+  # Number of seconds. If downlink message is not acknowledged within this period, it will be considered failed
+  downlink_msg_ack_timeout: "${TRANSPORT_DOWNLINK_MSG_ACK_TIMEOUT:180}"
   # Local LwM2M transport parameters
   lwm2m:
     # Enable/disable lvm2m transport protocol.
@@ -155,6 +157,8 @@ transport:
     ota_pool_size: "${LWM2M_OTA_POOL_SIZE:10}"
     clean_period_in_sec: "${LWM2M_CLEAN_PERIOD_IN_SEC:2}"
     log_max_length: "${LWM2M_LOG_MAX_LENGTH:1024}"
+    psm_activity_timer: "${LWM2M_PSM_ACTIVITY_TIMER:10000}"
+    paging_transmission_window: "${LWM2M_PAGING_TRANSMISSION_WINDOW:10000}"
     # Use redis for Security and Registration stores
     redis.enabled: "${LWM2M_REDIS_ENABLED:false}"
 

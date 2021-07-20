@@ -281,7 +281,7 @@ sql:
         ts_key_value_ttl: "${SQL_TTL_TS_TS_KEY_VALUE_TTL:0}" # Number of seconds
       events:
         enabled: "${SQL_TTL_EVENTS_ENABLED:true}"
-        execution_interval_ms: "${SQL_TTL_EVENTS_EXECUTION_INTERVAL:86400000}" # Number of milliseconds. The current value corresponds to one day
+        execution_interval_ms: "${SQL_TTL_EVENTS_EXECUTION_INTERVAL:2220000}" # Number of milliseconds (max random initial delay and fixed period). # 37minutes to avoid common interval spikes
         events_ttl: "${SQL_TTL_EVENTS_EVENTS_TTL:0}" # Number of seconds
         debug_events_ttl: "${SQL_TTL_EVENTS_DEBUG_EVENTS_TTL:604800}" # Number of seconds. The current value corresponds to one week
       edge_events:
@@ -365,6 +365,8 @@ integrations:
       enabled: "${INTEGRATIONS_RPC_SSL_ENABLED:false}"
       cert: "${INTEGRATIONS_RPC_SSL_CERT:certChainFile.pem}"
       privateKey: "${INTEGRATIONS_RPC_SSL_PRIVATE_KEY:privateKeyFile.pem}"
+    # Disconnect a client if no keepalive ping received in the specified time
+    client_max_keep_alive_time_sec: "${INTEGRATIONS_RPC_CLIENT_MAX_KEEP_ALIVE_TIME_SEC:300}"
 
 # Reports parameters
 reports:
@@ -639,6 +641,8 @@ transport:
     timeout: "${CLIENT_SIDE_RPC_TIMEOUT:60000}"
   # Enable/disable http/mqtt/coap transport protocols (has higher priority than certain protocol's 'enabled' property)
   api_enabled: "${TB_TRANSPORT_API_ENABLED:true}"
+  # Number of seconds. If downlink message is not acknowledged within this period, it will be considered failed
+  downlink_msg_ack_timeout: "${TRANSPORT_DOWNLINK_MSG_ACK_TIMEOUT:180}"
   # Local HTTP transport parameters
   http:
     enabled: "${HTTP_ENABLED:true}"
@@ -747,6 +751,8 @@ transport:
     ota_pool_size: "${LWM2M_OTA_POOL_SIZE:10}"
     clean_period_in_sec: "${LWM2M_CLEAN_PERIOD_IN_SEC:2}"
     log_max_length: "${LWM2M_LOG_MAX_LENGTH:1024}"
+    psm_activity_timer: "${LWM2M_PSM_ACTIVITY_TIMER:10000}"
+    paging_transmission_window: "${LWM2M_PAGING_TRANSMISSION_WINDOW:10000}"
     # Use redis for Security and Registration stores
     redis.enabled: "${LWM2M_REDIS_ENABLED:false}"
   snmp:
@@ -800,11 +806,14 @@ edges:
       enabled: "${EDGES_RPC_SSL_ENABLED:false}"
       cert: "${EDGES_RPC_SSL_CERT:certChainFile.pem}"
       private_key: "${EDGES_RPC_SSL_PRIVATE_KEY:privateKeyFile.pem}"
+    max_inbound_message_size: "${EDGES_RPC_MAX_INBOUND_MESSAGE_SIZE:4194304}"
   storage:
     max_read_records_count: "${EDGES_STORAGE_MAX_READ_RECORDS_COUNT:50}"
     no_read_records_sleep: "${EDGES_NO_READ_RECORDS_SLEEP:1000}"
     sleep_between_batches: "${EDGES_SLEEP_BETWEEN_BATCHES:1000}"
-  scheduler_pool_size: "${EDGES_SCHEDULER_POOL_SIZE:4}"
+  scheduler_pool_size: "${EDGES_SCHEDULER_POOL_SIZE:1}"
+  send_scheduler_pool_size: "${EDGES_SEND_SCHEDULER_POOL_SIZE:1}"
+  grpc_callback_thread_pool_size: "${EDGES_GRPC_CALLBACK_POOL_SIZE:1}"
   edge_events_ttl: "${EDGES_EDGE_EVENTS_TTL:0}"
   state:
     persistToTelemetry: "${EDGES_PERSIST_STATE_TO_TELEMETRY:false}"
@@ -964,6 +973,7 @@ queue:
         topic: "${TB_QUEUE_RE_MAIN_TOPIC:tb_rule_engine.main}"
         poll-interval: "${TB_QUEUE_RE_MAIN_POLL_INTERVAL_MS:25}"
         partitions: "${TB_QUEUE_RE_MAIN_PARTITIONS:10}"
+        consumer-per-partition: "${TB_QUEUE_RE_MAIN_CONSUMER_PER_PARTITION:true}"
         pack-processing-timeout: "${TB_QUEUE_RE_MAIN_PACK_PROCESSING_TIMEOUT_MS:2000}"
         submit-strategy:
           type: "${TB_QUEUE_RE_MAIN_SUBMIT_STRATEGY_TYPE:BURST}" # BURST, BATCH, SEQUENTIAL_BY_ORIGINATOR, SEQUENTIAL_BY_TENANT, SEQUENTIAL
@@ -980,6 +990,7 @@ queue:
         topic: "${TB_QUEUE_RE_HP_TOPIC:tb_rule_engine.hp}"
         poll-interval: "${TB_QUEUE_RE_HP_POLL_INTERVAL_MS:25}"
         partitions: "${TB_QUEUE_RE_HP_PARTITIONS:10}"
+        consumer-per-partition: "${TB_QUEUE_RE_HP_CONSUMER_PER_PARTITION:true}"
         pack-processing-timeout: "${TB_QUEUE_RE_HP_PACK_PROCESSING_TIMEOUT_MS:2000}"
         submit-strategy:
           type: "${TB_QUEUE_RE_HP_SUBMIT_STRATEGY_TYPE:BURST}" # BURST, BATCH, SEQUENTIAL_BY_ORIGINATOR, SEQUENTIAL_BY_TENANT, SEQUENTIAL
@@ -996,6 +1007,7 @@ queue:
         topic: "${TB_QUEUE_RE_SQ_TOPIC:tb_rule_engine.sq}"
         poll-interval: "${TB_QUEUE_RE_SQ_POLL_INTERVAL_MS:25}"
         partitions: "${TB_QUEUE_RE_SQ_PARTITIONS:10}"
+        consumer-per-partition: "${TB_QUEUE_RE_SQ_CONSUMER_PER_PARTITION:true}"
         pack-processing-timeout: "${TB_QUEUE_RE_SQ_PACK_PROCESSING_TIMEOUT_MS:2000}"
         submit-strategy:
           type: "${TB_QUEUE_RE_SQ_SUBMIT_STRATEGY_TYPE:SEQUENTIAL_BY_ORIGINATOR}" # BURST, BATCH, SEQUENTIAL_BY_ORIGINATOR, SEQUENTIAL_BY_TENANT, SEQUENTIAL

@@ -132,6 +132,8 @@ message DeviceInfoProto {
   int64 customerIdLSB = 11;
   string powerMode = 12;
   int64 edrxCycle = 13;
+  int64 psmActivityTimer = 14;
+  int64 pagingTransmissionWindow = 15;
 }
 
 /**
@@ -294,6 +296,36 @@ message GetSnmpDevicesRequestMsg {
 message GetSnmpDevicesResponseMsg {
   repeated string ids = 1;
   bool hasNextPage = 2;
+}
+
+message GetEntitiesKpiStatsRequestMsg {
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  int64 newCreatedDevicesTimeFrom = 3;
+}
+
+message GetEntitiesKpiStatsResponseMsg {
+  repeated KpiKV KpiKVs = 1;
+}
+
+message GetTenantsIdsRequestMsg {
+}
+
+message GetTenantsIdsResponseMsg {
+  repeated Id tenantsIds = 1;
+}
+
+message Id {
+  int64 msb = 1;
+  int64 lsb = 2;
+}
+
+message GetTenantRequestMsg {
+  Id tenantId = 1;
+}
+
+message GetTenantResponseMsg {
+  bytes data = 1;
 }
 
 message EntityUpdateMsg {
@@ -477,39 +509,39 @@ message TransportToRuleEngineMsg {
 }
 
 message IntegrationDownlinkMsgProto {
-    int64 tenantIdMSB = 1;
-    int64 tenantIdLSB = 2;
-    int64 integrationIdMSB = 3;
-    int64 integrationIdLSB = 4;
-    bytes data = 5;
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  int64 integrationIdMSB = 3;
+  int64 integrationIdLSB = 4;
+  bytes data = 5;
 }
 
 message RestApiCallResponseMsgProto {
-    int64 requestIdMSB = 1;
-    int64 requestIdLSB = 2;
-    bytes response = 5;
+  int64 requestIdMSB = 1;
+  int64 requestIdLSB = 2;
+  bytes response = 5;
 }
 
 message SchedulerServiceMsgProto {
-    int64 tenantIdMSB = 1;
-    int64 tenantIdLSB = 2;
-    int64 eventIdMSB = 3;
-    int64 eventIdLSB = 4;
-    bool added = 5;
-    bool updated = 6;
-    bool deleted = 7;
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  int64 eventIdMSB = 3;
+  int64 eventIdLSB = 4;
+  bool added = 5;
+  bool updated = 6;
+  bool deleted = 7;
 }
 
 message GenericUserPermissionsProto {
-    string resource = 1;
-    repeated string operation = 2;
+  string resource = 1;
+  repeated string operation = 2;
 }
 
 message GroupUserPermissionsProto {
-    int64 entityGroupIdMSB = 1;
-    int64 entityGroupIdLSB = 2;
-    string entityType = 3;
-    repeated string operation = 4;
+  int64 entityGroupIdMSB = 1;
+  int64 entityGroupIdLSB = 2;
+  string entityType = 3;
+  repeated string operation = 4;
 }
 
 message MergedUserPermissionsProto {
@@ -518,13 +550,13 @@ message MergedUserPermissionsProto {
 }
 
 message EntityIdProto {
-    int64 entityIdMSB = 1;
-    int64 entityIdLSB = 2;
-    string entityType = 3;
+  int64 entityIdMSB = 1;
+  int64 entityIdLSB = 2;
+  string entityType = 3;
 }
 
 message OwnersListProto {
-    repeated EntityIdProto entityIds = 1;
+  repeated EntityIdProto entityIds = 1;
 }
 
 
@@ -719,6 +751,9 @@ message TransportApiRequestMsg {
   GetSnmpDevicesRequestMsg snmpDevicesRequestMsg = 11;
   GetDeviceRequestMsg deviceRequestMsg = 12;
   GetDeviceCredentialsRequestMsg deviceCredentialsRequestMsg = 13;
+  GetEntitiesKpiStatsRequestMsg entitiesKpiStatsRequestMsg = 14;
+  GetTenantsIdsRequestMsg tenantsIdsRequestMsg = 15;
+  GetTenantRequestMsg tenantRequestMsg = 16;
 }
 
 /* Response from ThingsBoard Core Service to Transport Service */
@@ -733,6 +768,9 @@ message TransportApiResponseMsg {
   GetOtaPackageResponseMsg otaPackageResponseMsg = 8;
   GetDeviceResponseMsg deviceResponseMsg = 9;
   GetDeviceCredentialsResponseMsg deviceCredentialsResponseMsg = 10;
+  GetEntitiesKpiStatsResponseMsg entitiesKpiStatsResponseMsg = 11;
+  GetTenantsIdsResponseMsg tenantsIdsResponseMsg = 12;
+  GetTenantResponseMsg tenantResponseMsg = 13;
 }
 
 /* Messages that are handled by ThingsBoard Core Service */
@@ -785,9 +823,10 @@ message ToTransportMsg {
   ToTransportUpdateCredentialsProto toTransportUpdateCredentialsNotification = 11;
   ResourceUpdateMsg resourceUpdateMsg = 12;
   ResourceDeleteMsg resourceDeleteMsg = 13;
+  KpiUpdateMsg kpiUpdateMsg = 14;
 }
 
-message UsageStatsKVProto{
+message UsageStatsKVProto {
   string key = 1;
   int64 value = 2;
 }
@@ -811,4 +850,15 @@ message ToOtaPackageStateServiceMsg {
   int64 otaPackageIdMSB = 6;
   int64 otaPackageIdLSB = 7;
   string type = 8;
+}
+
+message KpiUpdateMsg {
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  repeated KpiKV kpiKVs = 3;
+}
+
+message KpiKV {
+  string key = 1;
+  int64 value = 2;
 }

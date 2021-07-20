@@ -273,7 +273,7 @@ public class SnmpTransportService implements TbTransportService {
         });
 
         ResponseDataMapper defaultResponseDataMapper = (pdu, requestInfo) -> {
-            return pduService.processPdu(pdu, requestInfo.getResponseMappings());
+            return pduService.mapPdu(pdu, requestInfo.getResponseMappings());
         };
         Arrays.stream(SnmpCommunicationSpec.values())
                 .forEach(communicationSpec -> {

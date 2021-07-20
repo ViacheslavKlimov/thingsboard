@@ -56,4 +56,15 @@ public interface TsKvLatestRepository extends CrudRepository<TsKvLatestEntity, T
             "WHERE ts_kv_latest.entity_id IN :entityIds ORDER BY ts_kv_dictionary.key", nativeQuery = true)
     List<String> findAllKeysByEntityIds(@Param("entityIds") List<UUID> entityIds);
 
+    @Query("SELECT count(kv) FROM TsKvLatestEntity kv INNER JOIN TsKvDictionary dict ON kv.key = dict.keyId " +
+            "WHERE dict.key = :key AND kv.booleanValue = :value AND " +
+            "EXISTS (SELECT 1 FROM DeviceEntity d WHERE d.id = kv.entityId)")
+    long countDevicesLatestKvByKeyAndBooleanValue(@Param("key") String key, @Param("value") boolean value);
+
+    @Query("SELECT count(kv) FROM TsKvLatestEntity kv INNER JOIN TsKvDictionary dict ON kv.key = dict.keyId " +
+            "WHERE dict.key = :key AND kv.booleanValue = :value AND " +
+            "EXISTS (SELECT 1 FROM DeviceEntity d WHERE d.id = kv.entityId AND d.tenantId = :tenantId)")
+    long countDevicesLatestKvByKeyAndBooleanValueAndDeviceTenantId(@Param("key") String key, @Param("value") boolean value,
+                                                                   @Param("tenantId") UUID tenantId);
+
 }
