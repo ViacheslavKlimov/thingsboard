@@ -923,9 +923,12 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         }
 
         ChannelFuture channelFuture = deviceSessionCtx.getChannel().writeAndFlush(message);
+        log.debug("Published MQTT message {}", msgId);
         channelFuture.addListener(future -> {
-            if (future.cause() != null) {
+            log.trace("ChannelFuture is done for message {}", msgId);
+            if (future.cause() != null || !future.isSuccess()) {
                 if (!isAckExpected(message) || context.getRequestsAwaitingAck().remove(msgId) != null) {
+                    log.debug("Reporting failed downlink message {}", msgId);
                     context.getApiUsageReportClient().report(TransportService.getTenantId(deviceSessionCtx.getSessionInfo()),
                             TransportService.getCustomerId(deviceSessionCtx.getSessionInfo()), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
                 }
