@@ -34,8 +34,11 @@ import { ControlValueAccessor, FormBuilder, FormGroup, NG_VALUE_ACCESSOR, Valida
 import { Store } from '@ngrx/store';
 import { AppState } from '@app/core/core.state';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
-import { DeviceTransportConfiguration, Lwm2mDeviceTransportConfiguration } from '@shared/models/device.models';
-import { PowerMode, PowerModeTranslationMap } from '@home/components/profile/device/lwm2m/lwm2m-profile-config.models';
+import {
+  DeviceTransportConfiguration,
+  DeviceTransportType,
+  Lwm2mDeviceTransportConfiguration
+} from '@shared/models/device.models';
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { isDefinedAndNotNull } from '@core/utils';
@@ -53,8 +56,6 @@ import { isDefinedAndNotNull } from '@core/utils';
 export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueAccessor, OnInit, OnDestroy {
 
   lwm2mDeviceTransportConfigurationFormGroup: FormGroup;
-  powerMods = Object.values(PowerMode);
-  powerModeTranslationMap = PowerModeTranslationMap;
 
   private requiredValue: boolean;
   get required(): boolean {
@@ -85,33 +86,9 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
   ngOnInit() {
     this.lwm2mDeviceTransportConfigurationFormGroup = this.fb.group({
       powerMode: [null],
-      edrxCycle: [{disabled: true, value: 0}],
-      psmActivityTimer: [{disabled: true, value: 0}],
-      pagingTransmissionWindow: [{disabled: true, value: 0}]
-    });
-    this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').valueChanges.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe((powerMode: PowerMode) => {
-      if (powerMode === PowerMode.E_DRX) {
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').enable({emitEvent: false});
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').enable({emitEvent: false});
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle')
-          .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow')
-          .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
-        this.clearValidatorsPSKMode();
-      } else if (powerMode === PowerMode.PSM) {
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').enable({emitEvent: false});
-        this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer')
-          .setValidators([Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]);
-        this.clearValidatorsEdrxMode();
-      } else {
-        this.clearValidatorsEdrxMode();
-        this.clearValidatorsPSKMode();
-      }
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').updateValueAndValidity({emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').updateValueAndValidity({emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').updateValueAndValidity({emitEvent: false});
+      edrxCycle: [{disabled: true, value: 0}, [Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]],
+      psmActivityTimer: [{disabled: true, value: 0}, [Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]],
+      pagingTransmissionWindow: [{disabled: true, value: 0}, [Validators.required, Validators.min(0), Validators.pattern('[0-9]*')]]
     });
     this.lwm2mDeviceTransportConfigurationFormGroup.valueChanges.pipe(
       takeUntil(this.destroy$)
@@ -137,12 +114,12 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
 
   writeValue(value: Lwm2mDeviceTransportConfiguration | null): void {
     if (isDefinedAndNotNull(value)) {
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').patchValue(value.powerMode, {emitEvent: false, onlySelf: true});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('edrxCycle').patchValue(value.edrxCycle || 0, {emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('pagingTransmissionWindow').patchValue(value.pagingTransmissionWindow || 0, {emitEvent: false});
-      this.lwm2mDeviceTransportConfigurationFormGroup.get('psmActivityTimer').patchValue(value.psmActivityTimer || 0, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.patchValue(value, {emitEvent: false});
     } else {
-      this.lwm2mDeviceTransportConfigurationFormGroup.patchValue({powerMode: null, edrxCycle: 0, psmActivityTimer: 0, pagingTransmissionWindow: 0}, {emitEvent: false});
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').patchValue(null, {emitEvent: false});
+    }
+    if (!this.disabled) {
+      this.lwm2mDeviceTransportConfigurationFormGroup.get('powerMode').updateValueAndValidity({onlySelf: true});
     }
   }
 
@@ -150,7 +127,7 @@ export class Lwm2mDeviceTransportConfigurationComponent implements ControlValueA
     let configuration: DeviceTransportConfiguration = null;
     if (this.lwm2mDeviceTransportConfigurationFormGroup.valid) {
       configuration = this.lwm2mDeviceTransportConfigurationFormGroup.value;
-      // configuration.type = DeviceTransportType.LWM2M;
+      configuration.type = DeviceTransportType.LWM2M;
     }
     this.propagateChange(configuration);
   }

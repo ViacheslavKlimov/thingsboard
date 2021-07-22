@@ -181,4 +181,5 @@ public interface TransportService {
         return new CustomerId(EntityId.NULL_UUID);
     }
 
+    void log(SessionInfoProto sessionInfo, String msg);
 }

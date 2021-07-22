@@ -98,9 +98,6 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
     @Autowired
     @Lazy
     private LwM2MOtaUpdateService otaUpdateService;
-    @Autowired
-    @Lazy
-    private LwM2MTelemetryLogService logService;
 
     private final Map<String, LwM2mClient> lwM2mClientsByEndpoint = new ConcurrentHashMap<>();
     private final Map<String, LwM2mClient> lwM2mClientsByRegistrationId = new ConcurrentHashMap<>();
@@ -195,7 +192,7 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
         boolean changed = compareAndSetSleepFlag(client, true);
         if (changed) {
             log.debug("[{}] client is sleeping", client.getEndpoint());
-            logService.log(client, LOG_LWM2M_INFO + ": Client is sleeping!");
+            context.getTransportService().log(client.getSession(), "Info : Client is sleeping!");
         }
         return changed;
     }
@@ -206,7 +203,7 @@ public class LwM2mClientContextImpl implements LwM2mClientContext {
         boolean changed = compareAndSetSleepFlag(client, false);
         if (changed) {
             log.debug("[{}] client is awake", client.getEndpoint());
-            logService.log(client, LOG_LWM2M_INFO + ": Client is awake!");
+            context.getTransportService().log(client.getSession(), "Info : Client is awake!");
             sendMsgsAfterSleeping(client);
         }
         return changed;

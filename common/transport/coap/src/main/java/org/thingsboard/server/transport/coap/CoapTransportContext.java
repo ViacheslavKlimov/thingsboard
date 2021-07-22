@@ -42,6 +42,7 @@ import org.thingsboard.server.common.transport.TransportService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.transport.coap.adaptors.JsonCoapAdaptor;
 import org.thingsboard.server.transport.coap.adaptors.ProtoCoapAdaptor;
+import org.thingsboard.server.transport.coap.client.CoapClientContext;
 import org.thingsboard.server.transport.coap.efento.adaptor.EfentoCoapAdaptor;
 
 import javax.annotation.PostConstruct;
@@ -73,6 +74,9 @@ public class CoapTransportContext extends TransportContext {
 
     @Autowired
     private EfentoCoapAdaptor efentoCoapAdaptor;
+
+    @Autowired
+    private CoapClientContext clientContext;
 
     private final ConcurrentMap<Integer, TransportProtos.ToDeviceRpcRequestMsg> rpcAwaitingAck = new ConcurrentHashMap<>();
 

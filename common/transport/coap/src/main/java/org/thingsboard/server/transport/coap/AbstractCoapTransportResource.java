@@ -34,36 +34,26 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.CoapResource;
-import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.elements.EndpointContext;
 import org.thingsboard.server.common.data.ApiUsageRecordKey;
-import org.thingsboard.server.common.data.DeviceProfile;
-import org.thingsboard.server.common.transport.TransportContext;
 import org.thingsboard.server.common.transport.TransportService;
 import org.thingsboard.server.common.transport.TransportServiceCallback;
-import org.thingsboard.server.common.transport.auth.SessionInfoCreator;
-import org.thingsboard.server.common.transport.auth.ValidateDeviceCredentialsResponse;
 import org.thingsboard.server.gen.transport.TransportProtos;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiConsumer;
 
 import static org.eclipse.californium.core.coap.Message.MAX_MID;
 import static org.eclipse.californium.core.coap.Message.NONE;
+
 
 @Slf4j
 public abstract class AbstractCoapTransportResource extends CoapResource {
 
     protected final CoapTransportContext transportContext;
     protected final TransportService transportService;
-
-    protected final Set<Integer> rpcRequestsAwaitingResponse = new HashSet<>();
 
     public AbstractCoapTransportResource(CoapTransportContext context, String name) {
         super(name);
@@ -103,13 +93,14 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
                 .setEvent(event).build();
     }
 
-    protected void respond(Response response, int msgId, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+    public static void respond(CoapTransportContext transportContext, Response response, int msgId, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
         response.setMID(msgId);
         transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
 
         response.addMessageObserver(new TbCoapMessageObserver(msgId, id -> {
             transportContext.getRequestsAwaitingAck().remove(id);
-        }));
+
+        }, null));
         response.addMessageObserver(new CoapRequestFailureMessageObserver(() -> {
             RequestInfo requestInfo = transportContext.getRequestsAwaitingAck().remove(msgId);
             if (requestInfo != null) {
@@ -123,82 +114,12 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         exchange.respond(response);
     }
 
-    protected void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
-        respond(response, getNextMsgId(), exchange, sessionInfo);
+    public static void respond(CoapTransportContext transportContext, Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo);
     }
 
-    public static class CoapDeviceAuthCallback implements TransportServiceCallback<ValidateDeviceCredentialsResponse> {
-        private final TransportContext transportContext;
-        private final CoapExchange exchange;
-        private final BiConsumer<TransportProtos.SessionInfoProto, DeviceProfile> onSuccess;
-
-        public CoapDeviceAuthCallback(TransportContext transportContext, CoapExchange exchange, BiConsumer<TransportProtos.SessionInfoProto, DeviceProfile> onSuccess) {
-            this.transportContext = transportContext;
-            this.exchange = exchange;
-            this.onSuccess = onSuccess;
-        }
-
-        @Override
-        public void onSuccess(ValidateDeviceCredentialsResponse msg) {
-            DeviceProfile deviceProfile = msg.getDeviceProfile();
-            if (msg.hasDeviceInfo() && deviceProfile != null) {
-                TransportProtos.SessionInfoProto sessionInfoProto = SessionInfoCreator.create(msg, transportContext, UUID.randomUUID());
-                onSuccess.accept(sessionInfoProto, deviceProfile);
-            } else {
-                exchange.respond(CoAP.ResponseCode.UNAUTHORIZED);
-            }
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            log.warn("Failed to process request", e);
-            exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public static class CoapOkCallback implements TransportServiceCallback<Void> {
-        private final CoapExchange exchange;
-        private final CoAP.ResponseCode onSuccessResponse;
-        private final CoAP.ResponseCode onFailureResponse;
-
-        public CoapOkCallback(CoapExchange exchange, CoAP.ResponseCode onSuccessResponse, CoAP.ResponseCode onFailureResponse) {
-            this.exchange = exchange;
-            this.onSuccessResponse = onSuccessResponse;
-            this.onFailureResponse = onFailureResponse;
-        }
-
-        @Override
-        public void onSuccess(Void msg) {
-            Response response = new Response(onSuccessResponse);
-            response.setAcknowledged(isConRequest());
-            exchange.respond(response);
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            exchange.respond(onFailureResponse);
-        }
-
-        private boolean isConRequest() {
-            return exchange.advanced().getRequest().isConfirmable();
-        }
-    }
-
-    public static class CoapNoOpCallback implements TransportServiceCallback<Void> {
-        private final CoapExchange exchange;
-
-        CoapNoOpCallback(CoapExchange exchange) {
-            this.exchange = exchange;
-        }
-
-        @Override
-        public void onSuccess(Void msg) {
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
-        }
+    public void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo);
     }
 
     @Data
@@ -212,12 +133,12 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
         private final int msgId;
     }
 
-    protected int getNextMsgId() {
+    protected static int getNextMsgId() {
         return ThreadLocalRandom.current().nextInt(NONE, MAX_MID + 1);
     }
 
     @RequiredArgsConstructor
-    static class CoapRequestFailureMessageObserver implements MessageObserver {
+    public static class CoapRequestFailureMessageObserver implements MessageObserver {
         private final Runnable onError;
 
         @Override

@@ -115,6 +115,9 @@ transport:
   # Number of seconds. If downlink message is not acknowledged within this period, it will be considered failed
   downlink_msg_ack_timeout: "${TRANSPORT_DOWNLINK_MSG_ACK_TIMEOUT:180}"
   # Local LwM2M transport parameters
+  log:
+    enabled: "${TB_TRANSPORT_LOG_ENABLED:true}"
+    max_length: "${TB_TRANSPORT_LOG_MAX_LENGTH:1024}"
   lwm2m:
     # Enable/disable lvm2m transport protocol.
     enabled: "${LWM2M_ENABLED:true}"

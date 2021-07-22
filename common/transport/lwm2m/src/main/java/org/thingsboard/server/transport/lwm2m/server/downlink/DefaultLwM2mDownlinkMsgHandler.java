@@ -362,6 +362,8 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
                         }
                     } catch (Exception e) {
                         log.error("[{}] failed to process successful response [{}] ", registration.getEndpoint(), response, e);
+                    } finally {
+                        clientContext.awake(client);
                     }
                 });
             }, e -> handleDownlinkError(client, request, callback, e));
@@ -494,5 +496,4 @@ public class DefaultLwM2mDownlinkMsgHandler extends LwM2MExecutorAwareService im
             return request != null ? request.getClass().getSimpleName() : "";
         }
     }
-
 }

@@ -57,8 +57,10 @@ import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantProfile;
 import org.thingsboard.server.common.data.device.credentials.BasicMqttCredentials;
 import org.thingsboard.server.common.data.device.credentials.ProvisionDeviceCredentialsData;
+import org.thingsboard.server.common.data.device.data.CoapDeviceTransportConfiguration;
 import org.thingsboard.server.common.data.device.data.Lwm2mDeviceTransportConfiguration;
 import org.thingsboard.server.common.data.device.data.PowerMode;
+import org.thingsboard.server.common.data.device.data.PowerSavingConfiguration;
 import org.thingsboard.server.common.data.device.profile.ProvisionDeviceProfileCredentials;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
@@ -533,7 +535,6 @@ public class DefaultTransportApiService implements TransportApiService {
     }
 
     private DeviceInfoProto getDeviceInfoProto(Device device) throws JsonProcessingException {
-
         DeviceInfoProto.Builder builder = DeviceInfoProto.newBuilder()
                 .setTenantIdMSB(device.getTenantId().getId().getMostSignificantBits())
                 .setTenantIdLSB(device.getTenantId().getId().getLeastSignificantBits())
@@ -547,20 +548,27 @@ public class DefaultTransportApiService implements TransportApiService {
                 .setDeviceProfileIdLSB(device.getDeviceProfileId().getId().getLeastSignificantBits())
                 .setAdditionalInfo(mapper.writeValueAsString(device.getAdditionalInfo()));
 
+        PowerSavingConfiguration psmConfiguration = null;
         switch (device.getDeviceData().getTransportConfiguration().getType()) {
             case LWM2M:
-                Lwm2mDeviceTransportConfiguration transportConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
-                PowerMode powerMode = transportConfiguration.getPowerMode();
-                if (powerMode != null) {
-                    builder.setPowerMode(powerMode.name());
-                    if (powerMode.equals(PowerMode.PSM)) {
-                        builder.setPsmActivityTimer(checkLong(transportConfiguration.getPsmActivityTimer()));
-                    } else if (powerMode.equals(PowerMode.E_DRX)) {
-                        builder.setEdrxCycle(checkLong(transportConfiguration.getEdrxCycle()));
-                        builder.setPagingTransmissionWindow(checkLong(transportConfiguration.getPagingTransmissionWindow()));
-                    }
-                }
+                psmConfiguration = (Lwm2mDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
                 break;
+            case COAP:
+                psmConfiguration = (CoapDeviceTransportConfiguration) device.getDeviceData().getTransportConfiguration();
+                break;
+        }
+
+        if (psmConfiguration != null) {
+            PowerMode powerMode = psmConfiguration.getPowerMode();
+            if (powerMode != null) {
+                builder.setPowerMode(powerMode.name());
+                if (powerMode.equals(PowerMode.PSM)) {
+                    builder.setPsmActivityTimer(checkLong(psmConfiguration.getPsmActivityTimer()));
+                } else if (powerMode.equals(PowerMode.E_DRX)) {
+                    builder.setEdrxCycle(checkLong(psmConfiguration.getEdrxCycle()));
+                    builder.setPagingTransmissionWindow(checkLong(psmConfiguration.getPagingTransmissionWindow()));
+                }
+            }
         }
 
         return builder.build();
