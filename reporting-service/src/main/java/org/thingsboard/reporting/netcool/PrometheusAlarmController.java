@@ -51,7 +51,6 @@ public class PrometheusAlarmController {
 
     @PostMapping("/alarm")
     public void postAlarm(@RequestBody PrometheusAlarm alarm) {
-        log.info("Received new alarm from Prometheus: {}", alarm);
         try {
             netcoolReportingService.onAlarm(toNetcoolAlarm(alarm));
         } catch (Exception e) {

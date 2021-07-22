@@ -32,19 +32,18 @@ package org.thingsboard.reporting.netcool;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
+import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.common.util.snmp.SnmpUtils;
-import org.thingsboard.server.common.adaptor.JsonConverter;
 
 import javax.annotation.PostConstruct;
-import java.text.ParseException;
+import java.io.IOException;
 
 @RestController
 @RequiredArgsConstructor
@@ -62,18 +61,20 @@ public class NetcoolReportingService {
 
     private Target target;
 
-    private final Snmp snmp = new Snmp();
+    private Snmp snmp;
 
     @PostConstruct
-    private void init() {
+    private void init() throws IOException {
         this.target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
+        this.snmp = new Snmp(new DefaultUdpTransportMapping());
     }
 
     public void onAlarm(NetcoolAlarm alarm) {
-        report(alarm);
+        log.info("Received new alarm: {}", alarm);
+        reportAlarm(alarm);
     }
 
-    private void report(NetcoolAlarm alarm) {
+    private void reportAlarm(NetcoolAlarm alarm) {
         try {
             snmp.send(toTrapPdu(alarm), target);
         } catch (Exception e) {
@@ -81,10 +82,10 @@ public class NetcoolReportingService {
         }
     }
 
-    private PDU toTrapPdu(NetcoolAlarm alarm) throws ParseException {
+    private PDU toTrapPdu(NetcoolAlarm alarm) {
         PDU pdu = new PDU();
         pdu.setType(PDU.TRAP);
-        pdu.add(new VariableBinding(new OID(getAlarmOid(alarm)), mapToString(alarm)));
+        pdu.add(new VariableBinding(new OID(getAlarmOid(alarm)), SnmpUtils.toSnmpVariable(mapToString(alarm))));
         return pdu;
     }
 
