@@ -28,62 +28,21 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.client.tools.migrator;
+package org.thingsboard.server.transport.coap.client;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang3.StringUtils;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+public class TbCoapContentFormatUtil {
 
-public class DictionaryParser {
-    private Map<String, String> dictionaryParsed = new HashMap<>();
-
-    public DictionaryParser(File sourceFile) throws IOException {
-        parseDictionaryDump(FileUtils.lineIterator(sourceFile));
-    }
-
-    public String getKeyByKeyId(String keyId) {
-        return dictionaryParsed.get(keyId);
-    }
-
-    private boolean isBlockFinished(String line) {
-        return StringUtils.isBlank(line) || line.equals("\\.");
-    }
-
-    private boolean isBlockStarted(String line) {
-        return line.startsWith("COPY public.ts_kv_dictionary (");
-    }
-
-    private void parseDictionaryDump(LineIterator iterator) throws IOException {
-        try {
-            String tempLine;
-            while (iterator.hasNext()) {
-                tempLine = iterator.nextLine();
-
-                if (isBlockStarted(tempLine)) {
-                    processBlock(iterator);
-                }
-            }
-        } finally {
-            iterator.close();
+    public static int getContentFormat(int requestFormat, int adaptorFormat) {
+        if (isStrict(adaptorFormat)) {
+            return adaptorFormat;
+        } else {
+            return requestFormat != MediaTypeRegistry.UNDEFINED ? requestFormat : adaptorFormat;
         }
     }
 
-    private void processBlock(LineIterator lineIterator) {
-        String tempLine;
-        String[] lineSplited;
-        while(lineIterator.hasNext()) {
-            tempLine = lineIterator.nextLine();
-            if(isBlockFinished(tempLine)) {
-                return;
-            }
-
-            lineSplited = tempLine.split("\t");
-            dictionaryParsed.put(lineSplited[1], lineSplited[0]);
-        }
+    public static boolean isStrict(int contentFormat) {
+        return contentFormat == MediaTypeRegistry.APPLICATION_OCTET_STREAM;
     }
 }

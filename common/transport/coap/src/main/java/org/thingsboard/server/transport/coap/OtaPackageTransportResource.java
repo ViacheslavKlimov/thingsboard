@@ -32,6 +32,7 @@ package org.thingsboard.server.transport.coap;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.Exchange;
@@ -141,17 +142,17 @@ public class OtaPackageTransportResource extends AbstractCoapTransportResource {
                     int chunk = StringUtils.isEmpty(strChunk) ? 0 : Integer.parseInt(strChunk);
                     respondOtaPackage(exchange, sessionInfo, transportContext.getOtaPackageDataCache().get(firmwareId, chunkSize, chunk));
                 } else {
-                    respond(new Response(CoAP.ResponseCode.BAD_REQUEST), exchange, sessionInfo);
+                    respond(new Response(CoAP.ResponseCode.BAD_REQUEST), exchange, sessionInfo, MediaTypeRegistry.APPLICATION_OCTET_STREAM);
                 }
             } else {
-                respond(new Response(CoAP.ResponseCode.NOT_FOUND), exchange, sessionInfo);
+                respond(new Response(CoAP.ResponseCode.NOT_FOUND), exchange, sessionInfo, MediaTypeRegistry.APPLICATION_OCTET_STREAM);
             }
         }
 
         @Override
         public void onError(Throwable e) {
             log.warn("Failed to process request", e);
-            respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR), exchange, sessionInfo);
+            respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR), exchange, sessionInfo, MediaTypeRegistry.APPLICATION_OCTET_STREAM);
         }
     }
 

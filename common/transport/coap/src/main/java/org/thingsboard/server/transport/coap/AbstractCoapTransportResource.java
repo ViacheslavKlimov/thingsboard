@@ -42,6 +42,7 @@ import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.transport.TransportService;
 import org.thingsboard.server.common.transport.TransportServiceCallback;
 import org.thingsboard.server.gen.transport.TransportProtos;
+import org.thingsboard.server.transport.coap.client.TbCoapContentFormatUtil;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -93,33 +94,39 @@ public abstract class AbstractCoapTransportResource extends CoapResource {
                 .setEvent(event).build();
     }
 
-    public static void respond(CoapTransportContext transportContext, Response response, int msgId, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
+    public static void respond(CoapTransportContext transportContext, Response response, int msgId, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo, int contentFormat) {
         response.setMID(msgId);
-        transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
+        if (sessionInfo != null) {
+            transportContext.getRequestsAwaitingAck().put(msgId, new RequestInfo(sessionInfo, System.currentTimeMillis()));
 
-        response.addMessageObserver(new TbCoapMessageObserver(msgId, id -> {
-            transportContext.getRequestsAwaitingAck().remove(id);
+            response.addMessageObserver(new TbCoapMessageObserver(msgId, id -> {
+                transportContext.getRequestsAwaitingAck().remove(id);
 
-        }, null));
-        response.addMessageObserver(new CoapRequestFailureMessageObserver(() -> {
-            RequestInfo requestInfo = transportContext.getRequestsAwaitingAck().remove(msgId);
-            if (requestInfo != null) {
-                transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
-                        TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
-            }
-        }));
+            }, null));
+            response.addMessageObserver(new CoapRequestFailureMessageObserver(() -> {
+                RequestInfo requestInfo = transportContext.getRequestsAwaitingAck().remove(msgId);
+                if (requestInfo != null) {
+                    transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                            TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.FAILED_DOWNLINK_MSG_COUNT);
+                }
+            }));
+            transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
+                    TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+        }
+        respond(exchange, response, contentFormat);
+    }
 
-        transportContext.getApiUsageReportClient().report(TransportService.getTenantId(sessionInfo),
-                TransportService.getCustomerId(sessionInfo), ApiUsageRecordKey.DOWNLINK_MSG_COUNT);
+    public static void respond(CoapTransportContext transportContext, Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo, int contentFormat) {
+        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo, contentFormat);
+    }
+
+    public void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo, int contentFormat) {
+        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo, contentFormat);
+    }
+
+    private static void respond(CoapExchange exchange, Response response, int defContentFormat) {
+        response.getOptions().setContentFormat(TbCoapContentFormatUtil.getContentFormat(exchange.getRequestOptions().getContentFormat(), defContentFormat));
         exchange.respond(response);
-    }
-
-    public static void respond(CoapTransportContext transportContext, Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
-        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo);
-    }
-
-    public void respond(Response response, CoapExchange exchange, TransportProtos.SessionInfoProto sessionInfo) {
-        respond(transportContext, response, getNextMsgId(), exchange, sessionInfo);
     }
 
     @Data

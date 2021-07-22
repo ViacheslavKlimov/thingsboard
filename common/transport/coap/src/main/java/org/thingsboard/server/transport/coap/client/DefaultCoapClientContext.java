@@ -33,6 +33,7 @@ package org.thingsboard.server.transport.coap.client;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.observe.ObserveRelation;
 import org.eclipse.californium.core.server.resources.CoapExchange;
@@ -348,8 +349,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
         state.lock();
         try {
             if (state.getConfiguration() == null || state.getAdaptor() == null) {
-                state.setConfiguration(getTransportConfigurationContainer(deviceProfile));
-                state.setAdaptor(getCoapTransportAdaptor(state.getConfiguration().isJsonPayload()));
+                initStateAdaptor(deviceProfile, state);
             }
             if (state.getCredentials() == null) {
                 state.init(deviceCredentials);
@@ -413,6 +413,12 @@ public class DefaultCoapClientContext implements CoapClientContext {
         }
     }
 
+    private void initStateAdaptor(DeviceProfile deviceProfile, TbCoapClientState state) throws AdaptorException {
+        state.setConfiguration(getTransportConfigurationContainer(deviceProfile));
+        state.setAdaptor(getCoapTransportAdaptor(state.getConfiguration().isJsonPayload()));
+        state.setContentFormat(state.getAdaptor().getContentFormat());
+    }
+
     private CoapTransportAdaptor getCoapTransportAdaptor(boolean jsonPayloadType) {
         return jsonPayloadType ? transportContext.getJsonCoapAdaptor() : transportContext.getProtoCoapAdaptor();
     }
@@ -429,7 +435,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
                 try {
                     boolean conRequest = AbstractSyncSessionCallback.isConRequest(state.getAttrs());
                     Response response = state.getAdaptor().convertToPublish(conRequest, msg);
-                    AbstractCoapTransportResource.respond(transportContext, response, attrs.getExchange(), state.getSession());
+                    AbstractCoapTransportResource.respond(transportContext, response, attrs.getExchange(), state.getSession(), state.getContentFormat());
                 } catch (AdaptorException e) {
                     log.trace("Failed to reply due to error", e);
                     cancelObserveRelation(attrs);
@@ -463,7 +469,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
                     if (conRequest) {
                         response.addMessageObserver(new TbCoapMessageObserver(requestId, id -> awake(state), id -> asleep(state)));
                     }
-                    AbstractCoapTransportResource.respond(transportContext, response, attrs.getExchange(), state.getSession());
+                    AbstractCoapTransportResource.respond(transportContext, response, attrs.getExchange(), state.getSession(), state.getContentFormat());
                 } catch (AdaptorException e) {
                     log.trace("[{}] Failed to reply due to error", state.getDeviceId(), e);
                     cancelObserveRelation(attrs);
@@ -475,7 +481,23 @@ public class DefaultCoapClientContext implements CoapClientContext {
         }
 
         @Override
+        public void onDeviceProfileUpdate(TransportProtos.SessionInfoProto newSessionInfo, DeviceProfile deviceProfile) {
+            try {
+                initStateAdaptor(deviceProfile, state);
+            } catch (AdaptorException e) {
+                log.warn("[{}] Failed to update device profile: ", deviceProfile.getId(), e);
+            }
+        }
+
+        @Override
         public void onDeviceUpdate(TransportProtos.SessionInfoProto sessionInfo, Device device, Optional<DeviceProfile> deviceProfileOpt) {
+            if (deviceProfileOpt.isPresent()) {
+                try {
+                    initStateAdaptor(deviceProfileOpt.get(), state);
+                } catch (AdaptorException e) {
+                    log.warn("[{}] Failed to update device: ", device.getId(), e);
+                }
+            }
             state.onDeviceUpdate(device);
         }
 
@@ -535,7 +557,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
                 if (conRequest) {
                     response.addMessageObserver(new TbCoapMessageObserver(requestId, id -> awake(state), id -> asleep(state)));
                 }
-                AbstractCoapTransportResource.respond(transportContext, response, state.getRpc().getExchange(), state.getSession());
+                AbstractCoapTransportResource.respond(transportContext, response, state.getRpc().getExchange(), state.getSession(), state.getContentFormat());
                 sent = true;
             } catch (AdaptorException e) {
                 log.trace("Failed to reply due to error", e);
@@ -757,4 +779,5 @@ public class DefaultCoapClientContext implements CoapClientContext {
         state.setAdaptor(null);
         //TODO: add optimistic lock check that the client was already deleted and cleanup "clients" map.
     }
+
 }

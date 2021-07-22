@@ -37,19 +37,20 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.thingsboard.server.common.adaptor.AdaptorException;
 import org.thingsboard.server.gen.transport.TransportProtos;
+import org.thingsboard.server.transport.coap.CoapTransportContext;
 import org.thingsboard.server.transport.coap.client.TbCoapClientState;
 
 @Slf4j
 public class GetAttributesSyncSessionCallback extends AbstractSyncSessionCallback {
 
-    public GetAttributesSyncSessionCallback(TbCoapClientState state, CoapExchange exchange, Request request) {
-        super(state, exchange, request);
+    public GetAttributesSyncSessionCallback(CoapTransportContext context, TbCoapClientState state, CoapExchange exchange, Request request, TransportProtos.SessionInfoProto sessionInfo) {
+        super(context, state, exchange, request, sessionInfo);
     }
 
     @Override
     public void onGetAttributesResponse(TransportProtos.GetAttributeResponseMsg msg) {
         try {
-            exchange.respond(state.getAdaptor().convertToPublish(AbstractSyncSessionCallback.isConRequest(state.getAttrs()), msg));
+            respond(state.getAdaptor().convertToPublish(request.isConfirmable(), msg));
         } catch (AdaptorException e) {
             log.trace("[{}] Failed to reply due to error", state.getDeviceId(), e);
             exchange.respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR));

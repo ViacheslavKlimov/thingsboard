@@ -32,12 +32,17 @@ package org.thingsboard.server.transport.coap.callback;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.thingsboard.server.common.transport.SessionMsgListener;
 import org.thingsboard.server.gen.transport.TransportProtos;
+import org.thingsboard.server.transport.coap.AbstractCoapTransportResource;
+import org.thingsboard.server.transport.coap.CoapTransportContext;
 import org.thingsboard.server.transport.coap.CoapTransportResource;
 import org.thingsboard.server.transport.coap.client.TbCoapClientState;
+import org.thingsboard.server.transport.coap.client.TbCoapContentFormatUtil;
 import org.thingsboard.server.transport.coap.client.TbCoapObservationState;
 
 import java.util.UUID;
@@ -46,9 +51,11 @@ import java.util.UUID;
 @Slf4j
 public abstract class AbstractSyncSessionCallback implements SessionMsgListener {
 
+    private final CoapTransportContext context;
     protected final TbCoapClientState state;
     protected final CoapExchange exchange;
     protected final Request request;
+    protected final TransportProtos.SessionInfoProto sessionInfo;
 
     @Override
     public void onGetAttributesResponse(TransportProtos.GetAttributeResponseMsg getAttributesResponse) {
@@ -85,6 +92,11 @@ public abstract class AbstractSyncSessionCallback implements SessionMsgListener 
         } else {
             return false;
         }
+    }
+
+    protected void respond(Response response) {
+        response.getOptions().setContentFormat(TbCoapContentFormatUtil.getContentFormat(exchange.getRequestOptions().getContentFormat(), state.getContentFormat()));
+        AbstractCoapTransportResource.respond(context, response, exchange, sessionInfo, state.getContentFormat());
     }
 
 }

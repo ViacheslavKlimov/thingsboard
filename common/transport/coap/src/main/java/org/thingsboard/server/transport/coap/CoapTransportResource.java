@@ -99,7 +99,6 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
     private static final String DTLS_SESSION_ID_KEY = "DTLS_SESSION_ID";
 
     private static final String INTEGRATIONS_RESOURCE_NAME = "i";
-    private final ConcurrentMap<TbCoapClientState, ObserveRelation> sessionInfoToObserveRelationMap = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, TbCoapDtlsSessionInfo> dtlsSessionIdMap;
     private final long timeout;
@@ -367,19 +366,15 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
     private void handleGetAttributesRequest(TbCoapClientState clientState, CoapExchange exchange, Request request) throws AdaptorException {
         TransportProtos.SessionInfoProto sessionInfo = clients.getNewSyncSession(clientState);
         UUID sessionId = toSessionId(sessionInfo);
-        transportService.registerSyncSession(sessionInfo, new GetAttributesSyncSessionCallback(clientState, exchange, request), timeout);
-        transportService.process(sessionInfo,
-                clientState.getAdaptor().convertToGetAttributes(sessionId, request),
-                new CoapNoOpCallback(exchange));
+        transportService.registerSyncSession(sessionInfo, new GetAttributesSyncSessionCallback(transportContext, clientState, exchange, request, sessionInfo), timeout);
+        transportService.process(sessionInfo, clientState.getAdaptor().convertToGetAttributes(sessionId, request), new CoapNoOpCallback(exchange));
     }
 
     private void handleToServerRpcRequest(TbCoapClientState clientState, CoapExchange exchange, Request request) throws AdaptorException {
         TransportProtos.SessionInfoProto sessionInfo = clients.getNewSyncSession(clientState);
         UUID sessionId = toSessionId(sessionInfo);
-        transportService.registerSyncSession(sessionInfo, new ToServerRpcSyncSessionCallback(clientState, exchange, request), timeout);
-        transportService.process(sessionInfo,
-                clientState.getAdaptor().convertToServerRpcRequest(sessionId, request),
-                new CoapNoOpCallback(exchange));
+        transportService.registerSyncSession(sessionInfo, new ToServerRpcSyncSessionCallback(transportContext, clientState, exchange, request, sessionInfo), timeout);
+        transportService.process(sessionInfo, clientState.getAdaptor().convertToServerRpcRequest(sessionId, request), new CoapNoOpCallback(exchange));
     }
 
     private UUID toSessionId(TransportProtos.SessionInfoProto sessionInfoProto) {
@@ -463,19 +458,22 @@ public class CoapTransportResource extends AbstractCoapTransportResource {
                 responseCode = CoAP.ResponseCode.BAD_REQUEST;
             }
             Response response = new Response(responseCode);
+            int contentFormat;
             if (payloadType.equals(TransportPayloadType.JSON)) {
                 response.setPayload(JsonConverter.toJson(msg).toString());
                 response.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+                contentFormat = MediaTypeRegistry.TEXT_PLAIN;
             } else {
                 response.setPayload(msg.toByteArray());
+                contentFormat = MediaTypeRegistry.APPLICATION_OCTET_STREAM;
             }
-            respond(response, exchange, null);
+            AbstractCoapTransportResource.respond(transportContext, response, exchange, null, contentFormat);
         }
 
         @Override
         public void onError(Throwable e) {
             log.warn("Failed to process request", e);
-            respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR), exchange, null);
+            respond(new Response(CoAP.ResponseCode.INTERNAL_SERVER_ERROR), exchange, null,  MediaTypeRegistry.TEXT_PLAIN);
         }
     }
 
