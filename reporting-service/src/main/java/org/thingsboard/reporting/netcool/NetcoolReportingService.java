@@ -77,7 +77,7 @@ public class NetcoolReportingService {
         try {
             snmp.send(toTrapPdu(alarm), target);
         } catch (Exception e) {
-            log.error("Failed to report alarm to Netcool: {}", ExceptionUtils.getRootCauseMessage(e));
+            log.error("Failed to report alarm to Netcool: {}", alarm, e);
         }
     }
 
@@ -93,7 +93,7 @@ public class NetcoolReportingService {
     }
 
     private String mapToString(NetcoolAlarm alarm) {
-        return JsonConverter.toJson(alarm);
+        return alarm.getTitle();
     }
 
 }

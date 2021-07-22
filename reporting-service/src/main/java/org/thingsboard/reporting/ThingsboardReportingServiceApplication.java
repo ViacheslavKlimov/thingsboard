@@ -39,8 +39,6 @@ import java.util.Arrays;
 @SpringBootApplication(scanBasePackages = {
         "org.thingsboard.reporting",
         "org.thingsboard.server.common",
-        "org.thingsboard.server.queue",
-        "org.thingsboard.server.cache"
 })
 @EnableScheduling
 public class ThingsboardReportingServiceApplication {
