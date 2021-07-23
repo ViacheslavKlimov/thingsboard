@@ -30,21 +30,101 @@
  */
 package org.thingsboard.reporting.netcool;
 
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
+
 public enum AlarmCategory {
-    COMMUNICATION(1),
-    QUALITY_OF_SERVICE(2),
-    PROCESSING(3),
-    EQUIPMENT(4),
-    ENVIRONMENTAL(5);
+    COMMUNICATION(1, Set.of(
+            "NodeNetworkReceiveErrs",
+            "NodeNetworkTransmitErrs",
+            "NodeNetworkInterfaceFlapping",
+            "NodeHighNumberConntrackEntriesUsed",
+            "PrometheusNotConnectedToAlertmanagers",
+            "PrometheusRemoteStorageFailures",
+            "PrometheusRemoteWriteBehind",
+            "PrometheusErrorSendingAlertsToAnyAlertmanager"
+    )),
+    QUALITY_OF_SERVICE(2, Set.of(
+            "KubePodCrashLooping",
+            "KubePodNotReady",
+            "KubeDeploymentGenerationMismatch",
+            "KubeDeploymentReplicasMismatch",
+            "KubeStatefulSetReplicasMismatch",
+            "KubeStatefulSetGenerationMismatch",
+            "KubeStatefulSetUpdateNotRolledOut",
+            "KubeDaemonSetRolloutStuck",
+            "KubeContainerWaiting",
+            "KubeDaemonSetNotScheduled",
+            "KubeDaemonSetMisScheduled",
+            "KubeNodeNotReady",
+            "KubeNodeUnreachable",
+            "KubeNodeReadinessFlapping",
+            "KubeletPlegDurationHigh",
+            "KubeletPodStartUpLatencyHigh"
+    )),
+    PROCESSING(3, Set.of(
+            "KubeJobCompletion",
+            "KubeJobFailed",
+            "KubeQuotaAlmostFull",
+            "KubeQuotaFullyUsed",
+            "KubeQuotaExceeded",
+//            "PrometheusBadConfig",
+            "PrometheusNotificationQueueRunningFull",
+            "PrometheusErrorSendingAlertsToSomeAlertmanagers",
+            "PrometheusNotIngestingSamples",
+            "PrometheusDuplicateTimestamps",
+            "PrometheusOutOfOrderTimestamps",
+            "PrometheusRuleFailures",
+            "PrometheusMissingRuleEvaluations",
+            "PrometheusTargetLimitHit",
+            "PrometheusLabelLimitHit",
+            "PrometheusTargetSyncFailure",
+            "NodeTextFileCollectorScrapeError"
+    )),
+    EQUIPMENT(4, Set.of(
+            "NodeFilesystemSpaceFillingUp",
+            "NodeFilesystemAlmostOutOfSpace",
+            "NodeFilesystemFilesFillingUp",
+            "NodeFilesystemAlmostOutOfFiles",
+            "NodeRAIDDegraded",
+            "NodeRAIDDiskFailure",
+            "PrometheusTSDBReloadsFailing",
+            "PrometheusTSDBCompactionsFailing"
+    )),
+    ENVIRONMENTAL(5, Set.of(
+            "PodCPUQuotaOverflow",
+            "PodMemoryQuotaOverflow",
+            "KubePersistentVolumeFillingUp",
+            "KubePersistentVolumeErrors",
+            "KubeCPUOvercommit",
+            "CPUThrottlingHigh",
+            "KubeMemoryOvercommit",
+            "KubeCPUQuotaOvercommit",
+            "KubeMemoryQuotaOvercommit",
+            "KubeletTooManyPods",
+            "KubeletDown",
+            "PrometheusRemoteWriteDesiredShards",
+            "NodeClockSkewDetected",
+            "NodeClockNotSynchronising"
+    ));
 
     private final int id;
+    private final Set<String> alerts;
 
-    AlarmCategory(int id) {
+    AlarmCategory(int id, Set<String> alerts) {
         this.id = id;
+        this.alerts = alerts;
     }
 
     public int getId() {
         return id;
+    }
+
+    public static Optional<AlarmCategory> forAlert(String alertName) {
+        return Arrays.stream(values())
+                .filter(category -> category.alerts.contains(alertName))
+                .findFirst();
     }
 
 }

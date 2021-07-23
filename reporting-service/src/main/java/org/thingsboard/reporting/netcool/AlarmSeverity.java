@@ -35,7 +35,8 @@ public enum AlarmSeverity {
     MINOR(2),
     WARNING(3),
     MAJOR(4),
-    CRITICAL(5);
+    CRITICAL(5),
+    INDETERMINATE(6);
 
     private final int id;
 
@@ -46,4 +47,5 @@ public enum AlarmSeverity {
     public int getId() {
         return id;
     }
+
 }
