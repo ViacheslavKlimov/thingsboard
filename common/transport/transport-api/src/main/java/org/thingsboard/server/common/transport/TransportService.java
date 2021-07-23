@@ -182,4 +182,6 @@ public interface TransportService {
     }
 
     void log(SessionInfoProto sessionInfo, String msg);
+
+    void notifyAboutUplink(SessionInfoProto sessionInfo, TransportProtos.UplinkNotificationMsg build, TransportServiceCallback<Void> empty);
 }
