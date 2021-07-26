@@ -102,7 +102,6 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
         this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo, () -> {
             transportService.reportFailedRpc(sessionInfo, toDeviceRequest.getOneway());
         });
-        transportService.process(sessionInfo, toDeviceRequest, false, TransportServiceCallback.EMPTY);
     }
 
     @Override
