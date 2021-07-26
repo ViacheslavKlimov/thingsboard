@@ -459,6 +459,21 @@
                                         </resources>
                                     </configuration>
                                 </execution>
+                                <execution>
+                                    <id>copy-magenta-extensions</id>
+                                    <phase>${pkg.process-resources.phase}</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/extensions</outputDirectory>
+                                        <resources>
+                                            <resource>
+                                                <directory>src/main/extensions</directory>
+                                            </resource>
+                                        </resources>
+                                    </configuration>
+                                </execution>
                             </executions>
                         </plugin>
                         <plugin>
