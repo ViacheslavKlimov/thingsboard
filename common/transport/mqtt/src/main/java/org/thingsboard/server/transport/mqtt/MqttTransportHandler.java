@@ -289,7 +289,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 context.getRequestsAwaitingAck().remove(msgId);
                 TransportProtos.ToDeviceRpcRequestMsg rpcRequest = rpcAwaitingAck.remove(msgId);
                 if (rpcRequest != null) {
-                    transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, false, TransportServiceCallback.EMPTY);
+                    transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, TransportServiceCallback.EMPTY);
                 }
                 break;
             default:
@@ -881,20 +881,24 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 }
                 var cf = publish(payload, deviceSessionCtx);
                 if (rpcRequest.getPersisted() && !isAckExpected(payload)) {
-                    cf.addListener(result -> transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, result.cause() != null, TransportServiceCallback.EMPTY));
+                    cf.addListener(result -> {
+                        if (result.cause() == null) {
+                            transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, TransportServiceCallback.EMPTY);
+                        }
+                    });
                 }
             });
         } catch (Exception e) {
+            transportService.process(deviceSessionCtx.getSessionInfo(),
+                    TransportProtos.ToDeviceRpcResponseMsg.newBuilder()
+                            .setRequestId(rpcRequest.getRequestId()).setError("Failed to convert device RPC command to MQTT msg").build(), TransportServiceCallback.EMPTY);
             log.trace("[{}] Failed to convert device RPC command to MQTT msg", sessionId, e);
         }
     }
 
     private void scheduleRpcRequestTimeout(ToDeviceRpcRequestMsg rpcRequest, int msgId, ApiUsageRecordKey key) {
         context.getScheduler().schedule(() -> {
-            ToDeviceRpcRequestMsg awaitingAckMsg = rpcAwaitingAck.remove(msgId);
-            if (awaitingAckMsg != null) {
-                transportService.process(deviceSessionCtx.getSessionInfo(), rpcRequest, true, TransportServiceCallback.EMPTY);
-            }
+            rpcAwaitingAck.remove(msgId);
             boolean notAcknowledged = context.getRequestsAwaitingAck().containsKey(msgId);
             boolean notReplied = rpcRequestsAwaitingResponse.remove(rpcRequest.getRequestId());
             if (notAcknowledged || notReplied) {
