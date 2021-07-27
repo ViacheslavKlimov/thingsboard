@@ -106,12 +106,12 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
         if (!this.rpcSubscriptions.containsKey(requestUUID)) {
             LwM2mOperationType operationType = LwM2mOperationType.fromType(rpcRequest.getMethodName());
             if (operationType == null) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.METHOD_NOT_ALLOWED.getName(), "Unsupported operation type: " + rpcRequest.getMethodName(), rpcRequest);
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.METHOD_NOT_ALLOWED, "Unsupported operation type: " + rpcRequest.getMethodName(), rpcRequest);
                 return;
             }
             LwM2mClient client = clientContext.getClientBySessionInfo(sessionInfo);
             if (client.getRegistration() == null) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR.getName(), "Registration is empty", rpcRequest);
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR, "Registration is empty", rpcRequest);
                 return;
             }
             try {
@@ -161,7 +161,7 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                                 throw new IllegalArgumentException("Unsupported operation: " + operationType.name());
                         }
                     } else {
-                        this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR.getName(),
+                        this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.INTERNAL_SERVER_ERROR,
                                 "This device does not support Composite Operation", rpcRequest);
                     }
                 } else {
@@ -182,7 +182,7 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
                     }
                 }
             } catch (IllegalArgumentException e) {
-                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.BAD_REQUEST.getName(), e.getMessage(), rpcRequest);
+                this.sendErrorRpcResponse(sessionInfo, rpcRequest.getRequestId(), ResponseCode.BAD_REQUEST, e.getMessage(), rpcRequest);
             }
         }
     }
@@ -329,9 +329,9 @@ public class DefaultLwM2MRpcRequestHandler implements LwM2MRpcRequestHandler {
         }
     }
 
-    private void sendErrorRpcResponse(TransportProtos.SessionInfoProto sessionInfo, int requestId, String result, String error, TransportProtos.ToDeviceRpcRequestMsg rpcRequest) {
-        String payload = JacksonUtil.toString(JacksonUtil.newObjectNode().put("result", result).put("error", error));
-        TransportProtos.ToDeviceRpcResponseMsg msg = TransportProtos.ToDeviceRpcResponseMsg.newBuilder().setRequestId(requestId).setPayload(payload).build();
+    private void sendErrorRpcResponse(TransportProtos.SessionInfoProto sessionInfo, int requestId, ResponseCode result, String error, TransportProtos.ToDeviceRpcRequestMsg rpcRequest) {
+        String payload = JacksonUtil.toString(LwM2MRpcResponseBody.builder().result(result.getName()).error(error).build());
+        TransportProtos.ToDeviceRpcResponseMsg msg = TransportProtos.ToDeviceRpcResponseMsg.newBuilder().setRequestId(requestId).setError(payload).build();
         transportService.process(sessionInfo, msg, null);
         transportService.reportFailedRpc(sessionInfo, rpcRequest.getOneway());
     }

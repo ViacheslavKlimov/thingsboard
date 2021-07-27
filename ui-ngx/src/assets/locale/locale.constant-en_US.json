@@ -1411,6 +1411,7 @@
         "lwm2m": {
             "object-list": "Object list",
             "object-list-empty": "No objects selected.",
+            "no-objects-found": "No objects found.",
             "no-objects-matching": "No objects matching '{{object}}' were found.",
             "model-tab": "LWM2M Model",
             "add-new-instances": "Add new instances",
@@ -4325,7 +4326,8 @@
             "update-attribute": "Update attribute",
             "update-timeseries": "Update timeseries",
             "value": "Value"
-        }
+        },
+        "invalid-qr-code-text": "Invalid input text for QR code. Input should have a string type"
     },
     "icon": {
         "icon": "Icon",
