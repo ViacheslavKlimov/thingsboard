@@ -99,9 +99,7 @@ public class LwM2mSessionMsgListener implements GenericFutureListener<Future<? s
     @Override
     public void onToDeviceRpcRequest(UUID sessionId, ToDeviceRpcRequestMsg toDeviceRequest) {
         log.trace("[{}] Received RPC command to device", sessionId);
-        this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo, () -> {
-            transportService.reportFailedRpc(sessionInfo, toDeviceRequest.getOneway());
-        });
+        this.rpcHandler.onToDeviceRpcRequest(toDeviceRequest, this.sessionInfo);
     }
 
     @Override
