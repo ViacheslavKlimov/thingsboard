@@ -36,6 +36,7 @@ import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.smi.OID;
+import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,15 +59,16 @@ public class NetcoolReportingService {
 
     @Value("${netcool.alarms.trap_base_oid}")
     private String alarmTrapBaseOid;
+    @Value("${netcool.binding_port}")
+    private Integer bindingPort;
 
     private Target target;
-
     private Snmp snmp;
 
     @PostConstruct
     private void init() throws IOException {
         this.target = SnmpUtils.createSnmpV2Target(snmpHost, snmpPort, snmpCommunity);
-        this.snmp = new Snmp(new DefaultUdpTransportMapping());
+        this.snmp = new Snmp(new DefaultUdpTransportMapping(new UdpAddress("0.0.0.0/" + bindingPort)));
     }
 
     public void onAlarm(NetcoolAlarm alarm) {

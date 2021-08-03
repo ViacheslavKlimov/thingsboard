@@ -43,6 +43,7 @@ nagios:
     oid: "${SNMP_KPI_STATISTICS_OID:1.3.6.1.4.1.980.4.2}" # KPI stats will be hosted on this OID
 
 netcool:
+  binding_port: "${NETCOOL_BINDING_PORT:8761}" # from which to send SNMP traps
   snmp:
     host: "${NETCOOL_SNMP_HOST:localhost}"
     port: "${NETCOOL_SNMP_PORT:162}"
