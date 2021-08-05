@@ -28,33 +28,40 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.rule.engine.api;
+package org.thingsboard.server.service.edge.rpc;
 
-import lombok.Builder;
-import lombok.Data;
-import org.thingsboard.server.common.data.id.DeviceId;
-import org.thingsboard.server.common.data.id.TenantId;
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
+import com.google.protobuf.Int64Value;
+import com.google.protobuf.StringValue;
 
-import java.util.UUID;
+public class EdgeProtoUtils {
 
-/**
- * Created by ashvayka on 02.04.18.
- */
-@Data
-@Builder
-public final class RuleEngineDeviceRpcRequest {
+    private EdgeProtoUtils() {
+    }
 
-    private final TenantId tenantId;
-    private final DeviceId deviceId;
-    private final int requestId;
-    private final UUID requestUUID;
-    private final String originServiceId;
-    private final boolean oneway;
-    private final boolean persisted;
-    private final String method;
-    private final String body;
-    private final long expirationTime;
-    private final boolean restApiCall;
-    private final String additionalInfo;
+    public static BoolValue getBoolValue(Boolean value) {
+        BoolValue.Builder builder = BoolValue.newBuilder();
+        builder.setValue(value);
+        return builder.build();
+    }
 
+    public static StringValue getStringValue(String value) {
+        StringValue.Builder builder = StringValue.newBuilder();
+        builder.setValue(value);
+        return builder.build();
+    }
+
+    public static Int64Value getInt64Value(Long value) {
+        Int64Value.Builder builder = Int64Value.newBuilder();
+        builder.setValue(value);
+        return builder.build();
+    }
+
+    public static BytesValue getBytesValue(ByteString value) {
+        BytesValue.Builder builder = BytesValue.newBuilder();
+        builder.setValue(value);
+        return builder.build();
+    }
 }

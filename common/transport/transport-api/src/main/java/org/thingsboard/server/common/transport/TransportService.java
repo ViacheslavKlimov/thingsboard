@@ -81,6 +81,7 @@ import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceTokenR
 import org.thingsboard.server.gen.transport.TransportProtos.ValidateDeviceX509CertRequestMsg;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by ashvayka on 04.10.18.
@@ -184,4 +185,6 @@ public interface TransportService {
     void log(SessionInfoProto sessionInfo, String msg);
 
     void notifyAboutUplink(SessionInfoProto sessionInfo, TransportProtos.UplinkNotificationMsg build, TransportServiceCallback<Void> empty);
+
+    ExecutorService getCallbackExecutor();
 }

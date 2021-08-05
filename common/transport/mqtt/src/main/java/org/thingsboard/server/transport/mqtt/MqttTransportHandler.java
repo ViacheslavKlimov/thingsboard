@@ -117,6 +117,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -159,9 +160,9 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     private final SslHandler sslHandler;
     private final ConcurrentMap<MqttTopicMatcher, Integer> mqttQoSMap;
 
-    private final DeviceSessionCtx deviceSessionCtx;
-    private volatile InetSocketAddress address;
-    private volatile GatewaySessionHandler gatewaySessionHandler;
+    final DeviceSessionCtx deviceSessionCtx;
+    volatile InetSocketAddress address;
+    volatile GatewaySessionHandler gatewaySessionHandler;
 
 
     private final ConcurrentMap<String, String> otaPackSessions;
@@ -192,10 +193,11 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 if (message.decoderResult().isSuccess()) {
                     processMqttMsg(ctx, message);
                 } else {
-                    log.error("[{}] Message processing failed: {}", sessionId, message.decoderResult().cause().getMessage());
+                    log.error("[{}] Message decoding failed: {}", sessionId, message.decoderResult().cause().getMessage());
                     ctx.close();
                 }
             } else {
+                log.debug("[{}] Received non mqtt message: {}", sessionId, msg.getClass().getSimpleName());
                 ctx.close();
             }
         } finally {
@@ -203,11 +205,11 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         }
     }
 
-    private void processMqttMsg(ChannelHandlerContext ctx, MqttMessage msg) {
-        address = (InetSocketAddress) ctx.channel().remoteAddress();
+    void processMqttMsg(ChannelHandlerContext ctx, MqttMessage msg) {
+        address = getAddress(ctx);
         if (msg.fixedHeader() == null) {
             log.info("[{}:{}] Invalid message received", address.getHostName(), address.getPort());
-            processDisconnect(ctx);
+            ctx.close();
             return;
         }
         deviceSessionCtx.setChannel(ctx);
@@ -216,8 +218,12 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         } else if (deviceSessionCtx.isProvisionOnly()) {
             processProvisionSessionMsg(ctx, msg);
         } else {
-            processRegularSessionMsg(ctx, msg);
+            enqueueRegularSessionMsg(ctx, msg);
         }
+    }
+
+    InetSocketAddress getAddress(ChannelHandlerContext ctx) {
+        return (InetSocketAddress) ctx.channel().remoteAddress();
     }
 
     private void processProvisionSessionMsg(ChannelHandlerContext ctx, MqttMessage msg) {
@@ -243,8 +249,8 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                             }
                         }
                     } else {
+                        log.debug("[{}] Unsupported topic for provisioning requests: {}!", sessionId, topicName);
                         ctx.close();
-                        throw new RuntimeException("Unsupported topic for provisioning requests!");
                     }
                 } catch (RuntimeException | AdaptorException e) {
                     log.warn("[{}] Failed to process publish msg [{}][{}]", sessionId, topicName, msgId, e);
@@ -255,14 +261,33 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 ctx.writeAndFlush(new MqttMessage(new MqttFixedHeader(PINGRESP, false, AT_MOST_ONCE, false, 0)));
                 break;
             case DISCONNECT:
-                if (checkConnected(ctx, msg)) {
-                    processDisconnect(ctx);
-                }
+                ctx.close();
                 break;
         }
     }
 
-    private void processRegularSessionMsg(ChannelHandlerContext ctx, MqttMessage msg) {
+    void enqueueRegularSessionMsg(ChannelHandlerContext ctx, MqttMessage msg) {
+        final int queueSize = deviceSessionCtx.getMsgQueueSize();
+        if (queueSize >= context.getMessageQueueSizePerDeviceLimit()) {
+            log.info("Closing current session because msq queue size for device {} exceed limit {} with msgQueueSize counter {} and actual queue size {}",
+                    deviceSessionCtx.getDeviceId(), context.getMessageQueueSizePerDeviceLimit(), queueSize, deviceSessionCtx.getMsgQueueSize());
+            ctx.close();
+            return;
+        }
+
+        deviceSessionCtx.addToQueue(msg);
+        processMsgQueue(ctx); //Under the normal conditions the msg queue will contain 0 messages. Many messages will be processed on device connect event in separate thread pool
+    }
+
+    void processMsgQueue(ChannelHandlerContext ctx) {
+        if (!deviceSessionCtx.isConnected()) {
+            log.trace("[{}][{}] Postpone processing msg due to device is not connected. Msg queue size is {}", sessionId, deviceSessionCtx.getDeviceId(), deviceSessionCtx.getMsgQueueSize());
+            return;
+        }
+        deviceSessionCtx.tryProcessQueuedMsgs(msg -> processRegularSessionMsg(ctx, msg));
+    }
+
+    void processRegularSessionMsg(ChannelHandlerContext ctx, MqttMessage msg) {
         switch (msg.fixedHeader().messageType()) {
             case PUBLISH:
                 processPublish(ctx, (MqttPublishMessage) msg);
@@ -280,9 +305,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 }
                 break;
             case DISCONNECT:
-                if (checkConnected(ctx, msg)) {
-                    processDisconnect(ctx);
-                }
+                ctx.close();
                 break;
             case PUBACK:
                 int msgId = ((MqttPubAckMessage) msg).variableHeader().messageId();
@@ -438,7 +461,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             @Override
             public void onError(Throwable e) {
                 log.trace("[{}] Failed to publish msg: {}", sessionId, msg, e);
-                processDisconnect(ctx);
+                ctx.close();
             }
         };
     }
@@ -465,8 +488,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 } else {
                     payloadAdaptor = deviceSessionCtx.getContext().getProtoMqttAdaptor();
                 }
-                publish(payloadAdaptor.convertToPublish(deviceSessionCtx, provisionResponseMsg).orElse(null), deviceSessionCtx);
-                scheduler.schedule(() -> processDisconnect(ctx), 60, TimeUnit.SECONDS);
+                scheduler.schedule((Callable<ChannelFuture>) ctx::close, 60, TimeUnit.SECONDS);
             } catch (Exception e) {
                 log.trace("[{}] Failed to convert device attributes response to MQTT msg", sessionId, e);
             }
@@ -475,7 +497,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         @Override
         public void onError(Throwable e) {
             log.trace("[{}] Failed to publish msg: {}", sessionId, msg, e);
-            processDisconnect(ctx);
+            ctx.close();
         }
     }
 
@@ -510,7 +532,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         @Override
         public void onError(Throwable e) {
             log.trace("[{}] Failed to get firmware: {}", sessionId, msg, e);
-            processDisconnect(ctx);
+            ctx.close();
         }
     }
 
@@ -527,9 +549,10 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
 
     private void sendOtaPackageError(ChannelHandlerContext ctx, String error) {
         log.warn("[{}] {}", sessionId, error);
-        publish(deviceSessionCtx.getPayloadAdaptor()
-                .createMqttPublishMsg(deviceSessionCtx, MqttTopics.DEVICE_FIRMWARE_ERROR_TOPIC, error.getBytes()), deviceSessionCtx);
-        processDisconnect(ctx);
+        deviceSessionCtx.getChannel().writeAndFlush(deviceSessionCtx
+                .getPayloadAdaptor()
+                .createMqttPublishMsg(deviceSessionCtx, MqttTopics.DEVICE_FIRMWARE_ERROR_TOPIC, error.getBytes()));
+        ctx.close();
     }
 
     private void processSubscribe(ChannelHandlerContext ctx, MqttSubscribeMessage mqttMsg) {
@@ -629,7 +652,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
         return new MqttMessage(mqttFixedHeader, mqttMessageIdVariableHeader);
     }
 
-    private void processConnect(ChannelHandlerContext ctx, MqttConnectMessage msg) {
+    void processConnect(ChannelHandlerContext ctx, MqttConnectMessage msg) {
         log.info("[{}] Processing connect msg for client: {}!", sessionId, msg.payload().clientIdentifier());
         String userName = msg.payload().userName();
         String clientId = msg.payload().clientIdentifier();
@@ -698,6 +721,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                     });
         } catch (Exception e) {
             ctx.writeAndFlush(createMqttConnAckMsg(CONNECTION_REFUSED_NOT_AUTHORIZED, connectMessage));
+            log.trace("[{}] X509 auth failure: {}", sessionId, address, e);
             ctx.close();
         }
     }
@@ -713,12 +737,6 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             return null;
         }
         return null;
-    }
-
-    private void processDisconnect(ChannelHandlerContext ctx) {
-        ctx.close();
-        log.info("[{}] Client disconnected!", sessionId);
-        doDisconnect();
     }
 
     private MqttConnAckMessage createMqttConnAckMsg(MqttConnectReturnCode returnCode, MqttConnectMessage msg) {
@@ -765,7 +783,6 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             return true;
         } else {
             log.info("[{}] Closing current session due to invalid msg order: {}", sessionId, msg);
-            ctx.close();
             return false;
         }
     }
@@ -790,11 +807,13 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
 
     @Override
     public void operationComplete(Future<? super Void> future) throws Exception {
+        log.trace("[{}] Channel closed!", sessionId);
         doDisconnect();
     }
 
-    private void doDisconnect() {
+    public void doDisconnect() {
         if (deviceSessionCtx.isConnected()) {
+            log.info("[{}] Client disconnected!", sessionId);
             transportService.process(deviceSessionCtx.getSessionInfo(), DefaultTransportService.getSessionEventMsg(SessionEvent.CLOSED), null);
             transportService.deregisterSession(deviceSessionCtx.getSessionInfo());
             if (gatewaySessionHandler != null) {
@@ -802,6 +821,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
             }
             deviceSessionCtx.setDisconnected();
         }
+        deviceSessionCtx.release();
     }
 
 
@@ -819,7 +839,9 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                     SessionMetaData sessionMetaData = transportService.registerAsyncSession(deviceSessionCtx.getSessionInfo(), MqttTransportHandler.this);
                     checkGatewaySession(sessionMetaData);
                     ctx.writeAndFlush(createMqttConnAckMsg(CONNECTION_ACCEPTED, connectMessage));
+                    deviceSessionCtx.setConnected(true);
                     log.info("[{}] Client connected!", sessionId);
+                    transportService.getCallbackExecutor().execute(() -> processMsgQueue(ctx)); //this callback will execute in Producer worker thread and hard or blocking work have to be submitted to the separate thread.
                 }
 
                 @Override
@@ -858,7 +880,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
     @Override
     public void onRemoteSessionCloseCommand(UUID sessionId, SessionCloseNotificationProto sessionCloseNotification) {
         log.trace("[{}] Received the remote command to close the session: {}", sessionId, sessionCloseNotification.getMessage());
-        processDisconnect(deviceSessionCtx.getChannel());
+        deviceSessionCtx.getChannel().close();
     }
 
     @Override

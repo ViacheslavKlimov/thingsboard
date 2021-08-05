@@ -85,6 +85,10 @@ public class MqttTransportContext extends TransportContext {
     private SslHandler sslHandler;
 
     @Getter
+    @Value("${transport.mqtt.msg_queue_size_per_device_limit:100}")
+    private int messageQueueSizePerDeviceLimit;
+
+    @Getter
     private final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
 
     @PostConstruct

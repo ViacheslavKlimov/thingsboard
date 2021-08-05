@@ -29,52 +29,31 @@
 /// OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 ///
 
-import { ChangeDetectorRef, Component, Inject } from '@angular/core';
-import { Store } from '@ngrx/store';
-import { AppState } from '@core/core.state';
-import { EntityComponent } from '../../components/entity/entity.component';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { WidgetsBundle } from '@shared/models/widgets-bundle.model';
-import { EntityTableConfig } from '@home/models/entity/entities-table-config.models';
+import { AfterViewInit, Component, ElementRef } from '@angular/core';
 
 @Component({
-  selector: 'tb-widgets-bundle',
-  templateUrl: './widgets-bundle.component.html',
-  styleUrls: ['./widgets-bundle.component.scss']
+  selector: 'tb-toggle-password',
+  templateUrl: 'toggle-password.component.html',
+  styleUrls: [],
 })
-export class WidgetsBundleComponent extends EntityComponent<WidgetsBundle> {
+export class TogglePasswordComponent implements AfterViewInit {
+  showPassword = false;
+  hideToggle = false;
+  private input: HTMLInputElement = null;
 
-  constructor(protected store: Store<AppState>,
-              @Inject('entity') protected entityValue: WidgetsBundle,
-              @Inject('entitiesTableConfig') protected entitiesTableConfigValue: EntityTableConfig<WidgetsBundle>,
-              protected fb: FormBuilder,
-              protected cd: ChangeDetectorRef) {
-    super(store, fb, entityValue, entitiesTableConfigValue, cd);
+  constructor(private hostElement: ElementRef) { }
+
+  togglePassword($event: Event) {
+    $event.stopPropagation();
+    $event.preventDefault();
+    this.showPassword = !this.showPassword;
+    this.input.type = this.showPassword ? 'text' : 'password';
   }
 
-  hideDelete() {
-    if (this.entitiesTableConfig) {
-      return !this.entitiesTableConfig.deleteEnabled(this.entity);
-    } else {
-      return false;
+  ngAfterViewInit() {
+    this.input = this.hostElement.nativeElement.closest('mat-form-field').querySelector('input[type="password"]');
+    if (this.input === null) {
+      this.hideToggle = true;
     }
-  }
-
-  buildForm(entity: WidgetsBundle): FormGroup {
-    return this.fb.group(
-      {
-        title: [entity ? entity.title : '', [Validators.required]],
-        image: [entity ? entity.image : ''],
-        description: [entity  ? entity.description : '', Validators.maxLength(255)]
-      }
-    );
-  }
-
-  updateForm(entity: WidgetsBundle) {
-    this.entityForm.patchValue({
-      title: entity.title,
-      image: entity.image,
-      description: entity.description
-    });
   }
 }
