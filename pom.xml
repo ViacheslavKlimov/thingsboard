@@ -151,6 +151,8 @@
         <snmp4j.version>2.8.5</snmp4j.version>
         <snmp4j-agent.version>2.7.4</snmp4j-agent.version>
         <opensmpp.version>3.0.0</opensmpp.version>
+        <jaxb.version>2.3.0</jaxb.version>
+        <jsch.version>0.1.55</jsch.version>
     </properties>
 
     <modules>
@@ -1183,6 +1185,11 @@
                 <version>${javax-annotation.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.jcraft</groupId>
+                <artifactId>jsch</artifactId>
+                <version>${jsch.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>jakarta.xml.bind</groupId>
                 <artifactId>jakarta.xml.bind-api</artifactId>
                 <version>${jakarta.xml.bind-api.version}</version>
@@ -1933,6 +1940,21 @@
                 <groupId>org.opensmpp</groupId>
                 <artifactId>opensmpp-core</artifactId>
                 <version>${opensmpp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-core</artifactId>
+                <version>${jaxb.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

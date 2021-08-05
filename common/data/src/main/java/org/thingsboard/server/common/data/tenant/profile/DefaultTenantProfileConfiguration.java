@@ -30,12 +30,16 @@
  */
 package org.thingsboard.server.common.data.tenant.profile;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.TenantProfileType;
+import org.thingsboard.server.common.data.billing.UsageDataKey;
+
+import java.util.Optional;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -78,6 +82,8 @@ public class DefaultTenantProfileConfiguration implements TenantProfileConfigura
 
     private double warnThreshold;
 
+    private SubscriptionPlanInfo subscriptionPlanInfo;
+
     @Override
     public long getProfileThreshold(ApiUsageRecordKey key) {
         switch (key) {
@@ -115,4 +121,27 @@ public class DefaultTenantProfileConfiguration implements TenantProfileConfigura
     public int getMaxRuleNodeExecsPerMessage() {
         return maxRuleNodeExecutionsPerMessage;
     }
+
+    @Data
+    public static class SubscriptionPlanInfo {
+        private double price;
+        private int materialNumber;
+        private PerUnitPrices perUnitPrices;
+    }
+
+    @Data
+    public static class PerUnitPrices {
+        private double whiteLabeling;
+
+        public Optional<Double> getPriceForFeature(UsageDataKey usageDataKey) {
+            Double price = null;
+            switch (usageDataKey) {
+                case WHITE_LABELING:
+                    price = whiteLabeling;
+                    break;
+            }
+            return Optional.ofNullable(price);
+        }
+    }
+
 }

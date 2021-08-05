@@ -49,12 +49,14 @@ import org.thingsboard.server.common.data.tenant.profile.TenantProfileData;
 import org.thingsboard.server.dao.DaoUtil;
 import org.thingsboard.server.dao.entity.AbstractEntityService;
 import org.thingsboard.server.dao.exception.DataValidationException;
+import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.thingsboard.server.common.data.CacheConstants.TENANT_PROFILE_CACHE;
 import static org.thingsboard.server.dao.service.Validator.validateId;
@@ -244,6 +246,14 @@ public class TenantProfileServiceImpl extends AbstractEntityService implements T
                             throw new DataValidationException("Another default tenant profile is present!");
                         }
                     }
+                    tenantProfile.getProfileConfiguration()
+                            .flatMap(profileConfiguration -> Optional.ofNullable(profileConfiguration.getSubscriptionPlanInfo()))
+                            .map(DefaultTenantProfileConfiguration.SubscriptionPlanInfo::getMaterialNumber)
+                            .ifPresent(materialNumber -> {
+                                if (materialNumber != 0 && !ModelConstants.ALLOWED_SUBSCRIPTION_PLAN_MATERIAL_NUMBERS.contains(materialNumber)) {
+                                    throw new DataValidationException("Unknown material number!");
+                                }
+                            });
                 }
 
                 @Override

@@ -3687,6 +3687,7 @@
         "manage-tenant-admins": "Manage tenant admins",
         "delete": "Delete tenant",
         "add-tenant-text": "Add new tenant",
+        "customer-reference": "Customer Reference",
         "no-tenants-text": "No tenants found",
         "tenant-details": "Tenant details",
         "delete-tenant-title": "Are you sure you want to delete the tenant '{{tenantTitle}}'?",
@@ -3697,6 +3698,7 @@
         "title": "Title",
         "title-required": "Title is required.",
         "description": "Description",
+        "magenta-customer-id": "Magenta Customer Id",
         "details": "Details",
         "events": "Events",
         "copyId": "Copy tenant Id",
@@ -4352,6 +4354,14 @@
             "pie-slice-click": "On slice click",
             "row-double-click": "On row double click"
         }
+    },
+    "magenta": {
+      "tenant-profile" : {
+        "subscription-plan-price": "Subscription plan price",
+        "min-price": "minimum price 0",
+        "material-number": "Material number",
+        "white-labeling-price": "White Labeling price"
+      }
     },
     "language": {
         "language": "Language",

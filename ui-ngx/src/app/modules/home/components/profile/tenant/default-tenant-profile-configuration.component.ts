@@ -34,8 +34,14 @@ import { ControlValueAccessor, FormBuilder, FormGroup, NG_VALUE_ACCESSOR, Valida
 import { Store } from '@ngrx/store';
 import { AppState } from '@app/core/core.state';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
-import { DefaultTenantProfileConfiguration, TenantProfileConfiguration } from '@shared/models/tenant.model';
+import {
+  createTenantProfileConfiguration,
+  DefaultTenantProfileConfiguration,
+  TenantProfileConfiguration,
+  TenantProfileType
+} from '@shared/models/tenant.model';
 import { isDefinedAndNotNull } from '@core/utils';
+import _ from 'lodash';
 
 @Component({
   selector: 'tb-default-tenant-profile-configuration',
@@ -96,7 +102,14 @@ export class DefaultTenantProfileConfigurationComponent implements ControlValueA
       maxCreatedAlarms: [null, [Validators.required, Validators.min(0)]],
       defaultStorageTtlDays: [null, [Validators.required, Validators.min(0)]],
       alarmsTtlDays: [null, [Validators.required, Validators.min(0)]],
-      rpcTtlDays: [null, [Validators.required, Validators.min(0)]]
+      rpcTtlDays: [null, [Validators.required, Validators.min(0)]],
+      subscriptionPlanInfo: this.fb.group({
+        price: [0, [Validators.min(0)]],
+        materialNumber: [null, []],
+        perUnitPrices: this.fb.group({
+          whiteLabeling: [0, [Validators.min(0)]]
+        })
+      })
     });
     this.defaultTenantProfileConfigurationFormGroup.valueChanges.subscribe(() => {
       this.updateModel();
@@ -123,6 +136,9 @@ export class DefaultTenantProfileConfigurationComponent implements ControlValueA
   }
 
   writeValue(value: DefaultTenantProfileConfiguration | null): void {
+    value = _.mergeWith({}, createTenantProfileConfiguration(TenantProfileType.DEFAULT), value,
+      (a, b) => b === null ? a : undefined
+    );
     if (isDefinedAndNotNull(value)) {
       this.defaultTenantProfileConfigurationFormGroup.patchValue(value, {emitEvent: false});
     }

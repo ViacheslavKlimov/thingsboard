@@ -28,41 +28,33 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.tenant;
+package org.thingsboard.server.controller;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import org.thingsboard.server.common.data.Tenant;
-import org.thingsboard.server.common.data.TenantInfo;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
+import lombok.AllArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.service.billing.InvoiceStorageService;
 
-import java.util.List;
+@AllArgsConstructor
+@RestController
+@TbCoreComponent
+@RequestMapping("/api/billing")
+@PreAuthorize("hasAnyAuthority('SYS_ADMIN')")
+public class BillingController extends BaseController {
+    private final InvoiceStorageService invoiceStorageService;
 
-public interface TenantService {
+    @GetMapping("/upload_xml_invoices")
+    public void loadXml() throws Exception {
+        invoiceStorageService.generateAndUploadXmlInvoices();
+    }
 
-    Tenant findTenantById(TenantId tenantId);
-
-    TenantInfo findTenantInfoById(TenantId tenantId);
-
-    ListenableFuture<Tenant> findTenantByIdAsync(TenantId callerId, TenantId tenantId);
-
-    ListenableFuture<List<Tenant>> findTenantsByIdsAsync(TenantId callerId, List<TenantId> tenantIds);
-
-    Tenant saveTenant(Tenant tenant);
-
-    void deleteTenant(TenantId tenantId);
-
-    PageData<Tenant> findTenants(PageLink pageLink);
-
-    PageData<TenantInfo> findTenantInfos(PageLink pageLink);
-
-    PageData<TenantId> findTenantsIds(PageLink pageLink);
-
-    void deleteTenants();
-
-    Tenant findTenantByMagentaCustomerId(String magentaCustomerId);
-
-    PageData<Tenant> findTenantsByAdditionalInfoField(String additionalInfoField, String additionalInfoFieldValue, PageLink pageLink);
+    @GetMapping("/load_pdf_invoices")
+    public void loadPdf() throws Exception {
+        invoiceStorageService.loadPdfInvoices();
+    }
 
 }

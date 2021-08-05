@@ -35,6 +35,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.kv.Aggregation;
 
+import java.util.Set;
 import java.util.UUID;
 
 public class ModelConstants {
@@ -146,6 +147,12 @@ public class ModelConstants {
     public static final String TENANT_PROFILE_IS_DEFAULT_PROPERTY = "is_default";
     public static final String TENANT_PROFILE_ISOLATED_TB_CORE = "isolated_tb_core";
     public static final String TENANT_PROFILE_ISOLATED_TB_RULE_ENGINE = "isolated_tb_rule_engine";
+
+    public static final Set<Integer> ALLOWED_SUBSCRIPTION_PLAN_MATERIAL_NUMBERS = Set.of(
+            10100, 10110, 10120, 10200, 10210, 10220, 10300, 10310, 10320
+    );
+
+    public static final String MAGENTA_CUSTOMER_ID = "magentaCustomerId";
 
     /**
      * Cassandra customer constants.

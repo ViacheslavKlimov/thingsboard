@@ -72,6 +72,14 @@ export interface DefaultTenantProfileConfiguration {
   defaultStorageTtlDays: number;
   alarmsTtlDays: number;
   rpcTtlDays: number;
+
+  subscriptionPlanInfo: {
+    price: number;
+    materialNumber: number;
+    perUnitPrices: {
+      whiteLabeling: number;
+    }
+  };
 }
 
 export type TenantProfileConfigurations = DefaultTenantProfileConfiguration;
@@ -108,7 +116,14 @@ export function createTenantProfileConfiguration(type: TenantProfileType): Tenan
           maxCreatedAlarms: 0,
           defaultStorageTtlDays: 0,
           alarmsTtlDays: 0,
-          rpcTtlDays: 0
+          rpcTtlDays: 0,
+          subscriptionPlanInfo: {
+            materialNumber: 0,
+            perUnitPrices: {
+              whiteLabeling: 0
+            },
+            price: 0
+          }
         };
         configuration = {...defaultConfiguration, type: TenantProfileType.DEFAULT};
         break;

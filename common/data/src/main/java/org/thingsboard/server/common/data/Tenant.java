@@ -32,10 +32,13 @@ package org.thingsboard.server.common.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.EqualsAndHashCode;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
 import org.thingsboard.server.common.data.validation.NoXss;
+
+import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 public class Tenant extends ContactBased<TenantId> implements TenantEntity {
@@ -107,6 +110,22 @@ public class Tenant extends ContactBased<TenantId> implements TenantEntity {
     @Override
     public String getSearchText() {
         return getTitle();
+    }
+
+    @JsonIgnore
+    public String getMagentaCustomerId() {
+        return Optional.ofNullable(getAdditionalInfo())
+                .flatMap(info -> Optional.ofNullable(info.get("magentaCustomerId")))
+                .map(JsonNode::asText)
+                .orElse(null);
+    }
+
+    @JsonIgnore
+    public String getCustomerReference() {
+        return Optional.ofNullable(getAdditionalInfo())
+                .flatMap(info -> Optional.ofNullable(info.get("customerReference")))
+                .map(JsonNode::asText)
+                .orElse(null);
     }
 
     @Override

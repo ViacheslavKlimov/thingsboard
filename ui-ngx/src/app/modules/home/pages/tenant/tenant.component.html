@@ -74,6 +74,14 @@
       </tb-tenant-profile-autocomplete>
       <div formGroupName="additionalInfo" fxLayout="column">
         <mat-form-field class="mat-block">
+          <mat-label translate>tenant.magenta-customer-id</mat-label>
+          <input matInput formControlName="magentaCustomerId"/>
+        </mat-form-field>
+        <mat-form-field class="mat-block">
+          <mat-label translate>tenant.customer-reference</mat-label>
+          <input matInput formControlName="customerReference"/>
+        </mat-form-field>
+        <mat-form-field class="mat-block">
           <mat-label translate>tenant.description</mat-label>
           <textarea matInput formControlName="description" rows="2"></textarea>
         </mat-form-field>

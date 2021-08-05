@@ -31,17 +31,21 @@
 package org.thingsboard.server.dao.tenant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.ListenableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantInfo;
 import org.thingsboard.server.common.data.TenantProfile;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.TenantProfileId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.asset.AssetService;
@@ -56,6 +60,7 @@ import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.grouppermission.GroupPermissionService;
 import org.thingsboard.server.dao.integration.IntegrationService;
+import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.ota.OtaPackageService;
 import org.thingsboard.server.dao.resource.ResourceService;
 import org.thingsboard.server.dao.role.RoleService;
@@ -70,7 +75,10 @@ import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
 import org.thingsboard.server.dao.wl.WhiteLabelingService;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.thingsboard.server.dao.DaoUtil.toUUIDs;
 import static org.thingsboard.server.dao.service.Validator.validateId;
@@ -188,6 +196,7 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
             tenant.setTenantProfileId(tenantProfile.getId());
         }
         tenantValidator.validate(tenant, Tenant::getId);
+        addTenantProfileChangeHistory(tenant);
         Tenant savedTenant = tenantDao.save(tenant.getId(), tenant);
         if (tenant.getId() == null) {
             deviceProfileService.createDefaultDeviceProfile(savedTenant.getId());
@@ -205,6 +214,22 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
             apiUsageStateService.createDefaultApiUsageState(savedTenant.getId(), null);
         }
         return savedTenant;
+    }
+
+    private void addTenantProfileChangeHistory(Tenant tenant) {
+        ObjectNode additionalInfo = (ObjectNode) Optional.ofNullable(tenant.getAdditionalInfo()).orElseGet(JacksonUtil::newObjectNode);
+        ObjectNode tenantProfileChangeHistory = (ObjectNode) Optional.ofNullable(additionalInfo.get("tenantProfileChangeHistory")).orElseGet(JacksonUtil::newObjectNode);
+
+        TenantProfileId lastTenantProfileId = Streams.stream(tenantProfileChangeHistory.fields())
+                .max(Comparator.comparing(entry -> Long.parseLong(entry.getKey())))
+                .map(entry -> new TenantProfileId(UUID.fromString(entry.getValue().asText())))
+                .orElse(null);
+        if (!tenant.getTenantProfileId().equals(lastTenantProfileId)) {
+            tenantProfileChangeHistory.put(String.valueOf(System.currentTimeMillis()), tenant.getTenantProfileId().toString());
+        }
+
+        additionalInfo.set("tenantProfileChangeHistory", tenantProfileChangeHistory);
+        tenant.setAdditionalInfo(additionalInfo);
     }
 
     @Override
@@ -262,6 +287,22 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
         tenantsRemover.removeEntities(new TenantId(EntityId.NULL_UUID), DEFAULT_TENANT_REGION);
     }
 
+    @Override
+    public Tenant findTenantByMagentaCustomerId(String magentaCustomerId) {
+        if (StringUtils.isEmpty(magentaCustomerId)) {
+            return null;
+        }
+        return Optional.of(tenantDao.findTenantsByAdditionalInfoField(ModelConstants.MAGENTA_CUSTOMER_ID, magentaCustomerId, new PageLink(1)))
+                .filter(result -> result.getTotalElements() == 1)
+                .map(result -> result.getData().get(0))
+                .orElse(null);
+    }
+
+    @Override
+    public PageData<Tenant> findTenantsByAdditionalInfoField(String additionalInfoField, String additionalInfoFieldValue, PageLink pageLink) {
+        return tenantDao.findTenantsByAdditionalInfoField(additionalInfoField, additionalInfoFieldValue, pageLink);
+    }
+
     private DataValidator<Tenant> tenantValidator =
             new DataValidator<Tenant>() {
                 @Override
@@ -271,6 +312,10 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
                     }
                     if (!StringUtils.isEmpty(tenant.getEmail())) {
                         validateEmail(tenant.getEmail());
+                    }
+                    if (StringUtils.isNotEmpty(tenant.getMagentaCustomerId()) &&
+                            findTenantByMagentaCustomerId(tenant.getMagentaCustomerId()) != null) {
+                        throw new DataValidationException("Tenant with such Magenta customer id already exists");
                     }
                 }
 

@@ -72,4 +72,9 @@ public interface TenantRepository extends PagingAndSortingRepository<TenantEntit
     @Query("SELECT t.id FROM TenantEntity t")
     Page<UUID> findTenantsIds(Pageable pageable);
 
+    @Query(value = "SELECT * FROM tenant t WHERE t.additional_info\\:\\:json ->> :additionalInfoField = :additionalInfoFieldValue", nativeQuery = true)
+    Page<TenantEntity> findTenantsByAdditionalInfoField(@Param("additionalInfoField") String additionalInfoField,
+                                                        @Param("additionalInfoFieldValue") String additionalInfoFieldValue,
+                                                        Pageable pageable);
+
 }

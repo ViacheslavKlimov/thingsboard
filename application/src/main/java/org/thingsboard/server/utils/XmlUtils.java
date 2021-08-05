@@ -28,41 +28,24 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.tenant;
+package org.thingsboard.server.utils;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import org.thingsboard.server.common.data.Tenant;
-import org.thingsboard.server.common.data.TenantInfo;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
-public interface TenantService {
-
-    Tenant findTenantById(TenantId tenantId);
-
-    TenantInfo findTenantInfoById(TenantId tenantId);
-
-    ListenableFuture<Tenant> findTenantByIdAsync(TenantId callerId, TenantId tenantId);
-
-    ListenableFuture<List<Tenant>> findTenantsByIdsAsync(TenantId callerId, List<TenantId> tenantIds);
-
-    Tenant saveTenant(Tenant tenant);
-
-    void deleteTenant(TenantId tenantId);
-
-    PageData<Tenant> findTenants(PageLink pageLink);
-
-    PageData<TenantInfo> findTenantInfos(PageLink pageLink);
-
-    PageData<TenantId> findTenantsIds(PageLink pageLink);
-
-    void deleteTenants();
-
-    Tenant findTenantByMagentaCustomerId(String magentaCustomerId);
-
-    PageData<Tenant> findTenantsByAdditionalInfoField(String additionalInfoField, String additionalInfoFieldValue, PageLink pageLink);
-
+@Slf4j
+public class XmlUtils {
+    public static InputStream objectToXmlInputStream(Object data) throws Exception {
+        JAXBContext jaxbContext = JAXBContext.newInstance(data.getClass());
+        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+        jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        ByteArrayOutputStream array = new ByteArrayOutputStream();
+        jaxbMarshaller.marshal(data, array);
+        return new ByteArrayInputStream(array.toByteArray());
+    }
 }

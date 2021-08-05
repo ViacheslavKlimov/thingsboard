@@ -74,4 +74,6 @@ public interface TenantDao extends Dao<Tenant> {
 
     PageData<TenantId> findTenantsIds(PageLink pageLink);
 
+    PageData<Tenant> findTenantsByAdditionalInfoField(String additionalInfoField, String additionalInfoValue, PageLink pageLink);
+
 }

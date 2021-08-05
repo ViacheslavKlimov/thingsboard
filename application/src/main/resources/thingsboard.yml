@@ -1060,3 +1060,14 @@ management:
       exposure:
         # Expose metrics endpoint (use value 'prometheus' to enable prometheus metrics).
         include: '${METRICS_ENDPOINTS_EXPOSE:info}'
+
+billing:
+  sftp:
+    host: '${BILLING_SFTP_HOST:}'
+    username: '${BILLING_SFTP_USERNAME:}'
+    password: '${BILLING_SFTP_PASSWORD:}'
+    connect_timeout: '${BILLING_SFTP_CONNECT_TIMEOUT:3000}'
+    xml_invoices_directory: '${BILLING_SFTP_XML_INVOICES_DIRECTORY:}'
+    xml_invoices_archive_directory: '${BILLING_SFTP_XML_INVOICES_ARCHIVE_DIRECTORY:}'
+    pdf_invoices_directory: '${BILLING_SFTP_PDF_INVOICES_DIRECTORY:}'
+    pdf_invoices_archive_directory: '${BILLING_SFTP_PDF_INVOICES_ARCHIVE_DIRECTORY:}'

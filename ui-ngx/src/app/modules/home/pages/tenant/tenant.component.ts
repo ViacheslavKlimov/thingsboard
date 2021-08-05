@@ -73,11 +73,15 @@ export class TenantComponent extends ContactBasedComponent<TenantInfo> {
         additionalInfo: this.fb.group(
           {
             description: [entity && entity.additionalInfo ? entity.additionalInfo.description : ''],
+            magentaCustomerId: [entity && entity.additionalInfo && isDefined(entity.additionalInfo.magentaCustomerId) ?
+              entity.additionalInfo.magentaCustomerId : ''],
+            customerReference: [entity && entity.additionalInfo && isDefined(entity.additionalInfo.customerReference) ?
+              entity.additionalInfo.customerReference : ''],
             allowWhiteLabeling: [entity && entity.additionalInfo
-                     && isDefined(entity.additionalInfo.allowWhiteLabeling) ? entity.additionalInfo.allowWhiteLabeling : true],
+            && isDefined(entity.additionalInfo.allowWhiteLabeling) ? entity.additionalInfo.allowWhiteLabeling : true],
             allowCustomerWhiteLabeling: [entity && entity.additionalInfo
-                    && isDefined(entity.additionalInfo.allowCustomerWhiteLabeling) ?
-                        entity.additionalInfo.allowCustomerWhiteLabeling : true],
+            && isDefined(entity.additionalInfo.allowCustomerWhiteLabeling) ?
+              entity.additionalInfo.allowCustomerWhiteLabeling : true],
             homeDashboardId: [entity && entity.additionalInfo ? entity.additionalInfo.homeDashboardId : null],
             homeDashboardHideToolbar: [entity && entity.additionalInfo &&
             isDefinedAndNotNull(entity.additionalInfo.homeDashboardHideToolbar) ? entity.additionalInfo.homeDashboardHideToolbar : true]
@@ -90,17 +94,22 @@ export class TenantComponent extends ContactBasedComponent<TenantInfo> {
   updateEntityForm(entity: Tenant) {
     this.entityForm.patchValue({title: entity.title});
     this.entityForm.patchValue({tenantProfileId: entity.tenantProfileId});
-    this.entityForm.patchValue({additionalInfo: {
-      description: entity.additionalInfo ? entity.additionalInfo.description : '',
-      allowWhiteLabeling: entity.additionalInfo
-        && isDefined(entity.additionalInfo.allowWhiteLabeling) ? entity.additionalInfo.allowWhiteLabeling : true,
-      allowCustomerWhiteLabeling: entity.additionalInfo
-        && isDefined(entity.additionalInfo.allowCustomerWhiteLabeling) ?
+    this.entityForm.patchValue({
+      additionalInfo: {
+        description: entity.additionalInfo ? entity.additionalInfo.description : '',
+        magentaCustomerId: entity.additionalInfo && isDefined(entity.additionalInfo.magentaCustomerId) ?
+          entity.additionalInfo.magentaCustomerId : '',
+        customerReference: entity.additionalInfo && isDefined(entity.additionalInfo.customerReference) ?
+          entity.additionalInfo.customerReference : '',
+        allowWhiteLabeling: entity.additionalInfo && isDefined(entity.additionalInfo.allowWhiteLabeling) ?
+          entity.additionalInfo.allowWhiteLabeling : true,
+        allowCustomerWhiteLabeling: entity.additionalInfo && isDefined(entity.additionalInfo.allowCustomerWhiteLabeling) ?
           entity.additionalInfo.allowCustomerWhiteLabeling : true,
-      homeDashboardId: entity.additionalInfo ? entity.additionalInfo.homeDashboardId : null,
-      homeDashboardHideToolbar: entity.additionalInfo &&
-        isDefinedAndNotNull(entity.additionalInfo.homeDashboardHideToolbar) ? entity.additionalInfo.homeDashboardHideToolbar : true
-    }});
+        homeDashboardId: entity.additionalInfo ? entity.additionalInfo.homeDashboardId : null,
+        homeDashboardHideToolbar: entity.additionalInfo && isDefinedAndNotNull(entity.additionalInfo.homeDashboardHideToolbar) ?
+          entity.additionalInfo.homeDashboardHideToolbar : true
+      }
+    });
   }
 
   updateFormState() {
