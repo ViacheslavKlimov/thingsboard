@@ -93,7 +93,7 @@ public class SwaggerConfiguration {
                         String.class);
 
         return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("thingsboard")
+                .groupName("MagentaIotHub")
                 .apiInfo(apiInfo())
                 .alternateTypeRules(
                         new AlternateTypeRule(
