@@ -82,8 +82,8 @@ import org.thingsboard.server.queue.discovery.TbApplicationEventListener;
 import org.thingsboard.server.queue.discovery.event.PartitionChangeEvent;
 import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.scheduler.SchedulerComponent;
-import org.thingsboard.server.service.queue.TbClusterService;
 import org.thingsboard.server.service.security.permission.OwnersCacheService;
+import org.thingsboard.server.cluster.TbClusterService;
 import org.thingsboard.server.service.telemetry.InternalTelemetryService;
 
 import javax.annotation.PostConstruct;
