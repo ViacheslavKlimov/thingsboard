@@ -30,6 +30,7 @@
  */
 package org.thingsboard.server.dao.tenant;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Streams;
@@ -217,7 +218,11 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
     }
 
     private void addTenantProfileChangeHistory(Tenant tenant) {
-        ObjectNode additionalInfo = (ObjectNode) Optional.ofNullable(tenant.getAdditionalInfo()).orElseGet(JacksonUtil::newObjectNode);
+        JsonNode additionalInfo = tenant.getAdditionalInfo();
+        if (additionalInfo == null || additionalInfo.isNull()) {
+            additionalInfo = JacksonUtil.newObjectNode();
+        }
+
         ObjectNode tenantProfileChangeHistory = (ObjectNode) Optional.ofNullable(additionalInfo.get("tenantProfileChangeHistory")).orElseGet(JacksonUtil::newObjectNode);
 
         TenantProfileId lastTenantProfileId = Streams.stream(tenantProfileChangeHistory.fields())
@@ -228,7 +233,7 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
             tenantProfileChangeHistory.put(String.valueOf(System.currentTimeMillis()), tenant.getTenantProfileId().toString());
         }
 
-        additionalInfo.set("tenantProfileChangeHistory", tenantProfileChangeHistory);
+        ((ObjectNode)additionalInfo).set("tenantProfileChangeHistory", tenantProfileChangeHistory);
         tenant.setAdditionalInfo(additionalInfo);
     }
 
