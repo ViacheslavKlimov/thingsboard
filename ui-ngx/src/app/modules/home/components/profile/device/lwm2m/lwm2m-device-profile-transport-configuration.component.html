@@ -160,6 +160,7 @@
               <mat-select formControlName="swUpdateStrategy">
                 <mat-option [value]=1>{{ 'device-profile.lwm2m.sw-update-strategy-package' | translate }}</mat-option>
                 <mat-option [value]=2>{{ 'device-profile.lwm2m.sw-update-strategy-package-uri' | translate }}</mat-option>
+                <mat-option [value]=3>{{ 'device-profile.lwm2m.sw-update-strategy-package-manualy' | translate }}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field class="mat-block" fxFlex *ngIf="lwm2mDeviceProfileFormGroup.get('clientLwM2mSettings.swUpdateStrategy').value === 2">

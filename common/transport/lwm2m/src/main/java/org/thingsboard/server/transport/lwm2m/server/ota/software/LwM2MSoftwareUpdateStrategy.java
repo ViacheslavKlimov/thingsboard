@@ -32,7 +32,8 @@ package org.thingsboard.server.transport.lwm2m.server.ota.software;
 
 public enum LwM2MSoftwareUpdateStrategy {
     BINARY(1, "ObjectId 9, Binary"),
-    TEMP_URL(2, "ObjectId 9, URI");
+    TEMP_URL(2, "ObjectId 9, URI"),
+    MANUALY(3, "Manualy");;
 
     public int code;
     public String type;
