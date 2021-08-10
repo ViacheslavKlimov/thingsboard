@@ -1503,6 +1503,7 @@
             "sw-update-strategy": "Software update strategy",
             "sw-update-strategy-package": "Push binary file using Object 9 and Resource 2 (Package)",
             "sw-update-strategy-package-uri": "Auto-generate unique CoAP URL to download the package and push software update using Object 9 and Resource 3 (Package URI)",
+            "sw-update-strategy-package-manualy": "Push binary file manualy",
             "fw-update-resource": "Firmware update CoAP resource",
             "fw-update-resource-required": "Firmware update CoAP resource is required.",
             "sw-update-resource": "Software update CoAP resource",

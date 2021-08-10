@@ -432,7 +432,9 @@ public class DefaultLwM2MOtaUpdateService extends LwM2MExecutorAwareService impl
                     log.debug("[{}] Attempt to restore the update state: {}", client.getEndpoint(), swInfo.getUpdateState());
                     executeSwUninstallForUpdate(client);
                 } else {
-                    if (StringUtils.isNotEmpty(swInfo.getTargetUrl())) {
+                    if (LwM2MSoftwareUpdateStrategy.MANUALY.equals(swInfo.getStrategy())) {
+                        log.debug("[{}] Starting update to [{}{}] manualy", client.getEndpoint(), swInfo.getTargetName(), swInfo.getTargetVersion());
+                    } else if (StringUtils.isNotEmpty(swInfo.getTargetUrl())) {
                         log.debug("[{}] Starting update to [{}{}] using URL: {}", client.getEndpoint(), swInfo.getTargetName(), swInfo.getTargetVersion(), swInfo.getTargetUrl());
                         startUpdateUsingUrl(client, SW_PACKAGE_URI_ID, swInfo.getTargetUrl());
                     } else {
