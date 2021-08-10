@@ -34,7 +34,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -44,6 +43,7 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.msg.queue.ServiceType;
+import org.thingsboard.server.common.msg.tools.SchedulerUtils;
 import org.thingsboard.server.dao.blob.BlobEntityService;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.queue.discovery.PartitionService;
@@ -55,9 +55,11 @@ import javax.annotation.PostConstruct;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -94,20 +96,24 @@ public class InvoiceStorageService {
 
     private static final String INVOICE_FILENAME_FORMAT = "THB_%s-%s.xml";
 
+    private static final LocalTime INVOICE_GENERATION_TIME = LocalTime.of(23, 30, 0);
+
     @PostConstruct
     private void init() {
         this.sftpClient = new SftpClient(host, username, password, connectTimeout, connectTimeout);
     }
 
-    @Scheduled(initialDelay = 10 * 60 * 1000, fixedDelay = 12 * 60 * 60 * 1000)
-    private void generateAndUploadXmlInvoicesBySchedule() throws Exception {
-        if (LocalDate.now().getDayOfMonth() == LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth() &&
-                partitionService.resolve(ServiceType.TB_CORE, TenantId.SYS_TENANT_ID, TenantId.SYS_TENANT_ID).isMyPartition()) {
-            generateAndUploadXmlInvoices();
-        }
+    @PostConstruct
+    private void generateAndUploadXmlInvoicesBySchedule() {
+        SchedulerUtils.scheduleForEachDayAtSpecificTime(() -> {
+            if (LocalDate.now().getDayOfMonth() == LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth() &&
+                    partitionService.resolve(ServiceType.TB_CORE, TenantId.SYS_TENANT_ID, TenantId.SYS_TENANT_ID).isMyPartition()) {
+                generateAndUploadXmlInvoices();
+            }
+        }, INVOICE_GENERATION_TIME, Executors.newSingleThreadScheduledExecutor(), true);
     }
 
-    public void generateAndUploadXmlInvoices() throws Exception {
+    public void generateAndUploadXmlInvoices() {
         try {
             sftpLock.lock();
             sftpClient.establishConnection();

@@ -30,14 +30,18 @@
  */
 package org.thingsboard.server.common.msg.tools;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
@@ -85,6 +89,20 @@ public class SchedulerUtils {
 
     public static TemporalAdjuster firstDayOfNextNextMonth() {
         return (temporal) -> temporal.with(DAY_OF_MONTH, 1).plus(2, MONTHS);
+    }
+
+    public static void scheduleForEachDayAtSpecificTime(Runnable task, LocalTime timeOfDay, ScheduledExecutorService executor, boolean executeIfTimeOfDayPassed) {
+        LocalTime currentTime = LocalTime.now();
+        Duration timeToLaunch = Duration.between(currentTime, timeOfDay);
+
+        if (timeToLaunch.isNegative()) {
+            if (executeIfTimeOfDayPassed) {
+                executor.submit(task);
+            }
+            timeToLaunch = timeToLaunch.plusDays(1);
+        }
+
+        executor.scheduleAtFixedRate(task, timeToLaunch.toMillis(), TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS);
     }
 
 }
