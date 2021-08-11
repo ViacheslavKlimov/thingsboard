@@ -488,6 +488,7 @@ public class MqttTransportHandler extends ChannelInboundHandlerAdapter implement
                 } else {
                     payloadAdaptor = deviceSessionCtx.getContext().getProtoMqttAdaptor();
                 }
+                publish(payloadAdaptor.convertToPublish(deviceSessionCtx, provisionResponseMsg).orElse(null), deviceSessionCtx);
                 scheduler.schedule((Callable<ChannelFuture>) ctx::close, 60, TimeUnit.SECONDS);
             } catch (Exception e) {
                 log.trace("[{}] Failed to convert device attributes response to MQTT msg", sessionId, e);
