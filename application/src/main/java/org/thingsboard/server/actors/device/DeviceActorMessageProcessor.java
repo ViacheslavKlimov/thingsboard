@@ -41,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.common.util.LinkedHashMapRemoveEldest;
-import org.thingsboard.server.common.data.rpc.RpcError;
 import org.thingsboard.rule.engine.api.msg.DeviceAttributesEventNotificationMsg;
 import org.thingsboard.rule.engine.api.msg.DeviceCredentialsUpdateNotificationMsg;
 import org.thingsboard.rule.engine.api.msg.DeviceEdgeUpdateMsg;
@@ -51,7 +50,17 @@ import org.thingsboard.server.actors.TbActorCtx;
 import org.thingsboard.server.actors.shared.AbstractContextAwareMsgProcessor;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.data.StringUtils;
+import org.thingsboard.server.common.data.device.data.DeviceData;
+import org.thingsboard.server.common.data.device.data.DeviceTransportConfiguration;
+import org.thingsboard.server.common.data.device.data.PowerMode;
+import org.thingsboard.server.common.data.device.data.PowerSavingConfiguration;
+import org.thingsboard.server.common.data.device.data.lwm2m.OtherConfiguration;
+import org.thingsboard.server.common.data.device.profile.CoapDeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.DeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.Lwm2mDeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.edge.EdgeEvent;
 import org.thingsboard.server.common.data.edge.EdgeEventActionType;
 import org.thingsboard.server.common.data.edge.EdgeEventType;
@@ -67,6 +76,7 @@ import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.relation.RelationTypeGroup;
 import org.thingsboard.server.common.data.rpc.Rpc;
+import org.thingsboard.server.common.data.rpc.RpcError;
 import org.thingsboard.server.common.data.rpc.RpcStatus;
 import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
 import org.thingsboard.server.common.data.security.DeviceCredentials;
@@ -74,6 +84,7 @@ import org.thingsboard.server.common.data.security.DeviceCredentialsType;
 import org.thingsboard.server.common.msg.TbActorMsg;
 import org.thingsboard.server.common.msg.TbMsgMetaData;
 import org.thingsboard.server.common.msg.queue.TbCallback;
+import org.thingsboard.server.common.msg.rpc.FromDeviceRpcResponse;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 import org.thingsboard.server.common.msg.timeout.DeviceActorServerSideRpcTimeoutMsg;
 import org.thingsboard.server.gen.transport.TransportProtos;
@@ -101,7 +112,6 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportUpdateCredentialsProto;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportToDeviceActorMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TsKvProto;
-import org.thingsboard.server.common.msg.rpc.FromDeviceRpcResponse;
 import org.thingsboard.server.service.rpc.FromDeviceRpcResponseActorMsg;
 import org.thingsboard.server.service.rpc.RemoveRpcActorMsg;
 import org.thingsboard.server.service.rpc.ToDeviceRpcRequestActorMsg;
@@ -116,6 +126,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -190,9 +201,11 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
 
     void processRpcRequest(TbActorCtx context, ToDeviceRpcRequestActorMsg msg) {
         ToDeviceRpcRequest request = msg.getMsg();
-        ToDeviceRpcRequestMsg rpcRequest = creteToDeviceRpcRequestMsg(request);
+        ToDeviceRpcRequestMsg rpcRequest = createToDeviceRpcRequestMsg(request);
 
         long timeout = request.getExpirationTime() - System.currentTimeMillis();
+
+        request.setPersisted(rpcRequest.getPersisted());
         boolean persisted = request.isPersisted();
 
         if (timeout <= 0) {
@@ -254,7 +267,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
         return systemContext.getTbRpcService().save(tenantId, rpc);
     }
 
-    private ToDeviceRpcRequestMsg creteToDeviceRpcRequestMsg(ToDeviceRpcRequest request) {
+    private ToDeviceRpcRequestMsg createToDeviceRpcRequestMsg(ToDeviceRpcRequest request) {
         ToDeviceRpcRequestBody body = request.getBody();
         return ToDeviceRpcRequestMsg.newBuilder()
                 .setRequestId(rpcSeq++)
@@ -264,8 +277,47 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                 .setRequestIdMSB(request.getId().getMostSignificantBits())
                 .setRequestIdLSB(request.getId().getLeastSignificantBits())
                 .setOneway(request.isOneway())
-                .setPersisted(request.isPersisted())
+                .setPersisted(isPersisted(request))
                 .build();
+    }
+
+    private boolean isPersisted(ToDeviceRpcRequest request) {
+        boolean isPersisted = request.isPersisted();
+        if (!isPersisted) {
+            DeviceProfile deviceProfile = systemContext.getDeviceProfileCache().get(request.getTenantId(), request.getDeviceId());
+            if (deviceProfile.getTransportType() == DeviceTransportType.COAP || deviceProfile.getTransportType() == DeviceTransportType.LWM2M) {
+                PowerMode profilePowerMode = Optional.ofNullable(deviceProfile.getProfileData())
+                        .flatMap(deviceProfileData -> {
+                            DeviceProfileTransportConfiguration profileTransportConfiguration = deviceProfileData.getTransportConfiguration();
+                            switch (profileTransportConfiguration.getType()) {
+                                case COAP:
+                                    return Optional.ofNullable(((CoapDeviceProfileTransportConfiguration) profileTransportConfiguration).getClientSettings())
+                                            .map(PowerSavingConfiguration::getPowerMode);
+                                case LWM2M:
+                                    return Optional.ofNullable(((Lwm2mDeviceProfileTransportConfiguration) profileTransportConfiguration).getClientLwM2mSettings())
+                                            .map(OtherConfiguration::getPowerMode);
+                                default:
+                                    return Optional.empty();
+                            }
+                        })
+                        .orElse(null);
+                if (profilePowerMode == PowerMode.PSM || profilePowerMode == PowerMode.E_DRX) {
+                    isPersisted = true;
+                } else {
+                    Device device = systemContext.getDeviceService().findDeviceById(request.getTenantId(), request.getDeviceId());
+                    DeviceTransportConfiguration deviceTransportConfiguration = Optional.ofNullable(device.getDeviceData())
+                            .map(DeviceData::getTransportConfiguration)
+                            .orElse(null);
+                    if (deviceTransportConfiguration instanceof PowerSavingConfiguration) {
+                        PowerMode devicePowerMode = ((PowerSavingConfiguration) deviceTransportConfiguration).getPowerMode();
+                        if (devicePowerMode == PowerMode.PSM || devicePowerMode == PowerMode.E_DRX) {
+                            isPersisted = true;
+                        }
+                    }
+                }
+            }
+        }
+        return isPersisted;
     }
 
     void processRpcResponsesFromEdge(TbActorCtx context, FromDeviceRpcResponseActorMsg responseMsg) {
@@ -882,7 +934,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                     rpc.setStatus(RpcStatus.TIMEOUT);
                     systemContext.getTbRpcService().save(tenantId, rpc);
                 } else {
-                    registerPendingRpcRequest(ctx, new ToDeviceRpcRequestActorMsg(systemContext.getServiceId(), msg), false, creteToDeviceRpcRequestMsg(msg), timeout);
+                    registerPendingRpcRequest(ctx, new ToDeviceRpcRequestActorMsg(systemContext.getServiceId(), msg), false, createToDeviceRpcRequestMsg(msg), timeout);
                 }
             });
             if (pageData.hasNext()) {
