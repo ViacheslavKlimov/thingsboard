@@ -89,6 +89,10 @@ public class MqttTransportContext extends TransportContext {
     private int messageQueueSizePerDeviceLimit;
 
     @Getter
+    @Value("${transport.mqtt.timeout:10000}")
+    private long timeout;
+
+    @Getter
     private final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
 
     @PostConstruct

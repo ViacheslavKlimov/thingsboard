@@ -1,4 +1,4 @@
-/**
+/*
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
  * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
@@ -28,42 +28,21 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m;
+import * as React from 'react';
+import ThingsboardAceEditor from './json-form-ace-editor';
+import { JsonFormFieldProps, JsonFormFieldState } from '@shared/components/json-form/react/json-form.models';
 
-import org.eclipse.leshan.client.object.Security;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.thingsboard.server.common.data.device.credentials.lwm2m.X509ClientCredentials;
-import org.thingsboard.server.common.transport.util.SslUtil;
+class ThingsboardMarkdown extends React.Component<JsonFormFieldProps, JsonFormFieldState> {
 
-import static org.eclipse.leshan.client.object.Security.x509;
+  constructor(props) {
+    super(props);
+  }
 
-public class X509LwM2MIntegrationTest extends AbstractLwM2MIntegrationTest {
-
-    @Test
-    public void testConnectAndObserveTelemetry() throws Exception {
-        X509ClientCredentials credentials = new X509ClientCredentials();
-        credentials.setEndpoint(ENDPOINT);
-        Security security = x509(SECURE_URI,
-                123,
-                clientX509Cert.getEncoded(),
-                clientPrivateKeyFromCert.getEncoded(),
-                serverX509Cert.getEncoded());
-        super.basicTestConnectionObserveTelemetry(security, credentials, SECURE_COAP_CONFIG, ENDPOINT);
-    }
-
-    @Ignore //See LwM2mClientContextImpl.unregister
-    @Test
-    public void testConnectWithCertAndObserveTelemetry() throws Exception {
-        X509ClientCredentials credentials = new X509ClientCredentials();
-        credentials.setEndpoint(ENDPOINT);
-        credentials.setCert(SslUtil.getCertificateString(clientX509CertNotTrusted));
-        Security security = x509(SECURE_URI,
-                123,
-                clientX509CertNotTrusted.getEncoded(),
-                clientPrivateKeyFromCert.getEncoded(),
-                serverX509Cert.getEncoded());
-        super.basicTestConnectionObserveTelemetry(security, credentials, SECURE_COAP_CONFIG, ENDPOINT);
-    }
-
+  render() {
+    return (
+      <ThingsboardAceEditor {...this.props} mode='markdown' {...this.state}></ThingsboardAceEditor>
+    );
+  }
 }
+
+export default ThingsboardMarkdown;
