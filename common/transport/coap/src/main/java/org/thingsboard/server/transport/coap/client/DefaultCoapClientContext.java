@@ -59,6 +59,7 @@ import org.thingsboard.server.common.data.device.profile.ProtoTransportPayloadCo
 import org.thingsboard.server.common.data.device.profile.TransportPayloadTypeConfiguration;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
+import org.thingsboard.server.common.data.rpc.RpcStatus;
 import org.thingsboard.server.common.msg.session.FeatureType;
 import org.thingsboard.server.common.msg.session.SessionMsgType;
 import org.thingsboard.server.common.transport.SessionMsgListener;
@@ -212,29 +213,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
         client.lock();
         try {
             long uplinkTime = client.updateLastUplinkTime(uplinkTs);
-            long timeout;
-            if (PowerMode.PSM.equals(powerMode)) {
-                Long psmActivityTimer = client.getPsmActivityTimer();
-                if (psmActivityTimer == null && profileSettings != null) {
-                    psmActivityTimer = profileSettings.getPsmActivityTimer();
-
-                }
-                if (psmActivityTimer == null || psmActivityTimer == 0L) {
-                    psmActivityTimer = config.getPsmActivityTimer();
-                }
-
-                timeout = psmActivityTimer;
-            } else {
-                Long pagingTransmissionWindow = client.getPagingTransmissionWindow();
-                if (pagingTransmissionWindow == null && profileSettings != null) {
-                    pagingTransmissionWindow = profileSettings.getPagingTransmissionWindow();
-
-                }
-                if (pagingTransmissionWindow == null || pagingTransmissionWindow == 0L) {
-                    pagingTransmissionWindow = config.getPagingTransmissionWindow();
-                }
-                timeout = pagingTransmissionWindow;
-            }
+            long timeout = getTimeout(client, powerMode, profileSettings);
             Future<Void> sleepTask = client.getSleepTask();
             if (sleepTask != null) {
                 sleepTask.cancel(false);
@@ -252,6 +231,33 @@ public class DefaultCoapClientContext implements CoapClientContext {
         } finally {
             client.unlock();
         }
+    }
+
+    private long getTimeout(TbCoapClientState client, PowerMode powerMode, PowerSavingConfiguration profileSettings) {
+        long timeout;
+        if (PowerMode.PSM.equals(powerMode)) {
+            Long psmActivityTimer = client.getPsmActivityTimer();
+            if (psmActivityTimer == null && profileSettings != null) {
+                psmActivityTimer = profileSettings.getPsmActivityTimer();
+
+            }
+            if (psmActivityTimer == null || psmActivityTimer == 0L) {
+                psmActivityTimer = config.getPsmActivityTimer();
+            }
+
+            timeout = psmActivityTimer;
+        } else {
+            Long pagingTransmissionWindow = client.getPagingTransmissionWindow();
+            if (pagingTransmissionWindow == null && profileSettings != null) {
+                pagingTransmissionWindow = profileSettings.getPagingTransmissionWindow();
+
+            }
+            if (pagingTransmissionWindow == null || pagingTransmissionWindow == 0L) {
+                pagingTransmissionWindow = config.getPagingTransmissionWindow();
+            }
+            timeout = pagingTransmissionWindow;
+        }
+        return timeout;
     }
 
     private boolean registerFeatureObservation(TbCoapClientState state, String token, CoapExchange exchange, FeatureType featureType) {
@@ -545,8 +551,38 @@ public class DefaultCoapClientContext implements CoapClientContext {
                 int requestId = getNextMsgId();
                 response.setMID(requestId);
 
-                if (msg.getPersisted() && conRequest) {
+                if (conRequest) {
+                    PowerMode powerMode = state.getPowerMode();
+                    PowerSavingConfiguration profileSettings = null;
+                    if (powerMode == null) {
+                        var clientProfile = getProfile(state.getProfileId());
+                        if (clientProfile.isPresent()) {
+                            profileSettings = clientProfile.get().getClientSettings();
+                            if (profileSettings != null) {
+                                powerMode = profileSettings.getPowerMode();
+                            }
+                        }
+                    }
+
                     transportContext.getRpcAwaitingAck().put(requestId, msg);
+                    transportContext.getScheduler().schedule(() -> {
+                        TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(requestId);
+                        if (rpcRequestMsg != null) {
+                            transportService.process(state.getSession(), msg, RpcStatus.TIMEOUT, TransportServiceCallback.EMPTY);
+                        }
+                    }, Math.min(getTimeout(state, powerMode, profileSettings), msg.getExpirationTime() - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+
+                    response.addMessageObserver(new TbCoapMessageObserver(requestId, id -> {
+                        TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(id);
+                        if (rpcRequestMsg != null) {
+                            transportService.process(state.getSession(), rpcRequestMsg, RpcStatus.DELIVERED, TransportServiceCallback.EMPTY);
+                        }
+                    }, id -> {
+                        TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(id);
+                        if (rpcRequestMsg != null) {
+                            transportService.process(state.getSession(), msg, RpcStatus.TIMEOUT, TransportServiceCallback.EMPTY);
+                        }
+                    }));
                 }
 
                 if (msg.getOneway()) {
@@ -557,12 +593,6 @@ public class DefaultCoapClientContext implements CoapClientContext {
                     rpcRequestsAwaitingResponse.add(requestId);
                     scheduleRpcRequestTimeout(msg, requestId, ApiUsageRecordKey.FAILED_TWO_WAY_RPC_REQUEST_COUNT);
                 }
-                response.addMessageObserver(new TbCoapMessageObserver(requestId, id -> {
-                    TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(id);
-                    if (rpcRequestMsg != null) {
-                        transportService.process(state.getSession(), rpcRequestMsg, TransportServiceCallback.EMPTY);
-                    }
-                }, null));
                 response.addMessageObserver(new AbstractCoapTransportResource.CoapRequestFailureMessageObserver(() -> {
                     TransportProtos.ToDeviceRpcRequestMsg rpcRequestMsg = transportContext.getRpcAwaitingAck().remove(requestId);
                     if (rpcRequestMsg != null) {
@@ -588,8 +618,12 @@ public class DefaultCoapClientContext implements CoapClientContext {
                     transportService.process(state.getSession(),
                             TransportProtos.ToDeviceRpcResponseMsg.newBuilder()
                                     .setRequestId(msg.getRequestId()).setError(error).build(), TransportServiceCallback.EMPTY);
-                } else if (msg.getPersisted() && !conRequest && sent) {
-                    transportService.process(state.getSession(), msg, TransportServiceCallback.EMPTY);
+                } else if (sent) {
+                    if (!conRequest) {
+                        transportService.process(state.getSession(), msg, RpcStatus.DELIVERED, TransportServiceCallback.EMPTY);
+                    } else if (msg.getPersisted()) {
+                        transportService.process(state.getSession(), msg, RpcStatus.SENT, TransportServiceCallback.EMPTY);
+                    }
                 }
             }
         }
@@ -612,7 +646,6 @@ public class DefaultCoapClientContext implements CoapClientContext {
 
         private void scheduleRpcRequestTimeout(TransportProtos.ToDeviceRpcRequestMsg rpcRequest, int msgId, ApiUsageRecordKey key) {
             transportContext.getScheduler().schedule(() -> {
-                transportContext.getRpcAwaitingAck().remove(msgId);
                 boolean notAcknowledged = transportContext.getRequestsAwaitingAck().containsKey(msgId);
                 boolean notReplied = rpcRequestsAwaitingResponse.remove(rpcRequest.getRequestId());
                 if (notAcknowledged || notReplied) {
@@ -775,7 +808,7 @@ public class DefaultCoapClientContext implements CoapClientContext {
     private void cancelRpcSubscription(TbCoapClientState state) {
         if (state.getRpc() != null) {
             clientsByToken.remove(state.getRpc().getToken());
-            CoapExchange exchange = state.getAttrs().getExchange();
+            CoapExchange exchange = state.getRpc().getExchange();
             state.setRpc(null);
             transportService.process(state.getSession(),
                     TransportProtos.SubscribeToRPCMsg.newBuilder().setUnsubscribe(true).build(),

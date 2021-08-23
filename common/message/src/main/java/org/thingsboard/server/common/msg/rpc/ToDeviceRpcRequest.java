@@ -53,6 +53,7 @@ public class ToDeviceRpcRequest implements Serializable {
     private final long expirationTime;
     private final ToDeviceRpcRequestBody body;
     private boolean persisted;
+    private final Integer retries;
     @JsonIgnore
     private final String additionalInfo;
 }

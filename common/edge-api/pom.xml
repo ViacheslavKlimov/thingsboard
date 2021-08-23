@@ -35,7 +35,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.thingsboard</groupId>
-        <version>3.3.0PE-MG8-SNAPSHOT</version>
+        <version>3.3.1PE-MG8-SNAPSHOT</version>
         <artifactId>common</artifactId>
     </parent>
     <groupId>org.thingsboard.common</groupId>
@@ -134,15 +134,26 @@
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-
-    <distributionManagement>
-        <repository>
-            <id>thingsboard-repo-deploy</id>
-            <name>ThingsBoard Repo Deployment</name>
-            <url>https://repo.thingsboard.io/artifactory/libs-release-public</url>
-        </repository>
-    </distributionManagement>
 
 </project>

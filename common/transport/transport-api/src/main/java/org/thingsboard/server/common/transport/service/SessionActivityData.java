@@ -28,31 +28,30 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.transport.lwm2m;
+package org.thingsboard.server.common.transport.service;
 
-import org.eclipse.leshan.client.object.Security;
-import org.eclipse.leshan.core.util.Hex;
-import org.junit.Test;
-import org.thingsboard.server.common.data.device.credentials.lwm2m.PSKClientCredentials;
+import lombok.Data;
+import org.thingsboard.server.common.transport.SessionMsgListener;
+import org.thingsboard.server.gen.transport.TransportProtos;
 
-import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ScheduledFuture;
 
-import static org.eclipse.leshan.client.object.Security.psk;
+/**
+ * Created by ashvayka on 15.10.18.
+ */
+@Data
+public class SessionActivityData {
 
-public class PskLwm2mIntegrationTest extends AbstractLwM2MIntegrationTest {
+    private volatile TransportProtos.SessionInfoProto sessionInfo;
+    private volatile long lastActivityTime;
+    private volatile long lastReportedActivityTime;
 
-    @Test
-    public void testConnectWithPSKAndObserveTelemetry() throws Exception {
-        String pskIdentity = "SOME_PSK_ID";
-        String pskKey = "73656372657450534b";
-        PSKClientCredentials clientCredentials = new PSKClientCredentials();
-        clientCredentials.setEndpoint(ENDPOINT);
-        clientCredentials.setKey(pskKey);
-        clientCredentials.setIdentity(pskIdentity);
-        Security security = psk(SECURE_URI,
-                123,
-                pskIdentity.getBytes(StandardCharsets.UTF_8),
-                Hex.decodeHex(pskKey.toCharArray()));
-        super.basicTestConnectionObserveTelemetry(security, clientCredentials, SECURE_COAP_CONFIG, ENDPOINT);
+    SessionActivityData(TransportProtos.SessionInfoProto sessionInfo) {
+        this.sessionInfo = sessionInfo;
     }
+
+    void updateLastActivityTime() {
+        this.lastActivityTime = System.currentTimeMillis();
+    }
+
 }
