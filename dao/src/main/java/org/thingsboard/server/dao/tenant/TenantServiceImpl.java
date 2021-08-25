@@ -318,9 +318,11 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
                     if (!StringUtils.isEmpty(tenant.getEmail())) {
                         validateEmail(tenant.getEmail());
                     }
-                    if (StringUtils.isNotEmpty(tenant.getMagentaCustomerId()) &&
-                            findTenantByMagentaCustomerId(tenant.getMagentaCustomerId()) != null) {
-                        throw new DataValidationException("Tenant with such Magenta customer id already exists");
+                    if (StringUtils.isNotEmpty(tenant.getMagentaCustomerId())) {
+                        Tenant existingTenantByMagentaCustomerId = findTenantByMagentaCustomerId(tenant.getMagentaCustomerId());
+                        if (existingTenantByMagentaCustomerId != null && !existingTenantByMagentaCustomerId.getTenantId().equals(tenantId)) {
+                            throw new DataValidationException("Tenant with such Magenta customer id already exists");
+                        }
                     }
                 }
 
