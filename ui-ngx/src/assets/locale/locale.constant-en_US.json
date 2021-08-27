@@ -1249,7 +1249,7 @@
         "default-rule-chain": "Default rule chain",
         "mobile-dashboard": "Mobile dashboard",
         "mobile-dashboard-hint": "Used by mobile application as a device details dashboard",
-        "select-queue-hint": "Select from a drop-down list or add a custom name.",
+        "select-queue-hint": "Select from a drop-down list.",
         "delete-device-profile-title": "Are you sure you want to delete the device profile '{{deviceProfileName}}'?",
         "delete-device-profile-text": "Be careful, after the confirmation the device profile and all related data will become unrecoverable.",
         "delete-device-profiles-title": "Are you sure you want to delete { count, plural, 1 {1 device profile} other {# device profiles} }?",
@@ -3031,6 +3031,7 @@
         "total": "total",
         "comparison-time-ago": {
             "previousInterval": "(previous interval)",
+            "customInterval": "(custom interval)",
             "days": "(day ago)",
             "weeks": "(week ago)",
             "months": "(month ago)",
@@ -3675,7 +3676,8 @@
     "queue": {
       "select_name": "Select queue name",
       "name": "Queue Name",
-      "name_required": "Queue name is required!"
+      "name_required": "Queue name is required!",
+      "no-queues-matching": "No queues matching '{{queue}}' were found."
     },
     "tenant": {
         "tenant": "Tenant",
@@ -3934,7 +3936,9 @@
         "disable-account": "Disable User Account",
         "enable-account": "Enable User Account",
         "enable-account-message": "User account was successfully enabled!",
-        "disable-account-message": "User account was successfully disabled!"
+        "disable-account-message": "User account was successfully disabled!",
+        "copyId": "Copy user Id",
+        "idCopiedMessage": "User Id has been copied to clipboard"
     },
     "value": {
         "type": "Value type",
@@ -4179,6 +4183,26 @@
         "mobile-app-host": "Application URL hostname",
         "mobile-app-host-placeholder": "Ex.: my.app.host",
         "mobile-app-host-required": "Application URL hostname is required"
+    },
+    "solution-template": {
+      "solution-template": "Solution template",
+      "solution-templates": "Solution templates",
+      "management": "Manage solution templates",
+      "details": "Details",
+      "install": "Install",
+      "level": "Level",
+      "install-title": "Solution template successfully installed",
+      "install-failed-title": "Solution template installation failed",
+      "instructions": "Instructions",
+      "goto-main-dashboard": "Goto main dashboard",
+      "delete": "Delete",
+      "delete-solution-title": "Are you sure you want to delete the solution '{{solutionTitle}}'?",
+      "delete-solution-text": "Be careful, after the confirmation the solution and all related data will become unrecoverable.",
+      "installing": "Installing solution template..."
+    },
+    "markdown": {
+      "edit": "Edit",
+      "preview": "Preview"
     },
     "white-labeling": {
         "white-labeling": "White Labeling",
