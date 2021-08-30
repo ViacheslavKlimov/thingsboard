@@ -95,7 +95,6 @@ public class ThingsboardErrorResponseHandler extends ResponseEntityExceptionHand
         }
     }
 
-
     private void handleThingsboardException(ThingsboardException thingsboardException, HttpServletResponse response) throws IOException {
 
         ThingsboardErrorCode errorCode = thingsboardException.getErrorCode();
