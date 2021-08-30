@@ -31,6 +31,7 @@
 package org.thingsboard.server.common.msg.rpc;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -43,6 +44,7 @@ import java.util.UUID;
  * @author Andrew Shvayka
  */
 @Data
+@AllArgsConstructor
 public class ToDeviceRpcRequest implements Serializable {
     private final UUID id;
     private final TenantId tenantId;
@@ -50,7 +52,7 @@ public class ToDeviceRpcRequest implements Serializable {
     private final boolean oneway;
     private final long expirationTime;
     private final ToDeviceRpcRequestBody body;
-    private final boolean persisted;
+    private boolean persisted;
     private final Integer retries;
     @JsonIgnore
     private final String additionalInfo;

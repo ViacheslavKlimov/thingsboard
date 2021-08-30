@@ -726,7 +726,7 @@ export class WidgetSubscription implements IWidgetSubscription {
         (oneWayElseTwoWay ? this.ctx.deviceService.sendOneWayRpcCommand(this.targetDeviceId, requestBody) :
           this.ctx.deviceService.sendTwoWayRpcCommand(this.targetDeviceId, requestBody)).pipe(
             switchMap((response) => {
-              if (persistent && persistentPollingInterval > 0) {
+              if ((persistent || response.rpcId) && persistentPollingInterval > 0) {
                 return timer(persistentPollingInterval / 2, persistentPollingInterval).pipe(
                   switchMap(() => this.ctx.deviceService.getPersistedRpc(response.rpcId, true)),
                   filter(persistentRespons =>

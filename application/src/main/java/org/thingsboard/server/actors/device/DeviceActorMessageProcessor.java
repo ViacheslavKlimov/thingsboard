@@ -50,7 +50,17 @@ import org.thingsboard.server.actors.TbActorCtx;
 import org.thingsboard.server.actors.shared.AbstractContextAwareMsgProcessor;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.data.StringUtils;
+import org.thingsboard.server.common.data.device.data.DeviceData;
+import org.thingsboard.server.common.data.device.data.DeviceTransportConfiguration;
+import org.thingsboard.server.common.data.device.data.PowerMode;
+import org.thingsboard.server.common.data.device.data.PowerSavingConfiguration;
+import org.thingsboard.server.common.data.device.data.lwm2m.OtherConfiguration;
+import org.thingsboard.server.common.data.device.profile.CoapDeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.DeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.Lwm2mDeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.edge.EdgeEvent;
 import org.thingsboard.server.common.data.edge.EdgeEventActionType;
 import org.thingsboard.server.common.data.edge.EdgeEventType;
@@ -195,9 +205,11 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
 
     void processRpcRequest(TbActorCtx context, ToDeviceRpcRequestActorMsg msg) {
         ToDeviceRpcRequest request = msg.getMsg();
-        ToDeviceRpcRequestMsg rpcRequest = creteToDeviceRpcRequestMsg(request);
+        ToDeviceRpcRequestMsg rpcRequest = createToDeviceRpcRequestMsg(request);
 
         long timeout = request.getExpirationTime() - System.currentTimeMillis();
+
+        request.setPersisted(rpcRequest.getPersisted());
         boolean persisted = request.isPersisted();
 
         if (timeout <= 0) {
@@ -263,7 +275,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
         return systemContext.getTbRpcService().save(tenantId, rpc);
     }
 
-    private ToDeviceRpcRequestMsg creteToDeviceRpcRequestMsg(ToDeviceRpcRequest request) {
+    private ToDeviceRpcRequestMsg createToDeviceRpcRequestMsg(ToDeviceRpcRequest request) {
         ToDeviceRpcRequestBody body = request.getBody();
         return ToDeviceRpcRequestMsg.newBuilder()
                 .setRequestId(rpcSeq++)
@@ -273,8 +285,47 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                 .setRequestIdMSB(request.getId().getMostSignificantBits())
                 .setRequestIdLSB(request.getId().getLeastSignificantBits())
                 .setOneway(request.isOneway())
-                .setPersisted(request.isPersisted())
+                .setPersisted(isPersisted(request))
                 .build();
+    }
+
+    private boolean isPersisted(ToDeviceRpcRequest request) {
+        boolean isPersisted = request.isPersisted();
+        if (!isPersisted) {
+            DeviceProfile deviceProfile = systemContext.getDeviceProfileCache().get(request.getTenantId(), request.getDeviceId());
+            if (deviceProfile.getTransportType() == DeviceTransportType.COAP || deviceProfile.getTransportType() == DeviceTransportType.LWM2M) {
+                PowerMode profilePowerMode = Optional.ofNullable(deviceProfile.getProfileData())
+                        .flatMap(deviceProfileData -> {
+                            DeviceProfileTransportConfiguration profileTransportConfiguration = deviceProfileData.getTransportConfiguration();
+                            switch (profileTransportConfiguration.getType()) {
+                                case COAP:
+                                    return Optional.ofNullable(((CoapDeviceProfileTransportConfiguration) profileTransportConfiguration).getClientSettings())
+                                            .map(PowerSavingConfiguration::getPowerMode);
+                                case LWM2M:
+                                    return Optional.ofNullable(((Lwm2mDeviceProfileTransportConfiguration) profileTransportConfiguration).getClientLwM2mSettings())
+                                            .map(OtherConfiguration::getPowerMode);
+                                default:
+                                    return Optional.empty();
+                            }
+                        })
+                        .orElse(null);
+                if (profilePowerMode == PowerMode.PSM || profilePowerMode == PowerMode.E_DRX) {
+                    isPersisted = true;
+                } else {
+                    Device device = systemContext.getDeviceService().findDeviceById(request.getTenantId(), request.getDeviceId());
+                    DeviceTransportConfiguration deviceTransportConfiguration = Optional.ofNullable(device.getDeviceData())
+                            .map(DeviceData::getTransportConfiguration)
+                            .orElse(null);
+                    if (deviceTransportConfiguration instanceof PowerSavingConfiguration) {
+                        PowerMode devicePowerMode = ((PowerSavingConfiguration) deviceTransportConfiguration).getPowerMode();
+                        if (devicePowerMode == PowerMode.PSM || devicePowerMode == PowerMode.E_DRX) {
+                            isPersisted = true;
+                        }
+                    }
+                }
+            }
+        }
+        return isPersisted;
     }
 
     void processRpcResponsesFromEdge(TbActorCtx context, FromDeviceRpcResponseActorMsg responseMsg) {
@@ -957,7 +1008,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                     rpc.setStatus(RpcStatus.EXPIRED);
                     systemContext.getTbRpcService().save(tenantId, rpc);
                 } else {
-                    registerPendingRpcRequest(ctx, new ToDeviceRpcRequestActorMsg(systemContext.getServiceId(), msg), false, creteToDeviceRpcRequestMsg(msg), timeout);
+                    registerPendingRpcRequest(ctx, new ToDeviceRpcRequestActorMsg(systemContext.getServiceId(), msg), false, createToDeviceRpcRequestMsg(msg), timeout);
                 }
             });
             if (pageData.hasNext()) {
