@@ -33,6 +33,10 @@ package org.thingsboard.server.actors.device;
 import lombok.Data;
 import org.thingsboard.server.service.rpc.ToDeviceRpcRequestActorMsg;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * @author Andrew Shvayka
  */
@@ -42,4 +46,5 @@ public class ToDeviceRpcRequestMetadata {
     private final boolean sent;
     private int retries;
     private boolean delivered;
+    private final Set<UUID> processedSessions = new HashSet<>();
 }
