@@ -43,16 +43,25 @@ public enum ApiUsageRecordKey {
     EMAIL_EXEC_COUNT(ApiFeature.EMAIL, "emailCount", "emailLimit"),
     SMS_EXEC_COUNT(ApiFeature.SMS, "smsCount", "smsLimit"),
     CREATED_ALARMS_COUNT(ApiFeature.ALARM, "createdAlarmsCount", "createdAlarmsLimit"),
+
     REST_API_CALLS_COUNT("restApiCallsCount"),
     FAILED_REST_API_CALLS_COUNT("failedRestApiCallsCount"),
+
     UPLINK_MSG_COUNT("uplinkMsgCount"),
     FAILED_UPLINK_MSG_COUNT("failedUplinkMsgCount"),
     DOWNLINK_MSG_COUNT("downlinkMsgCount"),
     FAILED_DOWNLINK_MSG_COUNT("failedDownlinkMsgCount"),
+
     ONE_WAY_RPC_REQUEST_COUNT("oneWayRpcCount"),
     FAILED_ONE_WAY_RPC_REQUEST_COUNT("failedOneWayRpcCount"),
     TWO_WAY_RPC_REQUEST_COUNT("twoWayRpcCount"),
-    FAILED_TWO_WAY_RPC_REQUEST_COUNT("failedTwoWayRpcCount");
+    FAILED_TWO_WAY_RPC_REQUEST_COUNT("failedTwoWayRpcCount"),
+
+    QUEUED_PERSISTENT_RPC_REQUEST_COUNT("queuedPersistentRpcRequestCount"),
+    DELIVERED_PERSISTENT_RPC_REQUEST_COUNT("deliveredPersistentRpcRequestCount"),
+    SUCCESSFUL_PERSISTENT_RPC_REQUEST_COUNT("successfulPersistentRpcRequestCount"),
+    TIMED_OUT_PERSISTENT_RPC_REQUEST_COUNT("timedOutPersistentRpcRequestCount"),
+    FAILED_PERSISTENT_RPC_REQUEST_COUNT("failedPersistentRpcRequestCount");
 
     private static final ApiUsageRecordKey[] JS_RECORD_KEYS = {JS_EXEC_COUNT};
     private static final ApiUsageRecordKey[] RE_RECORD_KEYS = {RE_EXEC_COUNT};

@@ -1011,8 +1011,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                 ToDeviceRpcRequest msg = JacksonUtil.convertValue(rpc.getRequest(), ToDeviceRpcRequest.class);
                 long timeout = rpc.getExpirationTime() - System.currentTimeMillis();
                 if (timeout <= 0) {
-                    rpc.setStatus(RpcStatus.EXPIRED);
-                    systemContext.getTbRpcService().save(tenantId, rpc);
+                    systemContext.getTbRpcService().save(tenantId, rpc.getId(), RpcStatus.EXPIRED, null);
                 } else {
                     registerPendingRpcRequest(ctx, new ToDeviceRpcRequestActorMsg(systemContext.getServiceId(), msg), false, createToDeviceRpcRequestMsg(msg), timeout);
                 }

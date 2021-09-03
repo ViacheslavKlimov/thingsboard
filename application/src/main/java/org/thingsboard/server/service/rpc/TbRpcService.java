@@ -35,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.common.util.JacksonUtil;
+import org.thingsboard.server.common.data.ApiUsageRecordKey;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.RpcId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -44,6 +45,7 @@ import org.thingsboard.server.common.data.rpc.Rpc;
 import org.thingsboard.server.common.data.rpc.RpcStatus;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgMetaData;
+import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.dao.rpc.RpcService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.cluster.TbClusterService;
@@ -55,22 +57,28 @@ import org.thingsboard.server.cluster.TbClusterService;
 public class TbRpcService {
     private final RpcService rpcService;
     private final TbClusterService tbClusterService;
+    private final TbApiUsageReportClient apiUsageReportClient;
 
     public Rpc save(TenantId tenantId, Rpc rpc) {
         Rpc saved = rpcService.save(rpc);
         pushRpcMsgToRuleEngine(tenantId, saved);
+        reportRpcStatus(tenantId, rpc.getStatus());
         return saved;
     }
 
     public void save(TenantId tenantId, RpcId rpcId, RpcStatus newStatus, JsonNode response) {
         Rpc foundRpc = rpcService.findById(tenantId, rpcId);
         if (foundRpc != null) {
+            RpcStatus previousStatus = foundRpc.getStatus();
             foundRpc.setStatus(newStatus);
             if (response != null) {
                 foundRpc.setResponse(response);
             }
             Rpc saved = rpcService.save(foundRpc);
             pushRpcMsgToRuleEngine(tenantId, saved);
+            if (newStatus != previousStatus) {
+                reportRpcStatus(tenantId, newStatus);
+            }
         } else {
             log.warn("[{}] Failed to update RPC status because RPC was already deleted", rpcId);
         }
@@ -87,6 +95,30 @@ public class TbRpcService {
 
     public PageData<Rpc> findAllByDeviceIdAndStatus(TenantId tenantId, DeviceId deviceId, RpcStatus rpcStatus, PageLink pageLink) {
         return rpcService.findAllByDeviceIdAndStatus(tenantId, deviceId, rpcStatus, pageLink);
+    }
+
+    private void reportRpcStatus(TenantId tenantId, RpcStatus rpcStatus) {
+        ApiUsageRecordKey rpcUsageRecordKey = null;
+        switch (rpcStatus) {
+            case QUEUED:
+                rpcUsageRecordKey = ApiUsageRecordKey.QUEUED_PERSISTENT_RPC_REQUEST_COUNT;
+                break;
+            case DELIVERED:
+                rpcUsageRecordKey = ApiUsageRecordKey.DELIVERED_PERSISTENT_RPC_REQUEST_COUNT;
+                break;
+            case SUCCESSFUL:
+                rpcUsageRecordKey = ApiUsageRecordKey.SUCCESSFUL_PERSISTENT_RPC_REQUEST_COUNT;
+                break;
+            case TIMEOUT:
+                rpcUsageRecordKey = ApiUsageRecordKey.TIMED_OUT_PERSISTENT_RPC_REQUEST_COUNT;
+                break;
+            case FAILED:
+                rpcUsageRecordKey = ApiUsageRecordKey.FAILED_PERSISTENT_RPC_REQUEST_COUNT;
+                break;
+        }
+        if (rpcUsageRecordKey != null) {
+            apiUsageReportClient.report(tenantId, null, rpcUsageRecordKey);
+        }
     }
 
 }
