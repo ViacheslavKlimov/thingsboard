@@ -681,7 +681,6 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                 maxRpcRetries = maxRpcRetries == null ? systemContext.getMaxRpcRetries() : Math.min(maxRpcRetries, systemContext.getMaxRpcRetries());
                 if (maxRpcRetries <= md.getRetries()) {
                     toDeviceRpcPendingMap.remove(responseMsg.getRequestId());
-                    status = RpcStatus.FAILED;
                 } else {
                     md.setRetries(md.getRetries() + 1);
                     md.getProcessedSessions().clear();
