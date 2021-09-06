@@ -31,6 +31,7 @@
 package org.thingsboard.server.transport.lwm2m.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.leshan.core.attributes.Attribute;
@@ -41,6 +42,7 @@ import org.eclipse.leshan.core.node.LwM2mMultipleResource;
 import org.eclipse.leshan.core.node.LwM2mPath;
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.node.LwM2mSingleResource;
+import org.eclipse.leshan.core.node.ObjectLink;
 import org.eclipse.leshan.core.node.codec.CodecException;
 import org.eclipse.leshan.core.request.SimpleDownlinkRequest;
 import org.eclipse.leshan.core.request.WriteAttributesRequest;
@@ -59,10 +61,12 @@ import org.thingsboard.server.transport.lwm2m.server.ota.firmware.FirmwareUpdate
 import org.thingsboard.server.transport.lwm2m.server.ota.software.SoftwareUpdateResult;
 import org.thingsboard.server.transport.lwm2m.server.ota.software.SoftwareUpdateState;
 import org.thingsboard.server.transport.lwm2m.server.uplink.DefaultLwM2MUplinkMsgHandler;
+import org.thingsboard.server.transport.lwm2m.utils.LwM2mValueConverterImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -336,6 +340,15 @@ public class LwM2mTransportUtil {
             default:
                 return null;
         }
+    }
+
+    public static Map<Integer, Object> convertMultiResourceValuesFromJson(JsonObject newValProto, ResourceModel.Type type, String versionedId) {
+        Map<Integer, Object> newValues = new HashMap<>();
+        newValProto.getAsJsonObject().entrySet().forEach((obj) -> {
+            newValues.put(Integer.valueOf(obj.getKey()), LwM2mValueConverterImpl.getInstance().convertValue(obj.getValue().getAsString(),
+                    STRING, type, new LwM2mPath(fromVersionedIdToObjectId(versionedId))));
+        });
+        return newValues;
     }
 
     public static Object convertWriteAttributes(String type, Object value, DefaultLwM2MUplinkMsgHandler serviceImpl, String target) {
