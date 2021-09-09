@@ -44,11 +44,6 @@ import org.thingsboard.server.common.data.billing.UsageDataKey;
 import org.thingsboard.server.common.data.billing.UsageDataValue;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
-import org.thingsboard.server.common.data.kv.Aggregation;
-import org.thingsboard.server.common.data.kv.BaseReadTsKvQuery;
-import org.thingsboard.server.common.data.kv.KvEntry;
-import org.thingsboard.server.common.data.kv.ReadTsKvQuery;
-import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration;
 import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration.SubscriptionPlanInfo;
 import org.thingsboard.server.dao.asset.AssetDao;
@@ -68,12 +63,9 @@ import org.thingsboard.server.service.billing.Invoice.InvoiceHeader;
 import org.thingsboard.server.service.billing.Invoice.InvoiceRecord;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -83,8 +75,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static org.thingsboard.server.utils.TimeUtils.toDate;
 
 @Slf4j
 @Service
@@ -254,7 +247,7 @@ public class InvoiceGenerationService {
         List<UsageDataKey> apiUsageDataKeys = Arrays.stream(UsageDataKey.values())
                 .filter(usageDataKey -> usageDataKey.getApiUsageRecordKey() != null)
                 .collect(Collectors.toList());
-        Map<String, Long> apiUsageStats = getTsValuesForKeysAndPeriod(tenantId, apiUsageDataKeys.stream()
+        Map<String, Long> apiUsageStats = tsService.getLongTsValuesForKeysAndPeriod(tenantId, apiUsageStateService.findTenantApiUsageState(tenantId).getId(), apiUsageDataKeys.stream()
                 .map(UsageDataKey::getApiUsageRecordKey)
                 .map(ApiUsageRecordKey::getApiCountKey)
                 .collect(Collectors.toList()), billingPeriodStart.getTime(), billingPeriodEnd.getTime());
@@ -268,22 +261,9 @@ public class InvoiceGenerationService {
         return usageInfo;
     }
 
-    private Map<String, Long> getTsValuesForKeysAndPeriod(TenantId tenantId, Collection<String> keys, long startTs, long endTs) throws ExecutionException, InterruptedException {
-        List<ReadTsKvQuery> queries = keys.stream()
-                .map(key -> new BaseReadTsKvQuery(key, startTs, endTs, endTs - startTs, 1, Aggregation.SUM))
-                .collect(Collectors.toList());
-
-        List<TsKvEntry> kvEntries = tsService.findAll(tenantId, apiUsageStateService.findTenantApiUsageState(tenantId).getId(), queries).get();
-        return kvEntries.stream().collect(Collectors.toMap(KvEntry::getKey, tsKvEntry -> tsKvEntry.getLongValue().orElse(0L)));
-    }
-
     public static String getInvoiceNumber(TenantId id) {
         int number = Math.abs((int) (id.getId().hashCode() % 1e6));
         return StringUtils.leftPad(String.valueOf(number), 6, '0') + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-    }
-
-    private static Date toDate(LocalDateTime localDateTime) {
-        return new Date(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
 }

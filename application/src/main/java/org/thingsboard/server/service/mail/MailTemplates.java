@@ -54,6 +54,7 @@ public class MailTemplates {
     public static final String PASSWORD_WAS_RESET = "passwordWasReset"; //NOSONAR, used as constant defining key for mail template
     public static final String USER_ACTIVATED = "userActivated";
     public static final String USER_REGISTERED = "userRegistered";
+    public static final String SERVICE_MANAGEMENT_REPORT = "serviceManagementReport";
 
     private static final String SUBJECT = "subject";
     private static final String BODY = "body";
@@ -63,7 +64,7 @@ public class MailTemplates {
         if (templateNode.has(SUBJECT)) {
             return templateNode.get(SUBJECT).asText();
         } else {
-            throw new IncorrectParameterException("Template '"+template+"' doesn't have subject field.");
+            throw new IncorrectParameterException("Template '" + template + "' doesn't have subject field.");
         }
     }
 
@@ -77,14 +78,14 @@ public class MailTemplates {
             freeMakerTemplate.process(model, out);
             return out.toString();
         } else {
-            throw new IncorrectParameterException("Template '"+template+"' doesn't have body field.");
+            throw new IncorrectParameterException("Template '" + template + "' doesn't have body field.");
         }
     }
 
     private static JsonNode getTemplate(JsonNode config, String template) {
         JsonNode templateNode = config.get(template);
         if (templateNode == null) {
-            throw new IncorrectParameterException("Can't find template with name '"+template+"'.");
+            throw new IncorrectParameterException("Can't find template with name '" + template + "'.");
         }
         return templateNode;
     }

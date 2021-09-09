@@ -41,25 +41,28 @@ import org.thingsboard.server.common.data.permission.Resource;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
-@Component(value="sysAdminPermissions")
+import static org.thingsboard.server.service.security.permission.PermissionChecker.allowAllPermissionChecker;
+
+@Component(value = "sysAdminPermissions")
 public class SysAdminPermissions extends AbstractPermissions {
 
     public SysAdminPermissions() {
         super();
-        put(Resource.PROFILE, PermissionChecker.allowAllPermissionChecker);
-        put(Resource.ADMIN_SETTINGS, PermissionChecker.allowAllPermissionChecker);
+        put(Resource.PROFILE, allowAllPermissionChecker);
+        put(Resource.ADMIN_SETTINGS, allowAllPermissionChecker);
         put(Resource.DASHBOARD, new PermissionChecker.GenericPermissionChecker(Operation.READ));
         put(Resource.ALARM, new PermissionChecker.GenericPermissionChecker(Operation.READ));
-        put(Resource.TENANT, PermissionChecker.allowAllPermissionChecker);
+        put(Resource.TENANT, allowAllPermissionChecker);
         put(Resource.RULE_CHAIN, systemEntityPermissionChecker);
         put(Resource.USER, userPermissionChecker);
         put(Resource.WIDGETS_BUNDLE, systemEntityPermissionChecker);
         put(Resource.WIDGET_TYPE, systemEntityPermissionChecker);
-        put(Resource.WHITE_LABELING, PermissionChecker.allowAllPermissionChecker);
-        put(Resource.OAUTH2_CONFIGURATION_INFO, PermissionChecker.allowAllPermissionChecker);
-        put(Resource.OAUTH2_CONFIGURATION_TEMPLATE, PermissionChecker.allowAllPermissionChecker);
-        put(Resource.TENANT_PROFILE, PermissionChecker.allowAllPermissionChecker);
+        put(Resource.WHITE_LABELING, allowAllPermissionChecker);
+        put(Resource.OAUTH2_CONFIGURATION_INFO, allowAllPermissionChecker);
+        put(Resource.OAUTH2_CONFIGURATION_TEMPLATE, allowAllPermissionChecker);
+        put(Resource.TENANT_PROFILE, allowAllPermissionChecker);
         put(Resource.TB_RESOURCE, systemEntityPermissionChecker);
+        put(Resource.BLOB_ENTITY, new PermissionChecker.GenericPermissionChecker(Operation.READ));
     }
 
     private static final PermissionChecker systemEntityPermissionChecker = new PermissionChecker() {

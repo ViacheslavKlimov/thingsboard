@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.Customer;
-import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.blob.BlobEntity;
 import org.thingsboard.server.common.data.blob.BlobEntityInfo;
 import org.thingsboard.server.common.data.blob.BlobEntityWithCustomerInfo;
@@ -51,6 +50,7 @@ import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.TimePaginatedRemover;
 import org.thingsboard.server.dao.tenant.TenantDao;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import static org.thingsboard.server.dao.DaoUtil.toUUIDs;
@@ -143,6 +143,18 @@ public class BaseBlobEntityService extends AbstractEntityService implements Blob
     }
 
     @Override
+    public BlobEntity createBlobEntity(TenantId tenantId, CustomerId customerId, ByteBuffer data, String name, String type, String contentType) {
+        BlobEntity blobEntity = new BlobEntity();
+        blobEntity.setData(data);
+        blobEntity.setContentType(contentType);
+        blobEntity.setName(name);
+        blobEntity.setType(type);
+        blobEntity.setTenantId(tenantId);
+        blobEntity.setCustomerId(customerId);
+        return saveBlobEntity(blobEntity);
+    }
+
+    @Override
     public void deleteBlobEntity(TenantId tenantId, BlobEntityId blobEntityId) {
         log.trace("Executing deleteBlobEntity [{}]", blobEntityId);
         validateId(blobEntityId, INCORRECT_BLOB_ENTITY_ID + blobEntityId);
@@ -189,11 +201,6 @@ public class BaseBlobEntityService extends AbstractEntityService implements Blob
                     }
                     if (blobEntity.getTenantId() == null) {
                         throw new DataValidationException("BlobEntity should be assigned to tenant!");
-                    } else {
-                        Tenant tenant = tenantDao.findById(tenantId, blobEntity.getTenantId().getId());
-                        if (tenant == null) {
-                            throw new DataValidationException("BlobEntity is referencing to non-existent tenant!");
-                        }
                     }
                     if (blobEntity.getCustomerId() == null) {
                         blobEntity.setCustomerId(new CustomerId(NULL_UUID));
@@ -236,4 +243,5 @@ public class BaseBlobEntityService extends AbstractEntityService implements Blob
                     deleteBlobEntity(tenantId, new BlobEntityId(entity.getId().getId()));
                 }
             };
+
 }

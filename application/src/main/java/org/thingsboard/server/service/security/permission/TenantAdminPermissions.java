@@ -33,7 +33,6 @@ package org.thingsboard.server.service.security.permission;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.HasTenantId;
 import org.thingsboard.server.common.data.TenantEntity;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;

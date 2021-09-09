@@ -91,6 +91,7 @@ import org.thingsboard.server.dao.entity.EntityService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.event.EventService;
 import org.thingsboard.server.dao.exception.DataValidationException;
+import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.ota.OtaPackageService;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
@@ -116,6 +117,7 @@ import static org.thingsboard.server.dao.model.ModelConstants.NULL_UUID;
 import static org.thingsboard.server.dao.service.Validator.validateId;
 import static org.thingsboard.server.dao.service.Validator.validateIds;
 import static org.thingsboard.server.dao.service.Validator.validatePageLink;
+import static org.thingsboard.server.dao.service.Validator.validatePositiveNumber;
 import static org.thingsboard.server.dao.service.Validator.validateString;
 
 @Service
@@ -194,7 +196,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return deviceOpt.orElse(null);
     }
 
-    @Caching(evict= {
+    @Caching(evict = {
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.name}"),
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.id}")
     })
@@ -204,7 +206,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return doSaveDevice(device, accessToken, true);
     }
 
-    @Caching(evict= {
+    @Caching(evict = {
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.name}"),
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.id}")
     })
@@ -213,7 +215,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return doSaveDevice(device, null, doValidate);
     }
 
-    @Caching(evict= {
+    @Caching(evict = {
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.name}"),
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.id}")
     })
@@ -222,7 +224,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return doSaveDevice(device, null, true);
     }
 
-    @Caching(evict= {
+    @Caching(evict = {
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.name}"),
             @CacheEvict(cacheNames = DEVICE_CACHE, key = "{#device.tenantId, #device.id}")
     })
@@ -759,4 +761,17 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
 
         return deviceDao.countByDeviceProfileAndEmptyOtaPackage(tenantId.getId(), deviceProfileId.getId(), type);
     }
+
+    @Override
+    public Long countByTenantIdAndCreatedTimeBetween(TenantId tenantId, Long start, Long end) {
+        log.trace("Executing countByTenantIdAndCreatedTimeBetween,  tenantId [{}], start [{}], end [{}]", tenantId, start, end);
+        validateId(tenantId, "Incorrect tenantId");
+        validatePositiveNumber(start, "Start time must be positive");
+        validatePositiveNumber(end, "End time must be positive");
+        if (start >= end)
+            throw new IncorrectParameterException("Start time must be less than end time");
+
+        return deviceDao.countByTenantIdAndCreatedTimeBetween(tenantId, start, end);
+    }
+
 }

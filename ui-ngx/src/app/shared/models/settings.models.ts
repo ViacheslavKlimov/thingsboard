@@ -29,8 +29,8 @@
 /// OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 ///
 
-import { ValidatorFn } from '@angular/forms';
-import { isNotEmptyStr } from '@core/utils';
+import {ValidatorFn} from '@angular/forms';
+import {isNotEmptyStr} from '@core/utils';
 
 export const smtpPortPattern: RegExp = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
 
@@ -76,6 +76,7 @@ export enum MailTemplate {
   apiUsageStateEnabled = 'apiUsageStateEnabled',
   apiUsageStateWarning = 'apiUsageStateWarning',
   apiUsageStateDisabled = 'apiUsageStateDisabled',
+  serviceManagementReport = 'serviceManagementReport'
 }
 
 export const mailTemplateTranslations = new Map<MailTemplate, string>(
@@ -90,12 +91,14 @@ export const mailTemplateTranslations = new Map<MailTemplate, string>(
     [MailTemplate.userRegistered, 'admin.mail-template.user-registered'],
     [MailTemplate.apiUsageStateEnabled, 'admin.mail-template.api-usage-state-enabled'],
     [MailTemplate.apiUsageStateWarning, 'admin.mail-template.api-usage-state-warning'],
-    [MailTemplate.apiUsageStateDisabled, 'admin.mail-template.api-usage-state-disabled']
+    [MailTemplate.apiUsageStateDisabled, 'admin.mail-template.api-usage-state-disabled'],
+    [MailTemplate.serviceManagementReport, 'admin.mail-template.service-management-report']
   ]
 );
 
 export interface MailTemplatesSettings {
   useSystemMailSettings?: any;
+
   [mailTemplate: string]: {
     subject: string;
     body: string;
@@ -155,7 +158,10 @@ export interface TbSmppGatewaySmsProviderConfiguration {
   password?: string;
 }
 
-export type SmsProviderConfigurations = AwsSnsSmsProviderConfiguration & TwilioSmsProviderConfiguration & TbSmppGatewaySmsProviderConfiguration;
+export type SmsProviderConfigurations =
+  AwsSnsSmsProviderConfiguration
+  & TwilioSmsProviderConfiguration
+  & TbSmppGatewaySmsProviderConfiguration;
 
 export interface SmsProviderConfiguration extends SmsProviderConfigurations {
   useSystemSmsSettings?: boolean;

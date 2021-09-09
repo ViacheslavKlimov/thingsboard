@@ -182,7 +182,7 @@ public class AdminController extends BaseController {
             }
             adminSettings = checkNotNull(adminSettings);
             if (adminSettings.getKey().equals("mail")) {
-                if(!adminSettings.getJsonValue().has("password")) {
+                if (!adminSettings.getJsonValue().has("password")) {
                     AdminSettings mailSettings;
                     if (Authority.SYS_ADMIN.equals(authority)) {
                         mailSettings = checkNotNull(adminSettingsService.findAdminSettingsByKey(TenantId.SYS_TENANT_ID, "mail"));
@@ -253,10 +253,10 @@ public class AdminController extends BaseController {
     private AdminSettings saveTenantAdminSettings(AdminSettings adminSettings) throws Exception {
         accessControlService.checkPermission(getCurrentUser(), Resource.WHITE_LABELING, Operation.WRITE);
         JsonNode jsonValue = adminSettings.getJsonValue();
-        if(adminSettings.getKey().equals("mail") && !jsonValue.has("password")) {
+        if (adminSettings.getKey().equals("mail") && !jsonValue.has("password")) {
             JsonNode oldMailSettings = objectMapper.readTree(getEntityAttributeValue(getTenantId(), "mail"));
             if (oldMailSettings != null) {
-                if(oldMailSettings.has("password")) {
+                if (oldMailSettings.has("password")) {
                     ((ObjectNode) jsonValue).put("password", oldMailSettings.get("password").asText());
                 }
             }

@@ -36,6 +36,38 @@ var logger = require('../../config/logger')('ReportController');
 const defaultPageNavigationTimeout = Number(config.get('browser.defaultPageNavigationTimeout'));
 const dashboardLoadWaitTime = Number(config.get('browser.dashboardLoadWaitTime'));
 
+exports.generatePdfFromHtml = function (req, res, browser) {
+    var body = req.body;
+    var name = body.name;
+    var html = Buffer.from(body.content, 'base64').toString('UTF-8');
+    logger.info(html);
+    generatePdf(browser, html).then((reportBuffer) => {
+            res.attachment(name + ".pdf");
+            res.contentType('application/pdf');
+            res.send(reportBuffer);
+            logger.info('Report data sent.');
+        },
+        (e) => {
+            logger.error(e);
+            res.statusMessage = 'Failed to convert html to pdf: ' + e;
+            res.status(500).end();
+        });
+}
+
+async function generatePdf(browser, html) {
+    try {
+        var page = await browser.newPage();
+        var buffer;
+        await page.setContent(html);
+        buffer = await page.pdf({
+            format: 'A4'
+        })
+    } finally {
+        await page.close();
+    }
+    return buffer;
+}
+
 exports.genDashboardReport = function(req, res, browser) {
     var body = req.body;
     if (body.baseUrl && body.dashboardId) {

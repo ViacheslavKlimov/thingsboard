@@ -161,7 +161,8 @@ public enum Resource {
                 Resource.WHITE_LABELING,
                 Resource.OAUTH2_CONFIGURATION_INFO,
                 Resource.OAUTH2_CONFIGURATION_TEMPLATE,
-                Resource.TB_RESOURCE)));
+                Resource.TB_RESOURCE
+        )));
 
         resourcesByAuthority.put(Authority.TENANT_ADMIN, new HashSet<>(Arrays.asList(
                 Resource.ALL,
@@ -196,7 +197,8 @@ public enum Resource {
                 Resource.WHITE_LABELING,
                 Resource.AUDIT_LOG,
                 Resource.TB_RESOURCE,
-                Resource.OTA_PACKAGE)));
+                Resource.OTA_PACKAGE
+        )));
 
         resourcesByAuthority.put(Authority.CUSTOMER_USER, new HashSet<>(Arrays.asList(
                 Resource.ALL,
@@ -223,7 +225,8 @@ public enum Resource {
                 Resource.EDGE_GROUP,
                 Resource.GROUP_PERMISSION,
                 Resource.WHITE_LABELING,
-                Resource.AUDIT_LOG)));
+                Resource.AUDIT_LOG
+        )));
 
     }
 

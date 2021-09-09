@@ -31,12 +31,15 @@
 package org.thingsboard.rule.engine.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.thingsboard.server.common.data.id.BlobEntityId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
+import org.thingsboard.server.common.data.report.PdfReportRequest;
 import org.thingsboard.server.common.data.report.ReportConfig;
 import org.thingsboard.server.common.data.report.ReportData;
 
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 public interface ReportService {
@@ -55,5 +58,7 @@ public interface ReportService {
                         String reportsServerEndpointUrl,
                         Consumer<ReportData> onSuccess,
                         Consumer<Throwable> onFailure);
+
+    Future<ReportData> generatePdf(TenantId tenantId, PdfReportRequest pdfReportRequest, String reportsServerEndpointUrl);
 
 }

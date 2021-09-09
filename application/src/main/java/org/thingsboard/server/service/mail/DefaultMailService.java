@@ -43,7 +43,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Base64Utils;
 import org.thingsboard.rule.engine.api.MailService;
+import org.thingsboard.rule.engine.api.ReportService;
 import org.thingsboard.rule.engine.api.TbEmail;
 import org.thingsboard.server.common.data.AdminSettings;
 import org.thingsboard.server.common.data.ApiFeature;
@@ -59,6 +61,9 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.kv.AttributeKvEntry;
+import org.thingsboard.server.common.data.report.MagentaReportType;
+import org.thingsboard.server.common.data.report.PdfReportRequest;
+import org.thingsboard.server.common.data.report.ReportData;
 import org.thingsboard.server.common.stats.TbApiUsageReportClient;
 import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.blob.BlobEntityService;
@@ -67,15 +72,18 @@ import org.thingsboard.server.dao.settings.AdminSettingsService;
 import org.thingsboard.server.service.apiusage.TbApiUsageStateService;
 
 import javax.activation.DataSource;
-import javax.annotation.PostConstruct;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.ByteArrayDataSource;
 import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Service
 @Slf4j
@@ -84,6 +92,7 @@ public class DefaultMailService implements MailService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     public static final String MAIL_PROP = "mail.";
     public static final String TARGET_EMAIL = "targetEmail";
+    public static final String DATA = "data";
     public static final String UTF_8 = "UTF-8";
 
     public static final int _10K = 10000;
@@ -103,6 +112,9 @@ public class DefaultMailService implements MailService {
 
     @Autowired
     private MailExecutorService mailExecutorService;
+
+    @Autowired
+    ReportService reportService;
 
     public DefaultMailService(AdminSettingsService adminSettingsService, AttributesService attributesService, BlobEntityService blobEntityService, TbApiUsageReportClient apiUsageClient) {
         this.adminSettingsService = adminSettingsService;
@@ -145,6 +157,59 @@ public class DefaultMailService implements MailService {
         String message = body(mailTemplates, MailTemplates.ACTIVATION, model);
 
         sendMail(tenantId, email, subject, message);
+    }
+
+    @Override
+    public void sendMagentaReportEmail(TenantId tenantId, CustomerId customerId, String email, Map<String, String> reportInfo,
+                                       MagentaReportType reportType, String templateName, String reportName) throws ThingsboardException {
+        JsonNode mailTemplates = getConfig(tenantId, "mailTemplates");
+        String subject = MailTemplates.subject(mailTemplates, templateName);
+
+        Map<String, Object> model = new HashMap<>();
+        model.put(DATA, reportInfo);
+        model.put(TARGET_EMAIL, email);
+
+        String message = body(mailTemplates, templateName, model);
+        byte[] data;
+        if (reportType == MagentaReportType.PDF) {
+            data = convertToPdf(tenantId, message, subject);
+        } else {
+            data = message.getBytes();
+        }
+
+        BlobEntity savedReport = blobEntityService.createBlobEntity(tenantId, null, ByteBuffer.wrap(data),
+                reportName, "report", reportType.getContentType());
+
+        TbEmail.TbEmailBuilder emailBuilder = TbEmail.builder()
+                .to(email)
+                .subject(subject);
+
+        switch (reportType) {
+            case PDF:
+                emailBuilder.attachments(Collections.singletonList(savedReport.getId()));
+                emailBuilder.body("");
+                break;
+            case HTML:
+                emailBuilder.html(true);
+            default:
+                emailBuilder.body(message);
+        }
+
+        send(tenantId, customerId, emailBuilder.build());
+    }
+
+    private byte[] convertToPdf(TenantId tenantId, String data, String pdfFileName) {
+        PdfReportRequest pdfReportRequest = new PdfReportRequest();
+        pdfReportRequest.setName(pdfFileName);
+        pdfReportRequest.setContent(Base64Utils.encodeToString(data.getBytes()));
+
+        Future<ReportData> pdf = reportService.generatePdf(tenantId, pdfReportRequest, null);
+
+        try {
+            return pdf.get().getData();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to generate pdf", e);
+        }
     }
 
     @Override
@@ -494,7 +559,7 @@ public class DefaultMailService implements MailService {
                 javaMailProperties.put(MAIL_PROP + protocol + ".ssl.protocols", tlsVersion);
             }
         }
-        
+
         boolean enableProxy = jsonConfig.has("enableProxy") && jsonConfig.get("enableProxy").asBoolean();
 
         if (enableProxy) {
@@ -582,7 +647,7 @@ public class DefaultMailService implements MailService {
         }
     }
 
-    class ConfigEntry {
+    static class ConfigEntry {
 
         JsonNode jsonConfig;
         boolean isSystem;

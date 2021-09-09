@@ -40,6 +40,7 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.TimePageLink;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public interface BlobEntityService {
@@ -63,6 +64,8 @@ public interface BlobEntityService {
     PageData<BlobEntityWithCustomerInfo> findBlobEntitiesByTenantIdAndCustomerIdAndType(TenantId tenantId, CustomerId customerId, String type, TimePageLink pageLink);
 
     BlobEntity saveBlobEntity(BlobEntity blobEntity);
+
+    BlobEntity createBlobEntity(TenantId tenantId, CustomerId customerId, ByteBuffer data, String name, String type, String contentType);
 
     void deleteBlobEntity(TenantId tenantId, BlobEntityId blobEntityId);
 

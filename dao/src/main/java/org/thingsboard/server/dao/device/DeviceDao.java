@@ -188,4 +188,6 @@ public interface DeviceDao extends Dao<Device>, TenantEntityDao {
 
     Long countByTenantIdAndCreatedTimeAfter(TenantId tenantId, Long time);
 
+    Long countByTenantIdAndCreatedTimeBetween(TenantId tenantId, Long from, Long to);
+
 }

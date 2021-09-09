@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.util.concurrent.SettableFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -41,18 +42,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.AsyncClientHttpRequest;
 import org.springframework.http.client.Netty4ClientHttpRequestFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.client.AsyncRequestCallback;
 import org.springframework.web.client.AsyncRestTemplate;
@@ -66,6 +64,7 @@ import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.permission.MergedUserPermissions;
+import org.thingsboard.server.common.data.report.PdfReportRequest;
 import org.thingsboard.server.common.data.report.ReportConfig;
 import org.thingsboard.server.common.data.report.ReportData;
 import org.thingsboard.server.common.data.security.Authority;
@@ -91,6 +90,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -185,15 +185,28 @@ public class DefaultReportService implements ReportService {
         requestReport(dashboardReportRequest, reportsServerEndpointUrl, onSuccess, onFailure);
     }
 
+    @Override
+    public Future<ReportData> generatePdf(TenantId tenantId, PdfReportRequest pdfReportRequest, String reportsServerEndpointUrl) {
+        JsonNode request = mapper.valueToTree(pdfReportRequest);
+        SettableFuture<ReportData> result = SettableFuture.create();
+        requestReport(request, reportsServerEndpointUrl, "/generatePdf", result::set, result::setException);
+        return result;
+    }
+
     private void requestReport(JsonNode dashboardReportRequest, String reportsServerEndpointUrl, Consumer<ReportData> onSuccess,
+                               Consumer<Throwable> onFailure) {
+        requestReport(dashboardReportRequest, reportsServerEndpointUrl, "/dashboardReport", onSuccess, onFailure);
+    }
+
+    private void requestReport(JsonNode request, String reportsServerEndpointUrl, String path, Consumer<ReportData> onSuccess,
                                Consumer<Throwable> onFailure) {
         if (StringUtils.isEmpty(reportsServerEndpointUrl)) {
             reportsServerEndpointUrl = this.reportsServerEndpointUrl;
         }
-        String endpointUrl = reportsServerEndpointUrl + "/dashboardReport";
+        String endpointUrl = reportsServerEndpointUrl + path;
 
         org.springframework.util.concurrent.ListenableFuture<ReportData> reportDataFuture = httpClient.execute(endpointUrl, HttpMethod.POST,
-                new ReportRequestCallback(dashboardReportRequest), responseExtractor);
+                new ReportRequestCallback(request), responseExtractor);
         reportDataFuture.addCallback(new ListenableFutureCallback<ReportData>() {
             @Override
             public void onSuccess(ReportData result) {

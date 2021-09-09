@@ -38,21 +38,26 @@ import org.thingsboard.server.common.data.ApiUsageStateValue;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.report.MagentaReportType;
+
+import java.util.Map;
 
 public interface MailService {
 
     void sendEmail(TenantId tenantId, String email, String subject, String message) throws ThingsboardException;
 
     void sendTestMail(TenantId tenantId, JsonNode config, String email) throws ThingsboardException;
-    
+
     void sendActivationEmail(TenantId tenantId, String activationLink, String email) throws ThingsboardException;
-    
+
+    void sendMagentaReportEmail(TenantId tenantId, CustomerId customerId, String email, Map<String, String> reportInfo, MagentaReportType reportType, String templateName, String reportName) throws ThingsboardException;
+
     void sendAccountActivatedEmail(TenantId tenantId, String loginLink, String email) throws ThingsboardException;
-    
+
     void sendResetPasswordEmail(TenantId tenantId, String passwordResetLink, String email) throws ThingsboardException;
 
     void sendResetPasswordEmailAsync(TenantId tenantId, String passwordResetLink, String email);
-    
+
     void sendPasswordWasResetEmail(TenantId tenantId, String loginLink, String email) throws ThingsboardException;
 
     void sendUserActivatedEmail(TenantId tenantId, String userFullName, String userEmail, String email) throws ThingsboardException;

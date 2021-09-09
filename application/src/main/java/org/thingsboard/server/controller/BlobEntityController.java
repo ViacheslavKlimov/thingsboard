@@ -72,7 +72,7 @@ public class BlobEntityController extends BaseController {
 
     public static final String BLOB_ENTITY_ID = "blobEntityId";
 
-    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/blobEntity/info/{blobEntityId}", method = RequestMethod.GET)
     @ResponseBody
     public BlobEntityWithCustomerInfo getBlobEntityInfoById(@PathVariable(BLOB_ENTITY_ID) String strBlobEntityId) throws ThingsboardException {
@@ -85,7 +85,7 @@ public class BlobEntityController extends BaseController {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/blobEntity/{blobEntityId}/download", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<Resource> downloadBlobEntity(@PathVariable(BLOB_ENTITY_ID) String strBlobEntityId) throws ThingsboardException {

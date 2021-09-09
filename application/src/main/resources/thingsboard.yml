@@ -373,6 +373,9 @@ integrations:
 
 # Reports parameters
 reports:
+  magenta:
+    enabled: "${MAGENTA_REPORTS_ENABLED:true}"
+    report_type: "${MAGENTA_REPORTS_TYPE:HTML}"
   server:
     endpointUrl: "${REPORTS_SERVER_ENDPOINT_URL:http://localhost:8383}"
 

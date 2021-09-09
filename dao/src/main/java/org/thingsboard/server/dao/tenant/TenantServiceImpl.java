@@ -80,6 +80,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static org.thingsboard.server.dao.DaoUtil.toUUIDs;
 import static org.thingsboard.server.dao.service.Validator.validateId;
@@ -233,7 +235,7 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
             tenantProfileChangeHistory.put(String.valueOf(System.currentTimeMillis()), tenant.getTenantProfileId().toString());
         }
 
-        ((ObjectNode)additionalInfo).set("tenantProfileChangeHistory", tenantProfileChangeHistory);
+        ((ObjectNode) additionalInfo).set("tenantProfileChangeHistory", tenantProfileChangeHistory);
         tenant.setAdditionalInfo(additionalInfo);
     }
 
@@ -308,6 +310,25 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
         return tenantDao.findTenantsByAdditionalInfoField(additionalInfoField, additionalInfoFieldValue, pageLink);
     }
 
+    @Override
+    public void forEachTenant(Consumer<Tenant> action, Predicate<Tenant> predicate) {
+        PageLink pageLink = new PageLink(1000);
+        boolean hasNext = true;
+
+        while (hasNext) {
+            PageData<Tenant> tenantsBatch = findTenants(pageLink);
+
+            tenantsBatch.getData().stream()
+                    .filter(predicate)
+                    .forEach(action);
+
+            hasNext = tenantsBatch.hasNext();
+            if (hasNext) {
+                pageLink = pageLink.nextPageLink();
+            }
+        }
+    }
+
     private DataValidator<Tenant> tenantValidator =
             new DataValidator<Tenant>() {
                 @Override
@@ -348,4 +369,5 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
                     deleteTenant(new TenantId(entity.getUuidId()));
                 }
             };
+
 }

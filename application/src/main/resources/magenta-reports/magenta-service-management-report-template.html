@@ -1,0 +1,183 @@
+<!DOCTYPE html
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>HTML Template</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            width: 100% !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            margin: 0;
+            padding: 0;
+            line-height: 100%;
+        }
+
+        [style*="Roboto"] {
+            font-family: 'Roboto', arial, sans-serif !important;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Roboto', Arial, Helvetica, sans-serif;
+            font-size: 28px;
+            line-height: 32px;
+        }
+
+        p {
+            margin: 0;
+            font-family: 'Roboto', Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            line-height: 18px;
+        }
+
+        table td {
+            border-collapse: collapse;
+        }
+
+        table {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0;">
+<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#f6f6f6">
+    <tr>
+        <td>
+            <table cellpadding="0" cellspacing="0" width="800" align="center">
+                <tr>
+                    <td bgcolor="#ffffff">
+                        <table cellpadding="0" cellspacing="0" width="600" align="center">
+                            <tr>
+                                <td height="36"></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h1 style="color:#d70d70">Magenta IoT Hub Service Management Report</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td height="24"></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>New Provisioned Devices: ${data.NEW_PROVISIONED_DEVICES}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>Rule Engine Executions: ${data.RULE_ENGINE_EXECUTIONS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed Rule Engine Executions: ${data.FAILED_RULE_ENGINE_EXECUTIONS}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>API Calls: ${data.API_CALLS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed API Calls: ${data.FAILED_API_CALLS}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>Uplink Messages: ${data.UPLINK_MESSAGES}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed Uplink Messages: ${data.FAILED_UPLINK_MESSAGES}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Downlink Messages: ${data.DOWNLINK_MESSAGES}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed Downlink Messages: ${data.FAILED_DOWNLINK_MESSAGES}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>One-Way RPC Requests: ${data.ONE_WAY_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed One-Way RPC Requests: ${data.FAILED_ONE_WAY_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Two-Way RPC Requests: ${data.TWO_WAY_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed Two-Way RPC Requests: ${data.FAILED_TWO_WAY_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>Queued Persistent RPC Requests: ${data.QUEUED_PERSISTENT_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Delivered Persistent RPC Requests: ${data.DELIVERED_PERSISTENT_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Successful Persistent RPC Requests:
+                                        ${data.SUCCESSFUL_PERSISTENT_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Timed-Out Persistent RPC Requests: ${data.TIMED_OUT_PERSISTENT_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Failed Persistent RPC Requests: ${data.FAILED_PERSISTENT_RPC_REQUESTS}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>Alarms Created: ${data.CREATED_ALARMS}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td bgcolor="#ffffff" height="36"></td>
+                            </tr>
+                            <tr>
+                                <td height="36"></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

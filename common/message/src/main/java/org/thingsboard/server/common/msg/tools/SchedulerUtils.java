@@ -91,14 +91,11 @@ public class SchedulerUtils {
         return (temporal) -> temporal.with(DAY_OF_MONTH, 1).plus(2, MONTHS);
     }
 
-    public static void scheduleForEachDayAtSpecificTime(Runnable task, LocalTime timeOfDay, ScheduledExecutorService executor, boolean executeIfTimeOfDayPassed) {
+    public static void scheduleForEachDayAtSpecificTime(Runnable task, LocalTime timeOfDay, ScheduledExecutorService executor) {
         LocalTime currentTime = LocalTime.now();
         Duration timeToLaunch = Duration.between(currentTime, timeOfDay);
 
         if (timeToLaunch.isNegative()) {
-            if (executeIfTimeOfDayPassed) {
-                executor.submit(task);
-            }
             timeToLaunch = timeToLaunch.plusDays(1);
         }
 

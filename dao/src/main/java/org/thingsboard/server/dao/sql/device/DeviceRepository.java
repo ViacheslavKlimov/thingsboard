@@ -319,4 +319,6 @@ public interface DeviceRepository extends PagingAndSortingRepository<DeviceEntit
 
     Long countByTenantIdAndCreatedTimeAfter(UUID tenantId, Long time);
 
+    Long countByTenantIdAndCreatedTimeBetween(UUID id, Long from, Long to);
+
 }

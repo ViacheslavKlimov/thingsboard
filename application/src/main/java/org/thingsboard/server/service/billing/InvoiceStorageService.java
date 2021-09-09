@@ -40,8 +40,6 @@ import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.blob.BlobEntity;
 import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.common.msg.tools.SchedulerUtils;
 import org.thingsboard.server.dao.blob.BlobEntityService;
@@ -110,7 +108,7 @@ public class InvoiceStorageService {
                     partitionService.resolve(ServiceType.TB_CORE, TenantId.SYS_TENANT_ID, TenantId.SYS_TENANT_ID).isMyPartition()) {
                 generateAndUploadXmlInvoices();
             }
-        }, INVOICE_GENERATION_TIME, Executors.newSingleThreadScheduledExecutor(), true);
+        }, INVOICE_GENERATION_TIME, Executors.newSingleThreadScheduledExecutor());
     }
 
     public void generateAndUploadXmlInvoices() {
@@ -121,27 +119,16 @@ public class InvoiceStorageService {
             Set<String> existingInvoices = sftpClient.listFiles(xmlInvoicesDirectory);
             existingInvoices.addAll(sftpClient.listFiles(xmlInvoicesArchiveDirectory));
 
-            PageLink pageLink = new PageLink(1000);
-            boolean hasNext = true;
-            while (hasNext) {
-                PageData<Tenant> tenants = tenantService.findTenants(pageLink);
-                tenants.getData().stream()
-                        .filter(tenant -> !existingInvoices.contains(getInvoiceFileName(tenant.getId())))
-                        .forEach(tenant -> {
-                            try {
-                                Invoice invoice = invoiceGenerationService.generateInvoiceForTenant(tenant);
-                                saveTenantInvoice(invoice, tenant);
-                                log.info("Uploaded xml invoice for tenant {} ({})", tenant.getId(), tenant.getName());
-                            } catch (Exception e) {
-                                log.error("Failed to upload xml invoice for tenant {} ({})", tenant.getId(), tenant.getName(), e);
-                            }
-                        });
-
-                hasNext = tenants.hasNext();
-                if (hasNext) {
-                    pageLink = pageLink.nextPageLink();
+            tenantService.forEachTenant(tenant -> {
+                try {
+                    Invoice invoice = invoiceGenerationService.generateInvoiceForTenant(tenant);
+                    saveTenantInvoice(invoice, tenant);
+                    log.info("Uploaded xml invoice for tenant {} ({})", tenant.getId(), tenant.getName());
+                } catch (Exception e) {
+                    log.error("Failed to upload xml invoice for tenant {} ({})", tenant.getId(), tenant.getName(), e);
                 }
-            }
+            }, tenant -> !existingInvoices.contains(getInvoiceFileName(tenant.getId())));
+
         } catch (Exception e) {
             log.error("Failed to generate and upload XML invoices", e);
         } finally {

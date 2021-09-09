@@ -50,6 +50,7 @@ import org.thingsboard.server.common.data.kv.Aggregation;
 import org.thingsboard.server.common.data.kv.BaseDeleteTsKvQuery;
 import org.thingsboard.server.common.data.kv.BaseReadTsKvQuery;
 import org.thingsboard.server.common.data.kv.DeleteTsKvQuery;
+import org.thingsboard.server.common.data.kv.KvEntry;
 import org.thingsboard.server.common.data.kv.ReadTsKvQuery;
 import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.dao.entityview.EntityViewService;
@@ -59,6 +60,8 @@ import org.thingsboard.server.dao.service.Validator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -247,6 +250,16 @@ public class BaseTimeseriesService implements TimeseriesService {
                 return Futures.immediateFuture(Collections.emptyList());
             }
         }, MoreExecutors.directExecutor());
+    }
+
+    @Override
+    public Map<String, Long> getLongTsValuesForKeysAndPeriod(TenantId tenantId, EntityId entityId, Collection<String> keys, long startTs, long endTs) throws ExecutionException, InterruptedException {
+        List<ReadTsKvQuery> queries = keys.stream()
+                .map(key -> new BaseReadTsKvQuery(key, startTs, endTs, endTs - startTs, 1, Aggregation.SUM))
+                .collect(Collectors.toList());
+
+        List<TsKvEntry> kvEntries = findAll(tenantId, entityId, queries).get();
+        return kvEntries.stream().collect(Collectors.toMap(KvEntry::getKey, tsKvEntry -> tsKvEntry.getLongValue().orElse(0L)));
     }
 
     private void deleteAndRegisterFutures(TenantId tenantId, List<ListenableFuture<Void>> futures, EntityId entityId, DeleteTsKvQuery query) {

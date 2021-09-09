@@ -40,6 +40,8 @@ import org.thingsboard.server.common.data.kv.TsKvEntry;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Andrew Shvayka
@@ -71,4 +73,7 @@ public interface TimeseriesService {
     List<String> findAllKeysByEntityIds(TenantId tenantId, List<EntityId> entityIds);
 
     void cleanup(long systemTtl);
+
+    Map<String, Long> getLongTsValuesForKeysAndPeriod(TenantId tenantId, EntityId entityId, Collection<String> keys, long startTs, long endTs) throws ExecutionException, InterruptedException;
+
 }

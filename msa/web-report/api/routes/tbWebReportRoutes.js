@@ -40,4 +40,10 @@ module.exports = function(app, browser) {
             }
         );
 
+    app.route('/generatePdf')
+        .post(
+            function (req, res) {
+                webReport.generatePdfFromHtml(req, res, browser)
+            }
+        )
 };

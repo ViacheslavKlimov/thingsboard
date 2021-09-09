@@ -28,45 +28,17 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.tenant;
+package org.thingsboard.server.utils;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import org.thingsboard.server.common.data.Tenant;
-import org.thingsboard.server.common.data.TenantInfo;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.page.PageData;
-import org.thingsboard.server.common.data.page.PageLink;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+public class TimeUtils {
+    private TimeUtils() {}
 
-public interface TenantService {
-
-    Tenant findTenantById(TenantId tenantId);
-
-    TenantInfo findTenantInfoById(TenantId tenantId);
-
-    ListenableFuture<Tenant> findTenantByIdAsync(TenantId callerId, TenantId tenantId);
-
-    ListenableFuture<List<Tenant>> findTenantsByIdsAsync(TenantId callerId, List<TenantId> tenantIds);
-
-    Tenant saveTenant(Tenant tenant);
-
-    void deleteTenant(TenantId tenantId);
-
-    PageData<Tenant> findTenants(PageLink pageLink);
-
-    PageData<TenantInfo> findTenantInfos(PageLink pageLink);
-
-    PageData<TenantId> findTenantsIds(PageLink pageLink);
-
-    void deleteTenants();
-
-    Tenant findTenantByMagentaCustomerId(String magentaCustomerId);
-
-    PageData<Tenant> findTenantsByAdditionalInfoField(String additionalInfoField, String additionalInfoFieldValue, PageLink pageLink);
-
-    void forEachTenant(Consumer<Tenant> action, Predicate<Tenant> predicate);
+    public static Date toDate(LocalDateTime localDateTime) {
+        return new Date(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+    }
 
 }

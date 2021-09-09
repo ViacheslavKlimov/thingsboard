@@ -116,4 +116,7 @@ public interface DeviceService {
     Long countByEntityGroupAndEmptyOtaPackage(EntityGroupId groupId, OtaPackageId otaPackageId, OtaPackageType type);
 
     Long countByDeviceProfileAndEmptyOtaPackage(TenantId tenantId, DeviceProfileId deviceProfileId, OtaPackageType type);
+
+    Long countByTenantIdAndCreatedTimeBetween(TenantId tenantId, Long start, Long end);
+
 }
