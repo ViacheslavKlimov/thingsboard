@@ -28,33 +28,43 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.oauth2.deprecated;
+package org.thingsboard.server.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import lombok.*;
-import org.thingsboard.server.common.data.oauth2.OAuth2MapperConfig;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.thingsboard.server.common.data.kv.DataType;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.Map;
 
-@Deprecated
-@EqualsAndHashCode
-@Data
-@ToString(exclude = {"clientSecret"})
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class ClientRegistrationDto {
-    private OAuth2MapperConfig mapperConfig;
-    private String clientId;
-    private String clientSecret;
-    private String authorizationUri;
-    private String accessTokenUri;
-    private List<String> scope;
-    private String userInfoUri;
-    private String userNameAttributeName;
-    private String jwkSetUri;
-    private String clientAuthenticationMethod;
-    private String loginButtonLabel;
-    private String loginButtonIcon;
-    private JsonNode additionalInfo;
+public class TypeCastUtil {
+
+    private TypeCastUtil() {}
+
+    public static Map.Entry<DataType, Object> castValue(String value) {
+        if (isNumber(value)) {
+            String formattedValue = value.replace(',', '.');
+            try {
+                BigDecimal bd = new BigDecimal(formattedValue);
+                if (bd.stripTrailingZeros().scale() > 0 || isSimpleDouble(formattedValue)) {
+                    if (bd.scale() <= 16) {
+                        return Map.entry(DataType.DOUBLE, bd.doubleValue());
+                    }
+                } else {
+                    return Map.entry(DataType.LONG, bd.longValueExact());
+                }
+            } catch (RuntimeException ignored) {}
+        } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+            return Map.entry(DataType.BOOLEAN, Boolean.parseBoolean(value));
+        }
+        return Map.entry(DataType.STRING, value);
+    }
+
+    private static boolean isNumber(String value) {
+        return NumberUtils.isNumber(value.replace(',', '.'));
+    }
+
+    private static boolean isSimpleDouble(String valueAsString) {
+        return valueAsString.contains(".") && !valueAsString.contains("E") && !valueAsString.contains("e");
+    }
+
 }

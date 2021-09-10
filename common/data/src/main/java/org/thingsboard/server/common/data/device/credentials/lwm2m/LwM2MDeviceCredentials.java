@@ -28,13 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.sql.oauth2.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import org.springframework.data.repository.CrudRepository;
-import org.thingsboard.server.dao.model.sql.deprecated.OAuth2ClientRegistrationEntity;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.UUID;
-
-@Deprecated
-public interface OAuth2ClientRegistrationRepository extends CrudRepository<OAuth2ClientRegistrationEntity, UUID> {
+@Getter
+@Setter
+public class LwM2MDeviceCredentials {
+    private LwM2MClientCredentials client;
+    private LwM2MBootstrapCredentials bootstrap;
 }

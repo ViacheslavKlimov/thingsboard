@@ -45,6 +45,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.thingsboard.common.util.JacksonUtil;
@@ -99,7 +100,6 @@ import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantDao;
 
 import javax.annotation.Nullable;
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -244,6 +244,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
             if (foundDeviceCredentials == null) {
                 deviceCredentialsService.createDeviceCredentials(savedDevice.getTenantId(), deviceCredentials);
             } else {
+                deviceCredentials.setId(foundDeviceCredentials.getId());
                 deviceCredentialsService.updateDeviceCredentials(device.getTenantId(), deviceCredentials);
             }
         }
@@ -257,7 +258,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
             deviceCredentials.setDeviceId(new DeviceId(savedDevice.getUuidId()));
             deviceCredentials.setCredentialsType(DeviceCredentialsType.ACCESS_TOKEN);
             deviceCredentials.setCredentialsId(!StringUtils.isEmpty(accessToken) ? accessToken : RandomStringUtils.randomAlphanumeric(20));
-            deviceCredentialsService.createDeviceCredentials(device.getTenantId(), deviceCredentials);
+            deviceCredentialsService.createDeviceCredentials(savedDevice.getTenantId(), deviceCredentials);
         }
         return savedDevice;
     }
@@ -285,7 +286,10 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
             }
             device.setType(deviceProfile.getName());
             device.setDeviceData(syncDeviceData(deviceProfile, device.getDeviceData()));
-            savedDevice = deviceDao.save(device.getTenantId(), device);
+            savedDevice = deviceDao.saveAndFlush(device.getTenantId(), device);
+            if (device.getId() == null) {
+                entityGroupService.addEntityToEntityGroupAll(savedDevice.getTenantId(), savedDevice.getOwnerId(), savedDevice.getId());
+            }
         } catch (Exception t) {
             ConstraintViolationException e = extractConstraintViolationException(t).orElse(null);
             if (e != null && e.getConstraintName() != null && e.getConstraintName().equalsIgnoreCase("device_name_unq_key")) {
@@ -296,9 +300,6 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
             } else {
                 throw t;
             }
-        }
-        if (device.getId() == null) {
-            entityGroupService.addEntityToEntityGroupAll(savedDevice.getTenantId(), savedDevice.getOwnerId(), savedDevice.getId());
         }
         return savedDevice;
     }
@@ -492,6 +493,7 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
                 }, MoreExecutors.directExecutor());
     }
 
+    @Transactional
     @Override
     public PageData<Device> findDevicesByEntityGroupId(EntityGroupId groupId, PageLink pageLink) {
         log.trace("Executing findDevicesByEntityGroupId, groupId [{}], pageLink [{}]", groupId, pageLink);
@@ -517,7 +519,6 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return deviceDao.findDevicesByEntityGroupIdsAndType(toUUIDs(groupIds), type, pageLink);
     }
 
-    @Transactional
     @Override
     public Device assignDeviceToTenant(TenantId tenantId, Device device) {
         log.trace("Executing assignDeviceToTenant [{}][{}]", tenantId, device);
@@ -774,4 +775,19 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
         return deviceDao.countByTenantIdAndCreatedTimeBetween(tenantId, start, end);
     }
 
+    private RuntimeException handleDeviceSaveException(Device device, Exception t)  {
+        ConstraintViolationException e = extractConstraintViolationException(t).orElse(null);
+        if (e != null && e.getConstraintName() != null && e.getConstraintName().equalsIgnoreCase("device_name_unq_key")) {
+            // remove device from cache in case null value cached in the distributed redis.
+            if (device != null) {
+                removeDeviceFromCacheByName(device.getTenantId(), device.getName());
+                removeDeviceFromCacheById(device.getTenantId(), device.getId());
+            }
+            return new DataValidationException("Device with such name already exists!");
+        } else if (t instanceof RuntimeException) {
+            return (RuntimeException)t;
+        } else {
+            return new RuntimeException("Failed to save device!", t);
+        }
+    }
 }

@@ -28,12 +28,12 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.oauth2.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import org.thingsboard.server.common.data.oauth2.deprecated.OAuth2ClientRegistration;
-import org.thingsboard.server.dao.Dao;
+public class NoSecServerCredentials implements LwM2MServerCredentials {
 
-@Deprecated
-public interface OAuth2ClientRegistrationDao extends Dao<OAuth2ClientRegistration> {
-    void deleteAll();
+    @Override
+    public LwM2MSecurityMode getSecurityMode() {
+        return LwM2MSecurityMode.NO_SEC;
+    }
 }

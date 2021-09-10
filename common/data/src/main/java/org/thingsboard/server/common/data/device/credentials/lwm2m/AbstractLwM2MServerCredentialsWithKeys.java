@@ -28,22 +28,33 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.oauth2.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import org.thingsboard.server.common.data.oauth2.deprecated.ExtendedOAuth2ClientRegistrationInfo;
-import org.thingsboard.server.common.data.oauth2.deprecated.OAuth2ClientRegistrationInfo;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
-import org.thingsboard.server.dao.Dao;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 
-import java.util.List;
+@Getter
+@Setter
+public abstract class AbstractLwM2MServerCredentialsWithKeys implements LwM2MServerCredentials {
 
-@Deprecated
-public interface OAuth2ClientRegistrationInfoDao extends Dao<OAuth2ClientRegistrationInfo> {
-    List<OAuth2ClientRegistrationInfo> findAll();
+    private String clientPublicKeyOrId;
+    private String clientSecretKey;
 
-    List<ExtendedOAuth2ClientRegistrationInfo> findAllExtended();
+    @JsonIgnore
+    public byte[] getDecodedClientPublicKeyOrId() {
+        return getDecoded(clientPublicKeyOrId);
+    }
 
-    List<OAuth2ClientRegistrationInfo> findByDomainSchemesAndDomainName(List<SchemeType> domainSchemes, String domainName);
+    @JsonIgnore
+    public byte[] getDecodedClientSecretKey() {
+        return getDecoded(clientSecretKey);
+    }
 
-    void deleteAll();
+    @SneakyThrows
+    private static byte[] getDecoded(String key) {
+        return Hex.decodeHex(key.toLowerCase().toCharArray());
+    }
 }

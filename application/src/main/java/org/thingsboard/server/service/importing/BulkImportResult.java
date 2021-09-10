@@ -28,30 +28,18 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.sql.oauth2.deprecated;
+package org.thingsboard.server.service.importing;
 
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
-import org.thingsboard.server.dao.model.sql.deprecated.ExtendedOAuth2ClientRegistrationInfoEntity;
-import org.thingsboard.server.dao.model.sql.deprecated.OAuth2ClientRegistrationInfoEntity;
+import lombok.Data;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
-@Deprecated
-public interface OAuth2ClientRegistrationInfoRepository extends CrudRepository<OAuth2ClientRegistrationInfoEntity, UUID> {
-    @Query("SELECT new OAuth2ClientRegistrationInfoEntity(cr_info) " +
-            "FROM OAuth2ClientRegistrationInfoEntity cr_info " +
-            "LEFT JOIN OAuth2ClientRegistrationEntity cr on cr_info.id = cr.clientRegistrationInfoId " +
-            "WHERE cr.domainName = :domainName " +
-            "AND cr.domainScheme IN (:domainSchemes)")
-    List<OAuth2ClientRegistrationInfoEntity> findAllByDomainSchemesAndName(@Param("domainSchemes") List<SchemeType> domainSchemes,
-                                                                           @Param("domainName") String domainName);
+@Data
+public class BulkImportResult<E> {
+    private int created = 0;
+    private int updated = 0;
+    private int errors = 0;
+    private List<String> errorsList = new LinkedList<>();
 
-    @Query("SELECT new org.thingsboard.server.dao.model.sql.deprecated.ExtendedOAuth2ClientRegistrationInfoEntity(cr_info, cr.domainName, cr.domainScheme) " +
-            "FROM OAuth2ClientRegistrationInfoEntity cr_info " +
-            "LEFT JOIN OAuth2ClientRegistrationEntity cr on cr_info.id = cr.clientRegistrationInfoId ")
-    List<ExtendedOAuth2ClientRegistrationInfoEntity> findAllExtended();
 }

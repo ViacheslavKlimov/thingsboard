@@ -28,32 +28,10 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.oauth2.deprecated;
+package org.thingsboard.server.dao.exception;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.thingsboard.server.common.data.BaseData;
-import org.thingsboard.server.common.data.id.deprecated.OAuth2ClientRegistrationId;
-import org.thingsboard.server.common.data.id.deprecated.OAuth2ClientRegistrationInfoId;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
-
-@Deprecated
-@EqualsAndHashCode(callSuper = true)
-@Data
-@ToString
-@NoArgsConstructor
-public class OAuth2ClientRegistration extends BaseData<OAuth2ClientRegistrationId> {
-
-    private OAuth2ClientRegistrationInfoId clientRegistrationId;
-    private String domainName;
-    private SchemeType domainScheme;
-
-    public OAuth2ClientRegistration(OAuth2ClientRegistration clientRegistration) {
-        super(clientRegistration);
-        this.clientRegistrationId = clientRegistration.clientRegistrationId;
-        this.domainName = clientRegistration.domainName;
-        this.domainScheme = clientRegistration.domainScheme;
+public class DeviceCredentialsValidationException extends DataValidationException {
+    public DeviceCredentialsValidationException(String message) {
+        super(message);
     }
 }

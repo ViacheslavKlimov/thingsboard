@@ -28,19 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.oauth2.deprecated;
+package org.thingsboard.server.service.importing;
 
-import lombok.*;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
+import lombok.Data;
 
-@Deprecated
-@EqualsAndHashCode
 @Data
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class DomainInfo {
-    private SchemeType scheme;
-    private String name;
+public class ImportedEntityInfo<E> {
+    private E entity;
+    private boolean isUpdated;
+    private E oldEntity;
+    private String relatedError;
 }

@@ -1,7 +1,7 @@
 {
   "name": "thingsboard-web-report",
   "private": true,
-  "version": "3.3.1PE",
+  "version": "3.3.2PE-MG9-SNAPSHOT",
   "description": "ThingsBoard Web Reporting Microservice",
   "main": "server.js",
   "bin": "server.js",
@@ -31,9 +31,9 @@
     ]
   },
   "devDependencies": {
-    "fs-extra": "^9.0.1",
-    "nodemon": "^2.0.4",
-    "pkg": "^4.4.9"
+    "fs-extra": "^10.0.0",
+    "nodemon": "^2.0.12",
+    "pkg": "^5.3.1"
   },
   "pkg": {
     "assets": [

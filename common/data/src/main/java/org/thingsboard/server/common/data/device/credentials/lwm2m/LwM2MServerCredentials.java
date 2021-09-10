@@ -28,30 +28,25 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.oauth2.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
-import org.thingsboard.server.common.data.oauth2.deprecated.OAuth2ClientRegistrationInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-@Deprecated
-@EqualsAndHashCode(callSuper = true)
-@Data
-public class ExtendedOAuth2ClientRegistrationInfo extends OAuth2ClientRegistrationInfo {
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        property = "securityMode")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = NoSecServerCredentials.class, name = "NO_SEC"),
+        @JsonSubTypes.Type(value = PSKServerCredentials.class, name = "PSK"),
+        @JsonSubTypes.Type(value = RPKServerCredentials.class, name = "RPK"),
+        @JsonSubTypes.Type(value = X509ServerCredentials.class, name = "X509")
+})
+@JsonIgnoreProperties(ignoreUnknown = true)
+public interface LwM2MServerCredentials {
 
-    private String domainName;
-    private SchemeType domainScheme;
-
-    public ExtendedOAuth2ClientRegistrationInfo() {
-        super();
-    }
-
-    public ExtendedOAuth2ClientRegistrationInfo(OAuth2ClientRegistrationInfo oAuth2ClientRegistrationInfo,
-                                                SchemeType domainScheme,
-                                                String domainName) {
-        super(oAuth2ClientRegistrationInfo);
-        this.domainScheme = domainScheme;
-        this.domainName = domainName;
-    }
+    @JsonIgnore
+    LwM2MSecurityMode getSecurityMode();
 }

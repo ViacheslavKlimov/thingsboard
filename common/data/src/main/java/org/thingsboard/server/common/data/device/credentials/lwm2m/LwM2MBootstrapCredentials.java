@@ -28,37 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.model.sql.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.thingsboard.server.common.data.oauth2.deprecated.ExtendedOAuth2ClientRegistrationInfo;
-import org.thingsboard.server.common.data.oauth2.SchemeType;
+import lombok.Getter;
+import lombok.Setter;
 
-@Deprecated
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class ExtendedOAuth2ClientRegistrationInfoEntity extends AbstractOAuth2ClientRegistrationInfoEntity<ExtendedOAuth2ClientRegistrationInfo> {
-
-    private String domainName;
-    private SchemeType domainScheme;
-
-    public ExtendedOAuth2ClientRegistrationInfoEntity() {
-        super();
-    }
-
-    public ExtendedOAuth2ClientRegistrationInfoEntity(OAuth2ClientRegistrationInfoEntity oAuth2ClientRegistrationInfoEntity,
-                                                      String domainName,
-                                                      SchemeType domainScheme) {
-        super(oAuth2ClientRegistrationInfoEntity);
-        this.domainName = domainName;
-        this.domainScheme = domainScheme;
-    }
-
-    @Override
-    public ExtendedOAuth2ClientRegistrationInfo toData() {
-        return new ExtendedOAuth2ClientRegistrationInfo(super.toOAuth2ClientRegistrationInfo(),
-                domainScheme,
-                domainName);
-    }
+@Getter
+@Setter
+public class LwM2MBootstrapCredentials {
+    private LwM2MServerCredentials bootstrapServer;
+    private LwM2MServerCredentials lwm2mServer;
 }

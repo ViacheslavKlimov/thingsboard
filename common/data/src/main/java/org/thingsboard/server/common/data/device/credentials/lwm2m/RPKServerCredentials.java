@@ -28,36 +28,12 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.dao.sql.oauth2.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.oauth2.deprecated.OAuth2ClientRegistration;
-import org.thingsboard.server.dao.model.sql.deprecated.OAuth2ClientRegistrationEntity;
-import org.thingsboard.server.dao.oauth2.deprecated.OAuth2ClientRegistrationDao;
-import org.thingsboard.server.dao.sql.JpaAbstractDao;
-
-import java.util.UUID;
-
-@Deprecated
-@Component
-@RequiredArgsConstructor
-public class JpaOAuth2ClientRegistrationDao extends JpaAbstractDao<OAuth2ClientRegistrationEntity, OAuth2ClientRegistration> implements OAuth2ClientRegistrationDao {
-    private final OAuth2ClientRegistrationRepository repository;
+public class RPKServerCredentials extends AbstractLwM2MServerCredentialsWithKeys {
 
     @Override
-    protected Class<OAuth2ClientRegistrationEntity> getEntityClass() {
-        return OAuth2ClientRegistrationEntity.class;
-    }
-
-    @Override
-    protected CrudRepository<OAuth2ClientRegistrationEntity, UUID> getCrudRepository() {
-        return repository;
-    }
-
-    @Override
-    public void deleteAll() {
-        repository.deleteAll();
+    public LwM2MSecurityMode getSecurityMode() {
+        return LwM2MSecurityMode.RPK;
     }
 }

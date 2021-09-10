@@ -28,23 +28,12 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.server.common.data.id.deprecated;
+package org.thingsboard.server.common.data.device.credentials.lwm2m;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.thingsboard.server.common.data.id.UUIDBased;
+public class X509ServerCredentials extends AbstractLwM2MServerCredentialsWithKeys {
 
-import java.util.UUID;
-
-@Deprecated
-public class OAuth2ClientRegistrationInfoId extends UUIDBased {
-
-    @JsonCreator
-    public OAuth2ClientRegistrationInfoId(@JsonProperty("id") UUID id) {
-        super(id);
-    }
-
-    public static OAuth2ClientRegistrationInfoId fromString(String clientRegistrationInfoId) {
-        return new OAuth2ClientRegistrationInfoId(UUID.fromString(clientRegistrationInfoId));
+    @Override
+    public LwM2MSecurityMode getSecurityMode() {
+        return LwM2MSecurityMode.X509;
     }
 }
