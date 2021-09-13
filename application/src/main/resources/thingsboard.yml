@@ -1080,3 +1080,16 @@ billing:
     xml_invoices_archive_directory: '${BILLING_SFTP_XML_INVOICES_ARCHIVE_DIRECTORY:}'
     pdf_invoices_directory: '${BILLING_SFTP_PDF_INVOICES_DIRECTORY:}'
     pdf_invoices_archive_directory: '${BILLING_SFTP_PDF_INVOICES_ARCHIVE_DIRECTORY:}'
+
+monitoring:
+  aws:
+    cloudwatch:
+      region: "${MONITORING_AWS_CLOUDWATCH_REGION:eu-central-1}"
+      iam_user:
+        access_key_id: "${MONITORING_AWS_CLOUDWATCH_IAM_USER_ACCESS_KEY_ID:}"
+        secret_access_key: "${MONITORING_AWS_CLOUDWATCH_IAM_USER_SECRET_ACCESS_KEY:}"
+    vpn:
+      tma: "${MONITORING_AWS_TMA_VPN_ID:}"
+      wbc: "${MONITORING_AWS_WBC_VPN_ID:}"
+      ericsson_amsterdam: "${MONITORING_AWS_ERICSSON_AMSTERDAM_VPN_ID:}"
+      ericsson_stockholm: "${MONITORING_AWS_ERICSSON_STOCKHOLM_VPN_ID:}"

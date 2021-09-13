@@ -61,7 +61,16 @@ public enum ApiUsageRecordKey {
     DELIVERED_PERSISTENT_RPC_REQUEST_COUNT("deliveredPersistentRpcRequestCount"),
     SUCCESSFUL_PERSISTENT_RPC_REQUEST_COUNT("successfulPersistentRpcRequestCount"),
     TIMED_OUT_PERSISTENT_RPC_REQUEST_COUNT("timedOutPersistentRpcRequestCount"),
-    FAILED_PERSISTENT_RPC_REQUEST_COUNT("failedPersistentRpcRequestCount");
+    FAILED_PERSISTENT_RPC_REQUEST_COUNT("failedPersistentRpcRequestCount"),
+
+    TMA_VPN_DATA_IN("tmaVpnDataIn"),
+    TMA_VPN_DATA_OUT("tmaVpnDataOut"),
+    WBC_VPN_DATA_IN("wbcVpnDataIn"),
+    WBC_VPN_DATA_OUT("wbcVpnDataOut"),
+    ERICSSON_AMSTERDAM_VPN_DATA_IN("ericssonAmsterdamVpnDataIn"),
+    ERICSSON_AMSTERDAM_VPN_DATA_OUT("ericssonAmsterdamVpnDataOut"),
+    ERICSSON_STOCKHOLM_VPN_DATA_IN("ericssonStockholmVpnDataIn"),
+    ERICSSON_STOCKHOLM_VPN_DATA_OUT("ericssonStockholmVpnDataOut");
 
     private static final ApiUsageRecordKey[] JS_RECORD_KEYS = {JS_EXEC_COUNT};
     private static final ApiUsageRecordKey[] RE_RECORD_KEYS = {RE_EXEC_COUNT};
