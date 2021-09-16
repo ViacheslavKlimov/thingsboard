@@ -53,6 +53,7 @@ import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
 import org.thingsboard.server.queue.discovery.PartitionService;
+import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.mail.DefaultMailService;
 import org.thingsboard.server.service.mail.MailTemplates;
 
@@ -78,6 +79,7 @@ import static org.thingsboard.server.utils.TimeUtils.toDate;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@TbCoreComponent
 
 @RestController // TODO: remove trigger endpoint when the final testing is finished
 public class ServiceManagementReportService {
@@ -109,7 +111,7 @@ public class ServiceManagementReportService {
         }, REPORT_EMAIL_SENDING_TIME, Executors.newSingleThreadScheduledExecutor());
     }
 
-    @GetMapping("/send_service_management_report/{tenantId}")
+    @GetMapping("/api/send_service_management_report/{tenantId}")
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN')")
     public String sendServiceManagementReport(@PathVariable String tenantId) throws ThingsboardException {
         try {
