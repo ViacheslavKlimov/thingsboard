@@ -1,0 +1,119 @@
+{
+  "title": "MagentaHome",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "",
+    "widgets": {
+      "a82c409f-d16c-764a-11f6-e5f275a12719": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "html_card",
+        "type": "static",
+        "title": "New widget",
+        "image": null,
+        "description": null,
+        "sizeX": 7.5,
+        "sizeY": 3,
+        "config": {
+          "datasources": [],
+          "timewindow": {
+            "realtime": {
+              "timewindowMs": 60000
+            }
+          },
+          "showTitle": false,
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgba(0, 0, 0, 0.87)",
+          "padding": "8px",
+          "settings": {
+            "cardHtml": "<div class=\"topic\">\n    <div class=\"logo\">\n        <img class=\"logo\" src=\"data:image/png;base64,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\" />\n    </div>\n    <div class=\"topicText\">\n        IoT Hub from Magenta Business\n    </div>\n</div>\n<br>\n<div class=\"infoText\">\n    IoT Hub is an IoT platform for data collection, processing, visualization, and device management -\n\n    that enables rapid development, management, and scaling of IoT projects.\n    <br>Our goal is to provide the out-of-the-box IoT solution that will enable server-side infrastructure for your IoT applications.\n</div>\n\n<br>\n<div class=\"infoText\">\n    Documentation, Quickstart Guides: <a href=\"someurl.magenta.at\">www.help.magent.at</a>\n    <br>\n    Support E-Mail: <a href=\"mailto:service4iot@magenta.at\">Service Team</a>\n</div>\n<br>\n<div class=\"infoText\">Application Access: <a target=\"_blank\" href=\"https://iothub.magenta.at/swagger-ui.html\">IoT Hub API Documentation</a></div>\n<br>\n<div class=\"infoText\">Device Access Information</div>\n<table class=\"infoText mainTable\">\n    <tr>\n        <td class=\"leftTable\">Direct Connected Devices</td>\n        <td>Public Connected Devices</td>\n    </tr>\n    <tr>\n        <td class=\"leftTable\">\n            <table>\n                <tr>\n                    <th>Network</th>\n                    <th>APN</th>\n                </tr>\n                <tr>\n                    <td>E/// DCP</td>\n                    <td>myiot.tma.iot</td>\n                </tr>\n                <tr>\n                    <td>DT WBC</td>\n                    <td>myiot.m2m.at</td>\n                </tr>\n            </table>\n        </td>\n        <td>\n            <table>\n                <tr>\n                    <th>Any access technology (public Internet, WIFI,LTE,5G,GPRS ..)</th>\n                </tr>\n            </table>\n        </td>\n    </tr>\n    <tr>\n        <td class=\"leftTable\"><br>Device Endpoints:</td>\n        <td ><br>Device Endpoints:</td>\n    </tr>\n    <tr>\n        <td  class=\"leftTable\">\n            <table class=\"detailTable\">\n                \n                <tr>\n                    <th>Protocol</th>\n                    <th>IP Addresses</th>\n                    <th>Ports</th>\n                </tr>\n                <tr>\n                    <td>LWM2M</td>\n                    <td>\n                        172.31.79.125<br>\n                        172.31.86.75<br>\n                        172.31.61.229<br>\n                        &nbsp;\n                    </td>\n                    <td>\n                        5685/UDP (no encryption)<br>\n                        5686/UDP (encryption)<br>\n                        5687/UDP (Bootstrap no encryption)<br>\n                        5688/UDP (Bootstrap encryption)\n                    </td>\n                </tr>\n                <tr>\n                    <td>CoAP</td>\n                    <td>\n                        172.31.78.49<br>\n                        172.31.83.246<br>\n                        172.31.60.74<br>\n                    </td>\n                    <td>\n                        5683/UDP (no encryption)<br>\n                        5684/UDP (encryption)<br>\n                    </td>\n                </tr>\n\n                <tr>\n                    <td>MQTT</td>\n                    <td>\n                        172.31.64.64<br>\n                        172.31.59.135<br>\n                        172.31.81.102<br>\n                    </td>\n                    <td>\n                        1883/TCP (no encryption)<br>\n                        8883/TCP (encryption MQTTS)<br>\n                    </td>\n                </tr>\n\n                <tr>\n                    <td>HTTP</td>\n                    <td>\n                        172.31.64.64<br>\n                        172.31.59.135<br>\n                        172.31.81.102<br>\n                    </td>\n                    <td>\n                        80/TCP (no encryption)<br>\n                        443/TCP (encryption HTTPS)<br>\n                    </td>\n                </tr>\n\n                <tr>\n                    <td>NTP</td>\n                    <td>\n                        172.31.25.113\n                    </td>\n                    <td>\n                        123/UDP\n                    </td>\n                </tr>\n\n            </table>\n        </td>\n        <td>\n            <table class=\"detailTable\">\n                <tr>\n                    <th>Protocol</th>\n                    <th>IP Addresses</th>\n                    <th>Ports</th>\n                </tr>\n                <tr>\n                    <td>LWM2M</td>\n                    <td>\n                        lwm2m.iothub.magenta.at<br>\n                        3.65.109.171<br>\n                        52.59.131.237<br>\n                        18.198.110.220<br>\n                        \n                    </td>\n                    <td>\n                        5686/UDP (encryption)<br>\n                        5688/UDP (Bootstrap encryption)\n                    </td>\n                </tr>\n                <tr>\n                    <td>CoAP</td>\n                    <td>\n                        coap-device.iothub.magenta.at<br>\n                        3.66.107.91<br>\n                        18.198.148.101<br>\n                        3.68.173.175<br>\n                    </td>\n                    <td>\n                        5684/UDP (encryption)<br>\n                    </td>\n                </tr>\n\n                <tr>\n                    <td>MQTT</td>\n                    <td>\n                        device.iothub.magenta.at<br>\n                        3.67.118.159<br>\n                        3.68.57.75<br>\n                        3.67.110.96<br>\n                    </td>\n                    <td>\n                        8883/TCP (encryption MQTTS)<br>\n                    </td>\n                </tr>\n\n                <tr>\n                    <td>HTTP</td>\n                    <td>\n                        device.iothub.magenta.at<br>\n                        3.67.118.159<br>\n                        3.68.57.75<br>\n                        3.67.110.96<br>\n                    </td>\n                    <td>\n                        443/TCP (encryption HTTPS)<br>\n                    </td>\n                </tr>\n\n                \n\n            </table>\n        </td>\n    </tr>\n\n</table>\n\n\n\n",
+            "cardCss": ".card {\n    font-weight: bold;\n    font-size: 32px;\n    color: #999;\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.topic {\n    display: flex;\n    align-items: center;\n    justify-content: center\n}\n\n.topicText {\n    color: #e20074;\n    font-family: \"TeleNeo Web,  Arial, Helvetica\", Sans-Serif;\n    font-size: 30pt;\n    padding-left: 20px;\n}\n\nimg {\n    max-width: 100%\n}\n\n.logo {\n\n    width: 100px;\n}\n\n.infoText {\n    font-family: \"TeleNeo Web,  Arial, Helvetica\", Sans-Serif;\n    font-size: 12pt;\n}\n\ntable {\n    width: 100%;\n    border-spacing: 0px;\n    border-collapse: separate;\n    xborder: 1px solid gray;\n\n}\n\nth {\n    text-align: left;\n}\n\ntd {\n    xborder: 1px solid gray;\n    padding: 5px;\n    vertical-align: top;\n}\n\n.mainTable {\n    border: 1px solid gray;\n}\n.leftTable {\n    border-right: 1px solid black;\n    width: 50%;\n}\n\ntable.detailTable tr:nth-child(even)  {\n            background-color: #EBEDEF;\n        }"
+          },
+          "title": "New HTML Card",
+          "dropShadow": false,
+          "showTitleIcon": false,
+          "iconColor": "rgba(0, 0, 0, 0.87)",
+          "iconSize": "24px",
+          "titleTooltip": "",
+          "enableFullscreen": false,
+          "enableDataExport": true,
+          "widgetStyle": {},
+          "titleStyle": {
+            "fontSize": "16px",
+            "fontWeight": 400
+          },
+          "showLegend": false
+        },
+        "row": 0,
+        "col": 0,
+        "id": "a82c409f-d16c-764a-11f6-e5f275a12719"
+      }
+    },
+    "states": {
+      "default": {
+        "name": "MagentaHome",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "a82c409f-d16c-764a-11f6-e5f275a12719": {
+                "sizeX": 24,
+                "sizeY": 26,
+                "row": 0,
+                "col": 0
+              }
+            },
+            "gridSettings": {
+              "backgroundColor": "#eeeeee",
+              "columns": 24,
+              "margin": 10,
+              "backgroundSizeMode": "100%"
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {},
+    "filters": {},
+    "timewindow": {
+      "displayValue": "",
+      "hideInterval": false,
+      "hideAggregation": false,
+      "hideAggInterval": false,
+      "hideTimezone": false,
+      "selectedTab": 0,
+      "realtime": {
+        "realtimeType": 0,
+        "interval": 1000,
+        "timewindowMs": 60000,
+        "quickInterval": "CURRENT_DAY"
+      },
+      "history": {
+        "historyType": 0,
+        "interval": 1000,
+        "timewindowMs": 60000,
+        "fixedTimewindow": {
+          "startTimeMs": 1631174812669,
+          "endTimeMs": 1631261212669
+        },
+        "quickInterval": "CURRENT_DAY"
+      },
+      "aggregation": {
+        "type": "AVG",
+        "limit": 25000
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": false,
+      "showDashboardsSelect": true,
+      "showEntitiesSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true,
+      "toolbarAlwaysOpen": true
+    }
+  },
+  "name": "MagentaHome"
+}
