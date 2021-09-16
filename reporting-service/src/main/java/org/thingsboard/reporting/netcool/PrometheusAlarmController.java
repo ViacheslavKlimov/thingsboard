@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -50,35 +51,49 @@ public class PrometheusAlarmController {
     private final NetcoolReportingService netcoolReportingService;
 
     @PostMapping("/alarm")
-    public void postAlarm(@RequestBody PrometheusAlarm alarm) {
+    public void processAlarm(@RequestBody PrometheusAlarm alarm) {
         try {
-            netcoolReportingService.onAlarm(toNetcoolAlarm(alarm));
+            toNetcoolAlarms(alarm).forEach(netcoolReportingService::onAlarm);
         } catch (Exception e) {
             log.error("Failed to process Prometheus alarm {}", alarm, e);
         }
     }
 
-    private NetcoolAlarm toNetcoolAlarm(PrometheusAlarm prometheusAlarm) {
-        if (StringUtils.isAnyEmpty(prometheusAlarm.getStatus(), prometheusAlarm.getAlertName(), prometheusAlarm.getSeverity())) {
-            throw new IllegalArgumentException("some of required fields is empty");
-        }
-
-        NetcoolAlarm netcoolAlarm = new NetcoolAlarm();
-        netcoolAlarm.setTitle(getAlarmTitle(prometheusAlarm));
-        netcoolAlarm.setCategory(resolveAlarmCategory(prometheusAlarm));
-        netcoolAlarm.setSeverity(resolveAlarmSeverity(prometheusAlarm));
-        return netcoolAlarm;
+    private List<NetcoolAlarm> toNetcoolAlarms(PrometheusAlarm prometheusAlarm) {
+        return prometheusAlarm.getAlerts().stream()
+                .peek(alert -> {
+                    if (StringUtils.isEmpty(alert.getStatus())) {
+                        throw new IllegalArgumentException("alert status is not specified");
+                    }
+                    if (StringUtils.isEmpty(alert.getAlertName())) {
+                        throw new IllegalArgumentException("alert name is not specified");
+                    }
+                    if (StringUtils.isEmpty(alert.getSeverity())) {
+                        throw new IllegalArgumentException("alert severity is not specified");
+                    }
+                    if (StringUtils.isEmpty(alert.getDescription()) && StringUtils.isEmpty(alert.getSummary())) {
+                        throw new IllegalArgumentException("neither alert description nor summary is specified");
+                    }
+                })
+                .map(alert -> {
+                    NetcoolAlarm netcoolAlarm = new NetcoolAlarm();
+                    netcoolAlarm.setTitle(getAlarmTitle(alert));
+                    netcoolAlarm.setCategory(resolveAlarmCategory(alert));
+                    netcoolAlarm.setSeverity(resolveAlarmSeverity(alert));
+                    return netcoolAlarm;
+                })
+                .collect(Collectors.toList());
     }
 
-    private String getAlarmTitle(PrometheusAlarm prometheusAlarm) {
-        return prometheusAlarm.getDescription();
+    private String getAlarmTitle(PrometheusAlarm.Alert alert) {
+        return StringUtils.defaultIfEmpty(alert.getDescription(), alert.getSummary());
     }
 
-    private AlarmSeverity resolveAlarmSeverity(PrometheusAlarm prometheusAlarm) {
-        if (StringUtils.equalsIgnoreCase(prometheusAlarm.getStatus(), "resolved")) {
+    private AlarmSeverity resolveAlarmSeverity(PrometheusAlarm.Alert alert) {
+        if (StringUtils.equalsIgnoreCase(alert.getStatus(), "resolved")) {
             return AlarmSeverity.CLEARED;
         } else {
-            String prometheusAlarmSeverity = prometheusAlarm.getSeverity();
+            String prometheusAlarmSeverity = alert.getSeverity();
             switch (prometheusAlarmSeverity) {
                 case "critical":
                     return AlarmSeverity.CRITICAL;
@@ -91,49 +106,47 @@ public class PrometheusAlarmController {
         }
     }
 
-    private AlarmCategory resolveAlarmCategory(PrometheusAlarm alarm) {
-        return AlarmCategory.forAlert(alarm.getAlertName())
+    private AlarmCategory resolveAlarmCategory(PrometheusAlarm.Alert alert) {
+        return AlarmCategory.forAlert(alert.getAlertName())
                 .orElseThrow(() -> new IllegalArgumentException("failed to resolve alarm category"));
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
     public static class PrometheusAlarm {
-        private String status; // firing, resolved
         private List<Alert> alerts;
-        private Map<String, String> groupLabels;
-        private Map<String, String> commonLabels;
-        private Map<String, String> commonAnnotations;
 
         @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
         public static class Alert {
             private String status; // firing, resolved
             private Map<String, String> labels;
             private Map<String, String> annotations;
-        }
 
-        public String getSeverity() { // info, warning, critical
-            return Optional.ofNullable(commonLabels)
-                    .map(labels -> labels.get("severity"))
-                    .orElse(null);
-        }
+            public String getSeverity() { // info, warning, critical
+                return Optional.ofNullable(labels)
+                        .map(labels -> labels.get("severity"))
+                        .orElse(null);
+            }
 
-        public String getAlertName() {
-            return Optional.ofNullable(commonLabels)
-                    .map(labels -> labels.get("alertname"))
-                    .orElse(null);
-        }
+            public String getAlertName() {
+                return Optional.ofNullable(labels)
+                        .map(labels -> labels.get("alertname"))
+                        .orElse(null);
+            }
 
-        public String getDescription() {
-            return Optional.ofNullable(commonAnnotations)
-                    .map(annotations -> annotations.get("description"))
-                    .orElse(null);
-        }
+            public String getDescription() {
+                return Optional.ofNullable(annotations)
+                        .map(annotations -> annotations.get("description"))
+                        .orElse(null);
+            }
 
-        public String getSummary() {
-            return Optional.ofNullable(commonAnnotations)
-                    .map(annotations -> annotations.get("summary"))
-                    .orElse(null);
+            public String getSummary() {
+                return Optional.ofNullable(annotations)
+                        .map(annotations -> annotations.get("summary"))
+                        .orElse(null);
+            }
+
         }
 
     }
