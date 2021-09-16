@@ -57,6 +57,8 @@ import org.thingsboard.server.service.mail.DefaultMailService;
 import org.thingsboard.server.service.mail.MailTemplates;
 
 import javax.annotation.PostConstruct;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
@@ -66,7 +68,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.thingsboard.server.utils.TimeUtils.toDate;
@@ -91,6 +95,7 @@ public class ServiceManagementReportService {
     private MagentaReportType reportType;
 
     private static final LocalTime REPORT_EMAIL_SENDING_TIME = LocalTime.of(23, 0);
+    private static final DateFormat REPORT_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy");
 
     @PostConstruct
     private void sendServiceManagementReportsBySchedule() {
@@ -127,34 +132,52 @@ public class ServiceManagementReportService {
     }
 
     private void sendServiceManagementReportForTenant(Tenant tenant) throws ThingsboardException {
-        Map<String, String> monthlyReportInfo = getServiceManagementReportInfo(tenant.getId());
-        defaultMailService.sendMagentaReportEmail(tenant.getId(), null, tenant.getEmail(), monthlyReportInfo,
+        Map<String, String> reportInfo = getServiceManagementReportInfo(tenant);
+        defaultMailService.sendMagentaReportEmail(tenant.getId(), null, tenant.getEmail(), reportInfo,
                 reportType, MailTemplates.SERVICE_MANAGEMENT_REPORT, getReportName(tenant));
     }
 
     @SneakyThrows
-    private Map<String, String> getServiceManagementReportInfo(TenantId tenantId) {
+    private Map<String, String> getServiceManagementReportInfo(Tenant tenant) {
         Date periodStart = toDate(LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay());
         Date periodEnd = toDate(LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59));
 
         Map<KpiKey, Long> kpisInfo = new HashMap<>();
         List<KpiKey> kpiKeys = Arrays.stream(KpiKey.values()).filter(kpiKey -> kpiKey.getApiUsageRecordKey() != null).collect(Collectors.toList());
 
-        Map<String, Long> tsData = tsService.getLongTsValuesForKeysAndPeriod(tenantId, apiUsageStateService.findTenantApiUsageState(tenantId).getId(), kpiKeys.stream()
-                .map(KpiKey::getApiUsageRecordKey).map(ApiUsageRecordKey::getApiCountKey)
-                .collect(Collectors.toList()), periodStart.getTime(), periodEnd.getTime());
+        Map<String, Long> tsData = getKpisValues(tenant.getId(), kpiKeys.stream().filter(Predicate.not(KpiKey::isSystemMetric)).collect(Collectors.toList()), periodStart, periodEnd);
+        Map<String, Long> tsSystemData = getKpisValues(TenantId.SYS_TENANT_ID, kpiKeys.stream().filter(KpiKey::isSystemMetric).collect(Collectors.toList()), periodStart, periodEnd);
 
-        kpiKeys.forEach(kpiKey -> kpisInfo.put(kpiKey, tsData.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), 0L)));
+        kpiKeys.stream().filter(Predicate.not(KpiKey::isSystemMetric))
+                .forEach(kpiKey -> kpisInfo.put(kpiKey, tsData.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), 0L)));
+
+        kpiKeys.stream().filter(KpiKey::isSystemMetric)
+                .forEach(kpiKey -> kpisInfo.put(kpiKey, tsSystemData.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), 0L)));
 
         kpiKeys.add(KpiKey.SUCCESSFUL_DOWNLINK_MESSAGES);
         kpiKeys.stream().filter(KpiKey::isComputed)
                 .forEach(kpiKey -> kpisInfo.put(kpiKey, kpiKey.compute(kpisInfo::get)));
 
-        long newProvisionedDevicesCount = deviceService.countByTenantIdAndCreatedTimeBetween(tenantId, periodStart.getTime(), periodEnd.getTime());
+        long newProvisionedDevicesCount = deviceService.countByTenantIdAndCreatedTimeBetween(tenant.getId(), periodStart.getTime(), periodEnd.getTime());
         kpisInfo.put(KpiKey.NEW_PROVISIONED_DEVICES, newProvisionedDevicesCount);
 
-        return kpisInfo.entrySet().stream()
+        Map<String, String> result = kpisInfo.entrySet().stream()
                 .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> entry.getValue().toString()));
+
+        result.put("PERIOD_START_DATE", REPORT_DATE_FORMAT.format(periodStart));
+        result.put("PERIOD_END_DATE", REPORT_DATE_FORMAT.format(periodEnd));
+        result.put("TENANT_NAME", tenant.getName());
+
+        return result;
+    }
+
+    private Map<String, Long> getKpisValues(TenantId tenantId, List<KpiKey> kpiKeys, Date periodStart, Date periodEnd) throws ExecutionException, InterruptedException {
+        return tsService.getLongTsValuesForKeysAndPeriod(tenantId, apiUsageStateService.findTenantApiUsageState(tenantId).getId(),
+                kpiKeys.stream()
+                        .map(KpiKey::getApiUsageRecordKey)
+                        .map(ApiUsageRecordKey::getApiCountKey)
+                        .collect(Collectors.toList()),
+                periodStart.getTime(), periodEnd.getTime());
     }
 
     private String getReportName(Tenant tenant) {
