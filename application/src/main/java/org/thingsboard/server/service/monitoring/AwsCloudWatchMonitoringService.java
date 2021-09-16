@@ -39,6 +39,7 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.util.Pair;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ import java.util.Map;
 @Service
 @TbCoreComponent
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "monitoring.aws.enabled", havingValue = "true")
 public class AwsCloudWatchMonitoringService {
     @Value("${monitoring.aws.cloudwatch.iam_user.access_key_id}")
     private String iamUserAccessKeyId;

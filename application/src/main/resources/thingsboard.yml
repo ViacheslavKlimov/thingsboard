@@ -1083,6 +1083,7 @@ billing:
 
 monitoring:
   aws:
+    enabled: "${MONITORING_AWS_ENABLED:false}"
     cloudwatch:
       region: "${MONITORING_AWS_CLOUDWATCH_REGION:eu-central-1}"
       iam_user:
