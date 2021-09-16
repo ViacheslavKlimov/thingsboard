@@ -186,7 +186,9 @@ public class PrometheusReportingService {
         Arrays.stream(KpiKey.values())
                 .filter(kpiKey -> kpiKey.getApiUsageRecordKey() != null)
                 .forEach(kpiKey -> {
-                    getCounter(kpiKey).labels(tenantId.toString()).get();
+                    if (!kpiKey.isSystemMetric() || tenantId.equals(TenantId.SYS_TENANT_ID.getId())) {
+                        getCounter(kpiKey).labels(tenantId.toString()).get();
+                    }
                 });
     }
 
