@@ -90,7 +90,14 @@
                             </tr>
                             <tr>
                                 <td>
-                                    <h1 style="color:#d70d70">Magenta IoT Hub Service Management Report</h1>
+                                    <h1 style="color:#d70d70; text-align: center">Magenta IoT Hub Service Management Report</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p style="color:#d70d70; text-align: center">
+                                        ${data.PERIOD_START_DATE} - ${data.PERIOD_END_DATE}
+                                    </p>
                                 </td>
                             </tr>
                             <tr>
@@ -196,6 +203,33 @@
                             <tr>
                                 <td>
                                     <p>Alarms Created: ${data.CREATED_ALARMS}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p>TMA VPN (IN/OUT): ${data.TMA_VPN_DATA_IN}/${data.TMA_VPN_DATA_OUT}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>WBC VPN (IN/OUT): ${data.WBC_VPN_DATA_IN}/${data.WBC_VPN_DATA_OUT}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Ericsson Amsterdam VPN (IN/OUT): ${data.ERICSSON_AMSTERDAM_VPN_DATA_IN}/${data.ERICSSON_AMSTERDAM_VPN_DATA_OUT}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p>Ericsson Stockholm VPN (IN/OUT): ${data.ERICSSON_STOCKHOLM_VPN_DATA_IN}/${data.ERICSSON_STOCKHOLM_VPN_DATA_OUT}</p>
+                                </td>
+                            </tr>
+                            <tr><td><br/></td></tr>
+                            <tr>
+                                <td>
+                                    <p style="text-align: right; color: darkgrey">${data.TENANT_NAME}</p>
                                 </td>
                             </tr>
                             <tr>

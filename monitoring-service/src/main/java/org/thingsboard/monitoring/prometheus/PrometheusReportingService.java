@@ -174,7 +174,11 @@ public class PrometheusReportingService {
     }
 
     private void setDefaultValuesForTenant(UUID tenantId) {
-        getCounter(KpiKey.CREATED_ALARMS).labels(tenantId.toString()).get();
+        Arrays.stream(KpiKey.values())
+                .filter(kpiKey -> kpiKey.getApiUsageRecordKey() != null)
+                .forEach(kpiKey -> {
+                    getCounter(kpiKey).labels(tenantId.toString()).get();
+                });
     }
 
     @Data
