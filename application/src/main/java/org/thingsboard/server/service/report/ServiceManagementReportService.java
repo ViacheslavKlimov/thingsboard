@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -118,7 +119,7 @@ public class ServiceManagementReportService {
             sendServiceManagementReportForTenant(tenantService.findTenantById(new TenantId(UUID.fromString(tenantId))));
             return "sent successfully";
         } catch (Exception e) {
-            return e.toString();
+            return ExceptionUtils.getStackTrace(e);
         }
     }
 
