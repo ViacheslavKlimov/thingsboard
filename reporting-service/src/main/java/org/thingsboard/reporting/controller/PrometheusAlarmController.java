@@ -28,7 +28,7 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.netcool;
+package org.thingsboard.reporting.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
@@ -38,6 +38,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.reporting.service.MonitoringServiceApiClient;
+import org.thingsboard.reporting.service.netcool.NetcoolReportingService;
+import org.thingsboard.server.common.data.stats.AlarmCategory;
+import org.thingsboard.server.common.data.stats.AlarmSeverity;
+import org.thingsboard.server.common.data.stats.SystemAlarm;
 
 import java.util.List;
 import java.util.Map;
@@ -49,17 +54,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PrometheusAlarmController {
     private final NetcoolReportingService netcoolReportingService;
+    private final MonitoringServiceApiClient monitoringServiceApiClient;
 
     @PostMapping("/alarm")
     public void processAlarm(@RequestBody PrometheusAlarm alarm) {
         try {
-            toNetcoolAlarms(alarm).forEach(netcoolReportingService::onAlarm);
+            toSystemAlarms(alarm).forEach(systemAlarm -> {
+                netcoolReportingService.onAlarm(systemAlarm);
+                monitoringServiceApiClient.publishSystemAlarm(systemAlarm);
+            });
         } catch (Exception e) {
             log.error("Failed to process Prometheus alarm {}", alarm, e);
         }
     }
 
-    private List<NetcoolAlarm> toNetcoolAlarms(PrometheusAlarm prometheusAlarm) {
+    private List<SystemAlarm> toSystemAlarms(PrometheusAlarm prometheusAlarm) {
         return prometheusAlarm.getAlerts().stream()
                 .peek(alert -> {
                     if (StringUtils.isEmpty(alert.getStatus())) {
@@ -76,11 +85,11 @@ public class PrometheusAlarmController {
                     }
                 })
                 .map(alert -> {
-                    NetcoolAlarm netcoolAlarm = new NetcoolAlarm();
-                    netcoolAlarm.setTitle(getAlarmTitle(alert));
-                    netcoolAlarm.setCategory(resolveAlarmCategory(alert));
-                    netcoolAlarm.setSeverity(resolveAlarmSeverity(alert));
-                    return netcoolAlarm;
+                    SystemAlarm systemAlarm = new SystemAlarm();
+                    systemAlarm.setTitle(getAlarmTitle(alert));
+                    systemAlarm.setCategory(resolveAlarmCategory(alert));
+                    systemAlarm.setSeverity(resolveAlarmSeverity(alert));
+                    return systemAlarm;
                 })
                 .collect(Collectors.toList());
     }
@@ -107,7 +116,7 @@ public class PrometheusAlarmController {
     }
 
     private AlarmCategory resolveAlarmCategory(PrometheusAlarm.Alert alert) {
-        return AlarmCategory.forAlert(alert.getAlertName())
+        return AlarmCategory.forAlertName(alert.getAlertName())
                 .orElseThrow(() -> new IllegalArgumentException("failed to resolve alarm category"));
     }
 

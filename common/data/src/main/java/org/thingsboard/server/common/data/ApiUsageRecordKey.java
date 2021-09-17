@@ -70,7 +70,13 @@ public enum ApiUsageRecordKey {
     ERICSSON_AMSTERDAM_VPN_DATA_IN("ericssonAmsterdamVpnDataIn"),
     ERICSSON_AMSTERDAM_VPN_DATA_OUT("ericssonAmsterdamVpnDataOut"),
     ERICSSON_STOCKHOLM_VPN_DATA_IN("ericssonStockholmVpnDataIn"),
-    ERICSSON_STOCKHOLM_VPN_DATA_OUT("ericssonStockholmVpnDataOut");
+    ERICSSON_STOCKHOLM_VPN_DATA_OUT("ericssonStockholmVpnDataOut"),
+
+    COMMUNICATION_SYSTEM_ALARMS_COUNT("communicationSystemAlarmsCount"),
+    QUALITY_OF_SERVICE_SYSTEM_ALARMS_COUNT("qualityOfServiceSystemAlarmsCount"),
+    PROCESSING_SYSTEM_ALARMS_COUNT("processingSystemAlarmsCount"),
+    EQUIPMENT_SYSTEM_ALARMS_COUNT("equipmentSystemAlarmsCount"),
+    ENVIRONMENTAL_SYSTEM_ALARMS_COUNT("environmentalSystemAlarmsCount");
 
     private static final ApiUsageRecordKey[] JS_RECORD_KEYS = {JS_EXEC_COUNT};
     private static final ApiUsageRecordKey[] RE_RECORD_KEYS = {RE_EXEC_COUNT};

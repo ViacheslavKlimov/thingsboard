@@ -65,7 +65,7 @@ import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -111,7 +111,7 @@ public class ServiceManagementReportService {
         }, REPORT_EMAIL_SENDING_TIME, Executors.newSingleThreadScheduledExecutor());
     }
 
-    @GetMapping("/api/send_service_management_report/{tenantId}")
+    @GetMapping("/api/reports/service_management_report/{tenantId}")
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN')")
     public String sendServiceManagementReport(@PathVariable String tenantId) throws ThingsboardException {
         try {
@@ -144,24 +144,17 @@ public class ServiceManagementReportService {
         Date periodStart = toDate(LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay());
         Date periodEnd = toDate(LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59));
 
-        Map<KpiKey, Long> kpisInfo = new HashMap<>();
         List<KpiKey> kpiKeys = Arrays.stream(KpiKey.values()).filter(kpiKey -> kpiKey.getApiUsageRecordKey() != null).collect(Collectors.toList());
+        Map<String, Long> kpisValues = getKpisValues(tenant.getId(), kpiKeys.stream().filter(Predicate.not(KpiKey::isSystemMetric)).collect(Collectors.toList()), periodStart, periodEnd);
+        kpisValues.putAll(getKpisValues(TenantId.SYS_TENANT_ID, kpiKeys.stream().filter(KpiKey::isSystemMetric).collect(Collectors.toList()), periodStart, periodEnd));
 
-        Map<String, Long> tsData = getKpisValues(tenant.getId(), kpiKeys.stream().filter(Predicate.not(KpiKey::isSystemMetric)).collect(Collectors.toList()), periodStart, periodEnd);
-        Map<String, Long> tsSystemData = getKpisValues(TenantId.SYS_TENANT_ID, kpiKeys.stream().filter(KpiKey::isSystemMetric).collect(Collectors.toList()), periodStart, periodEnd);
+        Map<KpiKey, Long> kpisInfo = new EnumMap<>(KpiKey.class);
+        kpiKeys.forEach(kpiKey -> {
+            kpisInfo.put(kpiKey, kpisValues.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), kpiKey.getDefaultValue()));
+        });
 
-        kpiKeys.stream().filter(Predicate.not(KpiKey::isSystemMetric))
-                .forEach(kpiKey -> kpisInfo.put(kpiKey, tsData.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), 0L)));
-
-        kpiKeys.stream().filter(KpiKey::isSystemMetric)
-                .forEach(kpiKey -> kpisInfo.put(kpiKey, tsSystemData.getOrDefault(kpiKey.getApiUsageRecordKey().getApiCountKey(), 0L)));
-
-        kpiKeys.add(KpiKey.SUCCESSFUL_DOWNLINK_MESSAGES);
-        kpiKeys.stream().filter(KpiKey::isComputed)
-                .forEach(kpiKey -> kpisInfo.put(kpiKey, kpiKey.compute(kpisInfo::get)));
-
-        long newProvisionedDevicesCount = deviceService.countByTenantIdAndCreatedTimeBetween(tenant.getId(), periodStart.getTime(), periodEnd.getTime());
-        kpisInfo.put(KpiKey.NEW_PROVISIONED_DEVICES, newProvisionedDevicesCount);
+        kpisInfo.put(KpiKey.SUCCESSFUL_DOWNLINK_MESSAGES, KpiKey.SUCCESSFUL_DOWNLINK_MESSAGES.compute(kpisInfo::get));
+        kpisInfo.put(KpiKey.NEW_PROVISIONED_DEVICES, deviceService.countByTenantIdAndCreatedTimeBetween(tenant.getId(), periodStart.getTime(), periodEnd.getTime()));
 
         Map<String, String> result = kpisInfo.entrySet().stream()
                 .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> entry.getValue().toString()));

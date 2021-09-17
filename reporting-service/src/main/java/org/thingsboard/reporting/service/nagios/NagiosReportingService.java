@@ -28,13 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.nagios;
+package org.thingsboard.reporting.service.nagios;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.thingsboard.reporting.util.snmp.SnmpAgent;
+import org.thingsboard.reporting.service.MonitoringServiceApiClient;
+import org.thingsboard.reporting.util.SnmpAgent;
 import org.thingsboard.server.common.data.stats.KpiKey;
 import org.thingsboard.server.common.data.stats.KpiStats;
 
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class NagiosReportingService {
     @Value("${snmp.binding_port}")
     private int snmpPort;
@@ -55,14 +57,11 @@ public class NagiosReportingService {
     @Value("${nagios.kpi_statistics.oid}")
     private String baseOid;
 
-    @Value("${monitoring_service_url}")
-    private String monitoringServiceUrl;
+    private final MonitoringServiceApiClient monitoringServiceApiClient;
 
     private final List<KpiKey> kpiKeysToReport = Arrays.stream(KpiKey.values())
             .filter(kpiKey -> kpiKey.getId() != null)
             .collect(Collectors.toList());
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     @PostConstruct
     public void run() throws Exception {
@@ -73,7 +72,7 @@ public class NagiosReportingService {
         snmpAgent.registerVariables(ids, () -> {
             KpiStats kpiStats;
             try {
-                kpiStats = requestKpiStats();
+                kpiStats = monitoringServiceApiClient.requestKpiStatsForNagios();
                 if (kpiStats == null || kpiStats.getEntries() == null) {
                     throw new IllegalStateException("empty response");
                 }
@@ -83,10 +82,6 @@ public class NagiosReportingService {
             }
             return toValues(kpiStats);
         }, baseOid);
-    }
-
-    private KpiStats requestKpiStats() {
-        return restTemplate.getForObject(monitoringServiceUrl + "/kpi_stats", KpiStats.class);
     }
 
     private Map<Integer, Object> toValues(KpiStats kpiStats) {

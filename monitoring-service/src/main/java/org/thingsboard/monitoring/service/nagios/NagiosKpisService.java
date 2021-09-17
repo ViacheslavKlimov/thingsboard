@@ -28,14 +28,13 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.monitoring.nagios;
+package org.thingsboard.monitoring.service.nagios;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.stats.KpiStats;
-import org.thingsboard.monitoring.KpiStatsService;
+import org.thingsboard.monitoring.service.KpiStatsService;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;
@@ -46,7 +45,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-@RestController
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class NagiosKpisService {
@@ -55,7 +54,6 @@ public class NagiosKpisService {
     private final KpiStats currentKpiStats = new KpiStats();
     private final AtomicLong lastRequestTime = new AtomicLong();
 
-    @GetMapping("/kpi_stats")
     public KpiStats getCurrentKpiStats() {
         if (lastRequestTime.get() == 0) {
             lastRequestTime.set(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(1));

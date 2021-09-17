@@ -28,14 +28,14 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.monitoring;
+package org.thingsboard.monitoring.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import org.thingsboard.monitoring.nagios.NagiosKpisService;
-import org.thingsboard.monitoring.prometheus.PrometheusReportingService;
+import org.thingsboard.monitoring.service.nagios.NagiosKpisService;
+import org.thingsboard.monitoring.service.prometheus.PrometheusReportingService;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
 import org.thingsboard.server.common.data.stats.KpiKey;

@@ -112,7 +112,13 @@ public enum KpiKey {
     ERICSSON_AMSTERDAM_VPN_DATA_IN(9_5, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_IN, true),
     ERICSSON_AMSTERDAM_VPN_DATA_OUT(9_6, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_OUT, true),
     ERICSSON_STOCKHOLM_VPN_DATA_IN(9_7, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_IN, true),
-    ERICSSON_STOCKHOLM_VPN_DATA_OUT(9_8, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_OUT, true);
+    ERICSSON_STOCKHOLM_VPN_DATA_OUT(9_8, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_OUT, true),
+
+    COMMUNICATION_SYSTEM_ALARMS(ApiUsageRecordKey.COMMUNICATION_SYSTEM_ALARMS_COUNT, true),
+    QUALITY_OF_SERVICE_SYSTEM_ALARMS(ApiUsageRecordKey.QUALITY_OF_SERVICE_SYSTEM_ALARMS_COUNT, true),
+    PROCESSING_SYSTEM_ALARMS(ApiUsageRecordKey.PROCESSING_SYSTEM_ALARMS_COUNT, true),
+    EQUIPMENT_SYSTEM_ALARMS(ApiUsageRecordKey.EQUIPMENT_SYSTEM_ALARMS_COUNT, true),
+    ENVIRONMENTAL_SYSTEM_ALARMS(ApiUsageRecordKey.ENVIRONMENTAL_SYSTEM_ALARMS_COUNT, true);
 
     private Integer id;
     private ApiUsageRecordKey apiUsageRecordKey;
@@ -123,10 +129,6 @@ public enum KpiKey {
 
     KpiKey(Integer id) {
         this.id = id;
-    }
-
-    KpiKey(ApiUsageRecordKey apiUsageRecordKey) {
-        this.apiUsageRecordKey = apiUsageRecordKey;
     }
 
     KpiKey(Integer id, ApiUsageRecordKey apiUsageRecordKey) {
@@ -149,6 +151,11 @@ public enum KpiKey {
     KpiKey(Integer id, boolean isAccumulated) {
         this.id = id;
         this.isAccumulated = isAccumulated;
+    }
+
+    KpiKey(ApiUsageRecordKey apiUsageRecordKey, boolean isSystemMetric) {
+        this.apiUsageRecordKey = apiUsageRecordKey;
+        this.isSystemMetric = isSystemMetric;
     }
 
     public static Optional<KpiKey> forApiUsageRecordKey(ApiUsageRecordKey apiUsageRecordKey) {

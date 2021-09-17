@@ -28,7 +28,7 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.netcool;
+package org.thingsboard.reporting.service.netcool;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +42,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.common.util.snmp.SnmpUtils;
+import org.thingsboard.server.common.data.stats.SystemAlarm;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -71,12 +72,12 @@ public class NetcoolReportingService {
         this.snmp = new Snmp(new DefaultUdpTransportMapping(new UdpAddress("0.0.0.0/" + bindingPort)));
     }
 
-    public void onAlarm(NetcoolAlarm alarm) {
+    public void onAlarm(SystemAlarm alarm) {
         log.info("Received new alarm: {}", alarm);
         reportAlarm(alarm);
     }
 
-    private void reportAlarm(NetcoolAlarm alarm) {
+    private void reportAlarm(SystemAlarm alarm) {
         try {
             snmp.send(toTrapPdu(alarm), target);
         } catch (Exception e) {
@@ -84,18 +85,18 @@ public class NetcoolReportingService {
         }
     }
 
-    private PDU toTrapPdu(NetcoolAlarm alarm) {
+    private PDU toTrapPdu(SystemAlarm alarm) {
         PDU pdu = new PDU();
         pdu.setType(PDU.TRAP);
         pdu.add(new VariableBinding(new OID(getAlarmOid(alarm)), SnmpUtils.toSnmpVariable(mapToString(alarm))));
         return pdu;
     }
 
-    private String getAlarmOid(NetcoolAlarm alarm) {
+    private String getAlarmOid(SystemAlarm alarm) {
         return String.format("%s.%d.%d", alarmTrapBaseOid, alarm.getSeverity().getId(), alarm.getCategory().getId());
     }
 
-    private String mapToString(NetcoolAlarm alarm) {
+    private String mapToString(SystemAlarm alarm) {
         return alarm.getTitle();
     }
 
