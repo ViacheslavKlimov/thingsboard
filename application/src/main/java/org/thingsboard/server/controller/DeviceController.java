@@ -34,6 +34,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,6 +116,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device/{deviceId}", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get device by id", notes = "Returns device by given id")
     public Device getDeviceById(@PathVariable(DEVICE_ID) String strDeviceId) throws ThingsboardException {
         checkParameter(DEVICE_ID, strDeviceId);
         try {
@@ -127,6 +130,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device", method = RequestMethod.POST)
     @ResponseBody
+    @ApiOperation(value = "Save device", notes = "Saves device with given access token and entity group id")
     public Device saveDevice(@RequestBody Device device,
                              @RequestParam(name = "accessToken", required = false) String accessToken,
                              @RequestParam(name = "entityGroupId", required = false) String strEntityGroupId) throws ThingsboardException {
@@ -154,6 +158,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device/{deviceId}", method = RequestMethod.DELETE)
     @ResponseStatus(value = HttpStatus.OK)
+    @ApiOperation(value = "Delete device", notes = "Deletes device with given device id")
     public void deleteDevice(@PathVariable(DEVICE_ID) String strDeviceId) throws ThingsboardException {
         checkParameter(DEVICE_ID, strDeviceId);
         try {
@@ -183,6 +188,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device/{deviceId}/credentials", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get device credentials by device id", notes = "Returns device credentials with given device id")
     public DeviceCredentials getDeviceCredentialsByDeviceId(@PathVariable(DEVICE_ID) String strDeviceId) throws ThingsboardException {
         checkParameter(DEVICE_ID, strDeviceId);
         try {
@@ -204,6 +210,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device/credentials", method = RequestMethod.POST)
     @ResponseBody
+    @ApiOperation(value = "Save device credentials", notes = "Saves credentials for device")
     public DeviceCredentials saveDeviceCredentials(@RequestBody DeviceCredentials deviceCredentials) throws ThingsboardException {
         checkNotNull(deviceCredentials);
         try {
@@ -228,12 +235,17 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAuthority('TENANT_ADMIN')")
     @RequestMapping(value = "/tenant/devices", params = {"pageSize", "page"}, method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get tenant devices", notes = "Returns page of devices in the possession of tenant")
     public PageData<Device> getTenantDevices(
             @RequestParam int pageSize,
             @RequestParam int page,
+            @ApiParam(value = "Device profile name")
             @RequestParam(required = false) String type,
+            @ApiParam(value = "The text to be searched for in the device name")
             @RequestParam(required = false) String textSearch,
+            @ApiParam(value = "Property of device to sort by", allowableValues = "created_time, name, label, type")
             @RequestParam(required = false) String sortProperty,
+            @ApiParam(value = "Sort order", allowableValues = "ASC, DESC")
             @RequestParam(required = false) String sortOrder) throws ThingsboardException {
         try {
             accessControlService.checkPermission(getCurrentUser(), Resource.DEVICE, Operation.READ);
@@ -252,6 +264,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAuthority('TENANT_ADMIN')")
     @RequestMapping(value = "/tenant/devices", params = {"deviceName"}, method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get device by its name and tenant", notes = "Returns device with given name in the possession of requesting tenant")
     public Device getTenantDevice(
             @RequestParam String deviceName) throws ThingsboardException {
         try {
@@ -266,13 +279,18 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/customer/{customerId}/devices", params = {"pageSize", "page"}, method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get all customer devices", notes = "Returns page of devices in the possession of customer")
     public PageData<Device> getCustomerDevices(
             @PathVariable("customerId") String strCustomerId,
             @RequestParam int pageSize,
             @RequestParam int page,
+            @ApiParam(value = "Device profile name")
             @RequestParam(required = false) String type,
+            @ApiParam(value = "The text to be searched for in the device name")
             @RequestParam(required = false) String textSearch,
+            @ApiParam(value = "Property of device to sort by", allowableValues = "created_time, name, label, type")
             @RequestParam(required = false) String sortProperty,
+            @ApiParam(value = "Sort order", allowableValues = "ASC, DESC")
             @RequestParam(required = false) String sortOrder) throws ThingsboardException {
         checkParameter("customerId", strCustomerId);
         try {
@@ -294,12 +312,17 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/user/devices", params = {"pageSize", "page"}, method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get all user devices", notes = "Returns page of devices in the possession of requesting user")
     public PageData<Device> getUserDevices(
             @RequestParam int pageSize,
             @RequestParam int page,
+            @ApiParam(value = "Device profile name")
             @RequestParam(required = false) String type,
+            @ApiParam(value = "The text to be searched for in the device name")
             @RequestParam(required = false) String textSearch,
+            @ApiParam(value = "Property of device to sort by", allowableValues = "created_time, name, label, type")
             @RequestParam(required = false) String sortProperty,
+            @ApiParam(value = "Sort order", allowableValues = "ASC, DESC")
             @RequestParam(required = false) String sortOrder) throws ThingsboardException {
         try {
             PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
@@ -315,7 +338,9 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/devices", params = {"deviceIds"}, method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get all devices by ids", notes = "Returns list of Devices by given ids")
     public List<Device> getDevicesByIds(
+            @ApiParam(value = "A list of devices' ids, separated by comma")
             @RequestParam("deviceIds") String[] strDeviceIds) throws ThingsboardException {
         checkArrayParameter("deviceIds", strDeviceIds);
         try {
@@ -335,7 +360,8 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/devices", method = RequestMethod.POST)
     @ResponseBody
-    public List<Device> findByQuery(@RequestBody DeviceSearchQuery query) throws ThingsboardException {
+    @ApiOperation(value = "Get all devices by query", notes = "Returns a list of devices found by the query")
+    public List<Device> findByQuery(@ApiParam(value = "") @RequestBody DeviceSearchQuery query) throws ThingsboardException {
         checkNotNull(query);
         checkNotNull(query.getParameters());
         checkNotNull(query.getDeviceTypes());
@@ -351,12 +377,18 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/entityGroup/{entityGroupId}/devices", params = {"pageSize", "page"}, method = RequestMethod.GET)
     @ResponseBody
-    public PageData<Device> getDevicesByEntityGroupId(
+    @ApiOperation(value = "Get all devices by entity group", notes = "Returns page of devices with given entity group id")
+    public PageData<Device> getDevicesByEntityGroupId (
             @PathVariable(ENTITY_GROUP_ID) String strEntityGroupId,
-            @ApiParam(value = "Page size", required = true, allowableValues = "range[1, infinity]") @RequestParam int pageSize,
-            @ApiParam(value = "Page", required = true, allowableValues = "range[0, infinity]") @RequestParam int page,
+            @ApiParam(value = "Page size", required = true, allowableValues = "range[1, infinity]")
+            @RequestParam int pageSize,
+            @ApiParam(value = "Page", required = true, allowableValues = "range[0, infinity]")
+            @RequestParam int page,
+            @ApiParam(value = "The text to be searched for in the device name")
             @RequestParam(required = false) String textSearch,
+            @ApiParam(value = "Property of device to sort by", allowableValues = "created_time, name, label, type")
             @RequestParam(required = false) String sortProperty,
+            @ApiParam(value = "Sort order", allowableValues = "ASC, DESC")
             @RequestParam(required = false) String sortOrder
     ) throws ThingsboardException {
         checkParameter(ENTITY_GROUP_ID, strEntityGroupId);
@@ -385,6 +417,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/device/types", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get all devices types", notes = "Returns a list of devices types")
     public List<EntitySubtype> getDeviceTypes() throws ThingsboardException {
         try {
             SecurityUser user = getCurrentUser();
@@ -399,6 +432,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAuthority('CUSTOMER_USER')")
     @RequestMapping(value = "/customer/device/{deviceName}/claim", method = RequestMethod.POST)
     @ResponseBody
+    @ApiOperation(value = "Claim device", notes = "A method which receives claiming request with secret key to assign a device to the specific customer")
     public DeferredResult<ResponseEntity> claimDevice(@PathVariable(DEVICE_NAME) String deviceName,
                                                       @RequestBody(required = false) ClaimRequest claimRequest,
                                                       @RequestParam(required = false) String subCustomerId) throws ThingsboardException {
@@ -463,6 +497,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/customer/device/{deviceName}/claim", method = RequestMethod.DELETE)
     @ResponseStatus(value = HttpStatus.OK)
+    @ApiOperation(value = "Reclaim device", notes = "An implementation of a possibility to reclaim the device, which means the device will be unassigned from the customer")
     public DeferredResult<ResponseEntity> reClaimDevice(@PathVariable(DEVICE_NAME) String deviceName) throws ThingsboardException {
         checkParameter(DEVICE_NAME, deviceName);
         try {
@@ -514,6 +549,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAuthority('TENANT_ADMIN')")
     @RequestMapping(value = "/tenant/{tenantId}/device/{deviceId}", method = RequestMethod.POST)
     @ResponseBody
+    @ApiOperation(value = "Assign device to tenant", notes = "Assigns a device to the specific tenant")
     public Device assignDeviceToTenant(@PathVariable(TENANT_ID) String strTenantId,
                                        @PathVariable(DEVICE_ID) String strDeviceId) throws ThingsboardException {
         checkParameter(TENANT_ID, strTenantId);
@@ -564,6 +600,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/devices/count/{otaPackageType}/{deviceProfileId}", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get amount by device profile and empty ota package", notes = "Returns amount of devices with given device profile and empty ota package")
     public Long countByDeviceProfileAndEmptyOtaPackage(@PathVariable("otaPackageType") String otaPackageType,
                                                        @PathVariable("deviceProfileId") String deviceProfileId) throws ThingsboardException {
         checkParameter("OtaPackageType", otaPackageType);
@@ -581,6 +618,7 @@ public class DeviceController extends BaseController {
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @RequestMapping(value = "/devices/count/{otaPackageType}/{otaPackageId}/{entityGroupId}", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get amount by device group and empty ota package", notes = "Returns amount of devices with given device group and empty ota package")
     public Long countByDeviceGroupAndEmptyOtaPackage(@PathVariable("otaPackageType") String otaPackageType,
                                                      @PathVariable("otaPackageId") String otaPackageId,
                                                      @PathVariable("entityGroupId") String deviceGroupId) throws ThingsboardException {
@@ -600,6 +638,7 @@ public class DeviceController extends BaseController {
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN')")
     @PostMapping("/device/bulk_import")
+    @ApiOperation(value = "Create/Update devices via csv file", notes = "The method processes the given request of importing devices. It contains csv file with defining information of devices and corresponding mappings how to process that information.")
     public BulkImportResult<Device> processDevicesBulkImport(@RequestBody BulkImportRequest request) throws Exception {
         return deviceBulkImportService.processBulkImport(request, getCurrentUser(), importedDeviceInfo -> {
             tbClusterService.onDeviceUpdated(importedDeviceInfo.getEntity(), importedDeviceInfo.getOldEntity());
