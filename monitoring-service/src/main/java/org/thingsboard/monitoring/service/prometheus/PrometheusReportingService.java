@@ -28,7 +28,7 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.monitoring.prometheus;
+package org.thingsboard.monitoring.service.prometheus;
 
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.thingsboard.monitoring.KpiStatsService;
+import org.thingsboard.monitoring.service.KpiStatsService;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.stats.KpiEntry;
@@ -50,12 +50,15 @@ import org.thingsboard.server.common.transport.util.DataDecodingEncodingService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.GetTenantsIdsRequestMsg;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,58 +75,64 @@ public class PrometheusReportingService {
     private final Map<TenantId, TenantInfo> tenants = new HashMap<>();
     private Gauge tenantsGauge;
 
+    @PostConstruct
+    private void init() {
+        this.tenantsGauge = Gauge.build()
+                .name("tenant")
+                .help("tenant")
+                .labelNames("tenantId", "tenantName", "displayText")
+                .register(collectorRegistry);
+    }
+
     @Scheduled(initialDelay = 0, fixedDelay = 60 * 1000)
     public void updateEntitiesKpiStats() {
-        List<TransportProtos.Id> tenantsIds = transportService.getTenantsIds(GetTenantsIdsRequestMsg.getDefaultInstance()).getTenantsIdsList();
-        if (tenantsGauge == null) {
-            tenantsGauge = Gauge.build()
-                    .name("tenant")
-                    .help("tenant")
-                    .labelNames("tenantId", "tenantName", "displayText")
-                    .register(collectorRegistry);
-        }
+        Collection<UUID> tenantsIds = transportService.getTenantsIds(GetTenantsIdsRequestMsg.getDefaultInstance()).getTenantsIdsList().stream()
+                .map(id -> new UUID(id.getMsb(), id.getLsb()))
+                .collect(Collectors.toSet());
 
         tenantsIds.forEach(tenantId -> {
             try {
                 updateEntitiesKpiStatsForTenant(tenantId);
-                setDefaultValuesForTenant(new UUID(tenantId.getMsb(), tenantId.getLsb()));
-                updateTenantInfo(new TenantId(new UUID(tenantId.getMsb(), tenantId.getLsb())));
+                setDefaultValuesForTenant(tenantId);
+                updateTenantInfo(new TenantId(tenantId));
             } catch (Exception e) {
                 log.error("Failed to update entities KPI stats for tenant {}", tenantId, e);
             }
         });
-        updateEntitiesKpiStatsForTenant(TransportProtos.Id.newBuilder()
-                .setMsb(TenantId.SYS_TENANT_ID.getId().getMostSignificantBits())
-                .setLsb(TenantId.SYS_TENANT_ID.getId().getLeastSignificantBits())
-                .build());
+        tenants.forEach((tenantId, tenantInfo) -> {
+            if (!tenantsIds.contains(tenantId.getId())) {
+                removeTenantGaugeValue(tenantId, tenantInfo);
+            }
+        });
+
+        updateEntitiesKpiStatsForTenant(TenantId.SYS_TENANT_ID.getId());
         createTenantGaugeValue(TenantId.SYS_TENANT_ID, new TenantInfo("System", "System"));
         setDefaultValuesForTenant(TenantId.SYS_TENANT_ID.getId());
     }
 
-    private void updateTenantInfo(TenantId tenantId) { // TODO: if tenant was deleted, then remove from prometheus
+    private void updateTenantInfo(TenantId tenantId) {
         Tenant tenant = getTenant(tenantId);
 
-        TenantInfo oldTenantInfo = tenants.get(tenantId);
         TenantInfo newTenantInfo = new TenantInfo(tenant.getName(), String.format("%s (%s)", tenant.getName(), tenant.getId()));
+        TenantInfo oldTenantInfo = tenants.put(tenantId, newTenantInfo);
 
         if (oldTenantInfo == null) {
             createTenantGaugeValue(tenantId, newTenantInfo);
-            tenants.put(tenantId, newTenantInfo);
         } else if (!newTenantInfo.equals(oldTenantInfo)) {
             removeTenantGaugeValue(tenantId, oldTenantInfo);
             createTenantGaugeValue(tenantId, newTenantInfo);
         }
     }
 
-    private void updateEntitiesKpiStatsForTenant(TransportProtos.Id tenantId) {
+    private void updateEntitiesKpiStatsForTenant(UUID tenantId) {
         List<KpiEntry> entitiesKpiStats = kpiStatsService.requestEntitiesKpiStats(TransportProtos.GetEntitiesKpiStatsRequestMsg.newBuilder()
-                .setTenantIdMSB(tenantId.getMsb())
-                .setTenantIdLSB(tenantId.getLsb())
+                .setTenantIdMSB(tenantId.getMostSignificantBits())
+                .setTenantIdLSB(tenantId.getLeastSignificantBits())
                 .setNewCreatedDevicesTimeFrom(-1)
                 .build());
         entitiesKpiStats.forEach(kpiEntry -> {
             Gauge gauge = getGauge(kpiEntry.getKey());
-            gauge.labels(new UUID(tenantId.getMsb(), tenantId.getLsb()).toString()).set(kpiEntry.getValue());
+            gauge.labels(tenantId.toString()).set(kpiEntry.getValue());
         });
     }
 
@@ -157,8 +166,8 @@ public class PrometheusReportingService {
                 .register(collectorRegistry));
     }
 
-    private Gauge.Child createTenantGaugeValue(TenantId tenantId, TenantInfo tenantInfo) {
-        return tenantsGauge.labels(tenantId.toString(), tenantInfo.getName(), tenantInfo.getDisplayText());
+    private void createTenantGaugeValue(TenantId tenantId, TenantInfo tenantInfo) {
+        tenantsGauge.labels(tenantId.toString(), tenantInfo.getName(), tenantInfo.getDisplayText());
     }
 
     private void removeTenantGaugeValue(TenantId tenantId, TenantInfo tenantInfo) {
@@ -174,7 +183,13 @@ public class PrometheusReportingService {
     }
 
     private void setDefaultValuesForTenant(UUID tenantId) {
-        getCounter(KpiKey.CREATED_ALARMS).labels(tenantId.toString()).get();
+        Arrays.stream(KpiKey.values())
+                .filter(kpiKey -> kpiKey.getApiUsageRecordKey() != null)
+                .forEach(kpiKey -> {
+                    if (!kpiKey.isSystemMetric() || tenantId.equals(TenantId.SYS_TENANT_ID.getId())) {
+                        getCounter(kpiKey).labels(tenantId.toString()).get();
+                    }
+                });
     }
 
     @Data

@@ -28,24 +28,19 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.netcool;
+package org.thingsboard.server.common.data.stats;
 
-public enum AlarmSeverity {
-    CLEARED(1),
-    MINOR(2),
-    WARNING(3),
-    MAJOR(4),
-    CRITICAL(5),
-    INDETERMINATE(6);
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-    private final int id;
-
-    AlarmSeverity(int id) {
-        this.id = id;
-    }
-
-    public int getId() {
-        return id;
-    }
-
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class SystemAlarm {
+    private String title;
+    private AlarmCategory category;
+    private AlarmSeverity severity;
 }

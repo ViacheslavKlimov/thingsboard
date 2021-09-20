@@ -105,32 +105,41 @@ public enum KpiKey {
 
     CREATED_ALARMS(8_1, ApiUsageRecordKey.CREATED_ALARMS_COUNT),
 
-    TMA_VPN_DATA_IN(9_1, ApiUsageRecordKey.TMA_VPN_DATA_IN),
-    TMA_VPN_DATA_OUT(9_2, ApiUsageRecordKey.TMA_VPN_DATA_OUT),
-    WBC_VPN_DATA_IN(9_3, ApiUsageRecordKey.WBC_VPN_DATA_IN),
-    WBC_VPN_DATA_OUT(9_4, ApiUsageRecordKey.WBC_VPN_DATA_OUT),
-    ERICSSON_AMSTERDAM_VPN_DATA_IN(9_5, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_IN),
-    ERICSSON_AMSTERDAM_VPN_DATA_OUT(9_6, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_OUT),
-    ERICSSON_STOCKHOLM_VPN_DATA_IN(9_7, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_IN),
-    ERICSSON_STOCKHOLM_VPN_DATA_OUT(9_8, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_OUT);
+    TMA_VPN_DATA_IN(9_1, ApiUsageRecordKey.TMA_VPN_DATA_IN, true),
+    TMA_VPN_DATA_OUT(9_2, ApiUsageRecordKey.TMA_VPN_DATA_OUT, true),
+    WBC_VPN_DATA_IN(9_3, ApiUsageRecordKey.WBC_VPN_DATA_IN, true),
+    WBC_VPN_DATA_OUT(9_4, ApiUsageRecordKey.WBC_VPN_DATA_OUT, true),
+    ERICSSON_AMSTERDAM_VPN_DATA_IN(9_5, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_IN, true),
+    ERICSSON_AMSTERDAM_VPN_DATA_OUT(9_6, ApiUsageRecordKey.ERICSSON_AMSTERDAM_VPN_DATA_OUT, true),
+    ERICSSON_STOCKHOLM_VPN_DATA_IN(9_7, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_IN, true),
+    ERICSSON_STOCKHOLM_VPN_DATA_OUT(9_8, ApiUsageRecordKey.ERICSSON_STOCKHOLM_VPN_DATA_OUT, true),
+
+    COMMUNICATION_SYSTEM_ALARMS(ApiUsageRecordKey.COMMUNICATION_SYSTEM_ALARMS_COUNT, true),
+    QUALITY_OF_SERVICE_SYSTEM_ALARMS(ApiUsageRecordKey.QUALITY_OF_SERVICE_SYSTEM_ALARMS_COUNT, true),
+    PROCESSING_SYSTEM_ALARMS(ApiUsageRecordKey.PROCESSING_SYSTEM_ALARMS_COUNT, true),
+    EQUIPMENT_SYSTEM_ALARMS(ApiUsageRecordKey.EQUIPMENT_SYSTEM_ALARMS_COUNT, true),
+    ENVIRONMENTAL_SYSTEM_ALARMS(ApiUsageRecordKey.ENVIRONMENTAL_SYSTEM_ALARMS_COUNT, true);
 
     private Integer id;
     private ApiUsageRecordKey apiUsageRecordKey;
     private Long defaultValue = 0L;
     private boolean isAccumulated = true;
     private boolean isComputed = false;
+    private boolean isSystemMetric = false;
 
     KpiKey(Integer id) {
         this.id = id;
     }
 
-    KpiKey(ApiUsageRecordKey apiUsageRecordKey) {
-        this.apiUsageRecordKey = apiUsageRecordKey;
-    }
-
     KpiKey(Integer id, ApiUsageRecordKey apiUsageRecordKey) {
         this.id = id;
         this.apiUsageRecordKey = apiUsageRecordKey;
+    }
+
+    KpiKey(Integer id, ApiUsageRecordKey apiUsageRecordKey, boolean isSystemMetric) {
+        this.id = id;
+        this.apiUsageRecordKey = apiUsageRecordKey;
+        this.isSystemMetric = isSystemMetric;
     }
 
     KpiKey(Integer id, Long defaultValue, boolean isComputed) {
@@ -142,6 +151,11 @@ public enum KpiKey {
     KpiKey(Integer id, boolean isAccumulated) {
         this.id = id;
         this.isAccumulated = isAccumulated;
+    }
+
+    KpiKey(ApiUsageRecordKey apiUsageRecordKey, boolean isSystemMetric) {
+        this.apiUsageRecordKey = apiUsageRecordKey;
+        this.isSystemMetric = isSystemMetric;
     }
 
     public static Optional<KpiKey> forApiUsageRecordKey(ApiUsageRecordKey apiUsageRecordKey) {

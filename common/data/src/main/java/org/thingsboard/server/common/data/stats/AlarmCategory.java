@@ -28,7 +28,7 @@
  * DOES NOT CONVEY OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS,
  * OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
  */
-package org.thingsboard.reporting.netcool;
+package org.thingsboard.server.common.data.stats;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -69,7 +69,6 @@ public enum AlarmCategory {
             "KubeQuotaAlmostFull",
             "KubeQuotaFullyUsed",
             "KubeQuotaExceeded",
-//            "PrometheusBadConfig",
             "PrometheusNotificationQueueRunningFull",
             "PrometheusErrorSendingAlertsToSomeAlertmanagers",
             "PrometheusNotIngestingSamples",
@@ -121,7 +120,7 @@ public enum AlarmCategory {
         return id;
     }
 
-    public static Optional<AlarmCategory> forAlert(String alertName) {
+    public static Optional<AlarmCategory> forAlertName(String alertName) {
         return Arrays.stream(values())
                 .filter(category -> category.alerts.contains(alertName))
                 .findFirst();
