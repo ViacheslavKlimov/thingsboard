@@ -36,8 +36,7 @@ import { MediaBreakpoints } from '@shared/models/constants';
 import { HomeSection, HomeSectionPlace } from '@core/services/menu.models';
 import { map } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
-import { Dashboard, HomeDashboard } from '@shared/models/dashboard.models';
-import defaultHomeDashboardJson from '!raw-loader!./home_default_json.raw';
+import { HomeDashboard } from '@shared/models/dashboard.models';
 
 @Component({
   selector: 'tb-home-links',
@@ -46,8 +45,6 @@ import defaultHomeDashboardJson from '!raw-loader!./home_default_json.raw';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeLinksComponent implements OnInit {
-
-  defaultHomeDashboard: Dashboard;
 
   homeSections$ = this.menuService.homeSections();
   showHomeSections$ = this.homeSections$.pipe(
@@ -67,8 +64,7 @@ export class HomeLinksComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.defaultHomeDashboard = JSON.parse(defaultHomeDashboardJson);
-    if (!this.homeDashboard && !this.defaultHomeDashboard) {
+    if (!this.homeDashboard) {
       this.updateColumnCount();
       this.breakpointObserver
         .observe([MediaBreakpoints.lg, MediaBreakpoints['gt-lg']])
