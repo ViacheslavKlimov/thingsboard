@@ -163,6 +163,7 @@ public class UserController extends BaseController {
             ObjectNode tokenObject = objectMapper.createObjectNode();
             tokenObject.put("token", accessToken.getToken());
             tokenObject.put("refreshToken", refreshToken.getToken());
+            auditLogService.logEntityAction(getCurrentUser(), userId, user, ActionType.LOGIN, null);
             return tokenObject;
         } catch (Exception e) {
             throw handleException(e);

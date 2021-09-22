@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.thingsboard.server.common.data.id.AdminSettingsId;
 import org.thingsboard.server.common.data.validation.NoXss;
 
-public class AdminSettings extends BaseData<AdminSettingsId> {
+public class AdminSettings extends BaseData<AdminSettingsId> implements HasName {
 
     private static final long serialVersionUID = -7670322981725511892L;
 
@@ -101,6 +101,11 @@ public class AdminSettings extends BaseData<AdminSettingsId> {
         } else if (!key.equals(other.key))
             return false;
         return true;
+    }
+
+    @Override
+    public String getName() {
+        return key;
     }
 
     @Override

@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.HasName;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.audit.AuditLog;
 import org.thingsboard.server.common.data.id.CustomerId;
@@ -70,7 +71,13 @@ public class DummyAuditLogServiceImpl implements AuditLogService {
     }
 
     @Override
+    public <E extends HasName, I extends EntityId> ListenableFuture<List<Void>> logEntityAction(User user, I entityId, E entity, ActionType actionType, Exception e, Object... additionalInfo) {
+        return null;
+    }
+
+    @Override
     public <E extends HasName, I extends EntityId> ListenableFuture<List<Void>> logEntityAction(TenantId tenantId, CustomerId customerId, UserId userId, String userName, I entityId, E entity, ActionType actionType, Exception e, Object... additionalInfo) {
         return null;
     }
+
 }

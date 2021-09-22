@@ -42,7 +42,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.server.common.data.EntityInfo;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.TenantProfile;
+import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
@@ -100,9 +102,8 @@ public class TenantProfileController extends BaseController {
     @RequestMapping(value = "/tenantProfile", method = RequestMethod.POST)
     @ResponseBody
     public TenantProfile saveTenantProfile(@RequestBody TenantProfile tenantProfile) throws ThingsboardException {
+        boolean newTenantProfile = tenantProfile.getId() == null;
         try {
-            boolean newTenantProfile = tenantProfile.getId() == null;
-
             if (newTenantProfile) {
                 accessControlService
                         .checkPermission(getCurrentUser(), Resource.TENANT_PROFILE, Operation.CREATE);
@@ -115,8 +116,11 @@ public class TenantProfileController extends BaseController {
             tbClusterService.onTenantProfileChange(tenantProfile, null);
             tbClusterService.broadcastEntityStateChangeEvent(TenantId.SYS_TENANT_ID, tenantProfile.getId(),
                     newTenantProfile ? ComponentLifecycleEvent.CREATED : ComponentLifecycleEvent.UPDATED);
+
+            auditLogService.logEntityAction(getCurrentUser(), tenantProfile.getId(), tenantProfile, newTenantProfile ? ActionType.ADDED : ActionType.UPDATED, null);
             return tenantProfile;
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.TENANT_PROFILE), tenantProfile, newTenantProfile ? ActionType.ADDED : ActionType.UPDATED, e);
             throw handleException(e);
         }
     }
@@ -131,7 +135,9 @@ public class TenantProfileController extends BaseController {
             TenantProfile profile = checkTenantProfileId(tenantProfileId, Operation.DELETE);
             tenantProfileService.deleteTenantProfile(getTenantId(), tenantProfileId);
             tbClusterService.onTenantProfileDelete(profile, null);
+            auditLogService.logEntityAction(getCurrentUser(), profile.getId(), profile, ActionType.DELETED, null, strTenantProfileId);
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.TENANT_PROFILE), null, ActionType.DELETED, e, strTenantProfileId);
             throw handleException(e);
         }
     }
@@ -145,8 +151,10 @@ public class TenantProfileController extends BaseController {
             TenantProfileId tenantProfileId = new TenantProfileId(toUUID(strTenantProfileId));
             TenantProfile tenantProfile = checkTenantProfileId(tenantProfileId, Operation.WRITE);
             tenantProfileService.setDefaultTenantProfile(getTenantId(), tenantProfileId);
+            auditLogService.logEntityAction(getCurrentUser(), tenantProfile.getId(), tenantProfile, ActionType.UPDATED, null, strTenantProfileId);
             return tenantProfile;
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.TENANT_PROFILE), null, ActionType.UPDATED, e, strTenantProfileId);
             throw handleException(e);
         }
     }

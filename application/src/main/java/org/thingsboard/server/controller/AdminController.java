@@ -47,7 +47,9 @@ import org.thingsboard.rule.engine.api.MailService;
 import org.thingsboard.rule.engine.api.SmsService;
 import org.thingsboard.server.common.data.AdminSettings;
 import org.thingsboard.server.common.data.DataConstants;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.UpdateMessage;
+import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -139,8 +141,10 @@ public class AdminController extends BaseController {
             if (adminSettings.getKey().equals("mail")) {
                 ((ObjectNode) adminSettings.getJsonValue()).remove("password");
             }
+            auditLogService.logEntityAction(getCurrentUser(), adminSettings.getId(), adminSettings, ActionType.UPDATED, null);
             return adminSettings;
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.ADMIN_SETTINGS), adminSettings, ActionType.UPDATED, e);
             throw handleException(e);
         }
     }
@@ -164,8 +168,10 @@ public class AdminController extends BaseController {
         try {
             accessControlService.checkPermission(getCurrentUser(), Resource.ADMIN_SETTINGS, Operation.WRITE);
             securitySettings = checkNotNull(systemSecurityService.saveSecuritySettings(TenantId.SYS_TENANT_ID, securitySettings));
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.ADMIN_SETTINGS), null, ActionType.UPDATED, null, "securitySettings");
             return securitySettings;
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.ADMIN_SETTINGS), null, ActionType.UPDATED, e, "securitySettings");
             throw handleException(e);
         }
     }
