@@ -1824,7 +1824,11 @@
         "profile": "Профіль",
         "last-login-time": "Час останнього входу",
         "change-password": "Змінити пароль",
-        "current-password": "Поточний пароль"
+        "current-password": "Поточний пароль",
+        "copy-jwt-token": "Копіювати JWT токен",
+        "valid-till": "Дійсний до {{expirationData}}",
+        "tokenCopiedMessage": "JWT токен скопійовано в буфер обміну",
+        "tokenCopiedWarnMessage": "JWT токен не є дійсним! Перезавантажте сторінку."
     },
     "relation": {
         "relations": "Відношення",
@@ -1853,6 +1857,7 @@
         "any-relation-type": "Будь-який тип",
         "add": "Додати відношення",
         "edit": "Редагувати відношення",
+        "view": "Переглянути відношення",
         "delete-to-relation-title": "Ви впевнені, що хочете видалити відношення до сутності '{{entityName}}'?",
         "delete-to-relation-text": "Будьте обережні, після підтвердження, сутність '{{entityName}}' не буде пов'язана з поточним об'єктом.",
         "delete-to-relations-title": "Ви впевнені, що хочете видалити  { count, plural, 1 {1 відношення} other {# відношення} }?",
