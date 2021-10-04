@@ -1966,8 +1966,6 @@
       "authority": "Authority",
       "first_name": "First name",
       "last_name": "Last name",
-      "first-name": "First name",
-      "last-name": "Last name",
       "email": "Email",
       "title": "Title",
       "country": "Country",
@@ -3184,7 +3182,11 @@
     "profile": "Profile",
     "last-login-time": "Last Login",
     "change-password": "Change Password",
-    "current-password": "Current password"
+    "current-password": "Current password",
+    "copy-jwt-token": "Copy JWT token",
+    "valid-till": "Valid till {{expirationData}}",
+    "tokenCopiedSuccessMessage": "JWT token has been copied to clipboard",
+    "tokenCopiedWarnMessage": "JWT token is expired! Please, refresh the page."
   },
   "relation": {
     "relations": "Relations",
@@ -4166,7 +4168,8 @@
     "action-name-required": "Action name is required.",
     "action-name-not-unique": "Another action with the same name already exists.<br/>Action name should be unique within the same action source.",
     "action-icon": "Icon",
-    "action-type": "Type",
+    "use-show-widget-action-function": "Use show widget action function",
+        "action-type": "Type",
     "action-type-required": "Action type is required.",
     "edit-action": "Edit action",
     "delete-action": "Delete action",

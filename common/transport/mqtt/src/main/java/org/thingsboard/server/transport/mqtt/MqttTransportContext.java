@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by ashvayka on 04.10.18.
@@ -92,10 +93,17 @@ public class MqttTransportContext extends TransportContext {
     @Value("${transport.mqtt.timeout:10000}")
     private long timeout;
 
+    private final AtomicInteger connectionsCounter = new AtomicInteger();
     @Getter
     private final ConcurrentMap<Integer, RequestInfo> requestsAwaitingAck = new ConcurrentHashMap<>();
 
     @PostConstruct
+    public void init() {
+        super.init();
+        transportService.createGaugeStats("openConnections", connectionsCounter);
+        initMsgAckTimeoutCheck();
+    }
+
     private void initMsgAckTimeoutCheck() {
         getScheduler().scheduleWithFixedDelay(() -> {
             List<Integer> timedOut = new LinkedList<>();
@@ -111,4 +119,11 @@ public class MqttTransportContext extends TransportContext {
         }, getMsgAckTimeout(), 10, TimeUnit.SECONDS);
     }
 
+    public void channelRegistered() {
+        connectionsCounter.incrementAndGet();
+    }
+
+    public void channelUnregistered() {
+        connectionsCounter.decrementAndGet();
+    }
 }

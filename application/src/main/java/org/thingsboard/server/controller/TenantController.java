@@ -43,14 +43,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantInfo;
+import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.permission.Operation;
-import org.thingsboard.server.common.data.permission.Resource;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
+import org.thingsboard.server.common.data.permission.Operation;
+import org.thingsboard.server.common.data.permission.Resource;
 import org.thingsboard.server.common.data.plugin.ComponentLifecycleEvent;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
@@ -107,9 +109,8 @@ public class TenantController extends BaseController {
     @RequestMapping(value = "/tenant", method = RequestMethod.POST)
     @ResponseBody
     public Tenant saveTenant(@RequestBody Tenant tenant) throws ThingsboardException {
+        boolean newTenant = tenant.getId() == null;
         try {
-            boolean newTenant = tenant.getId() == null;
-
             checkEntity(tenant.getId(), tenant, Resource.TENANT, null);
 
             tenant = checkNotNull(tenantService.saveTenant(tenant));
@@ -121,8 +122,10 @@ public class TenantController extends BaseController {
             tbClusterService.onTenantChange(tenant, null);
             tbClusterService.broadcastEntityStateChangeEvent(tenant.getId(), tenant.getId(),
                     newTenant ? ComponentLifecycleEvent.CREATED : ComponentLifecycleEvent.UPDATED);
+            auditLogService.logEntityAction(getCurrentUser(), tenant.getId(), tenant, newTenant ? ActionType.ADDED : ActionType.UPDATED, null);
             return tenant;
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.TENANT), tenant, newTenant ? ActionType.ADDED : ActionType.UPDATED, e);
             throw handleException(e);
         }
     }
@@ -139,7 +142,9 @@ public class TenantController extends BaseController {
             tenantProfileCache.evict(tenantId);
             tbClusterService.onTenantDelete(tenant, null);
             tbClusterService.broadcastEntityStateChangeEvent(tenantId, tenantId, ComponentLifecycleEvent.DELETED);
+            auditLogService.logEntityAction(getCurrentUser(), tenant.getId(), tenant, ActionType.DELETED, null, strTenantId);
         } catch (Exception e) {
+            auditLogService.logEntityAction(getCurrentUser(), emptyId(EntityType.TENANT), null, ActionType.DELETED, e, strTenantId);
             throw handleException(e);
         }
     }

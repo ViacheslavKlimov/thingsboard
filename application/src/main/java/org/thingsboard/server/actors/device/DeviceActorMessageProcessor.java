@@ -422,10 +422,6 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
     private Consumer<Map.Entry<Integer, ToDeviceRpcRequestMetadata>> processPendingRpc(TbActorCtx context, UUID sessionId, String nodeId, Set<Integer> sentOneWayIds) {
         return entry -> {
             ToDeviceRpcRequest request = entry.getValue().getMsg().getMsg();
-            if (entry.getValue().getProcessedSessions().contains(sessionId) && request.isPersisted()) {
-                log.warn("Pending RPC {} for device {} is already processed for session {}", request.getId(), request.getDeviceId(), sessionId);
-                return;
-            }
             ToDeviceRpcRequestBody body = request.getBody();
             if (request.isOneway() && !rpcSequential) {
                 sentOneWayIds.add(entry.getKey());
@@ -442,7 +438,6 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                     .setPersisted(request.isPersisted())
                     .build();
             sendToTransport(rpcRequest, sessionId, nodeId);
-            entry.getValue().getProcessedSessions().add(sessionId);
         };
     }
 
@@ -652,7 +647,7 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                     systemContext.getTbRpcService().save(tenantId, new RpcId(requestMd.getMsg().getMsg().getId()), status, response);
                 }
             } finally {
-                if (hasError) {
+                if (hasError && !requestMd.isDelivered()) {
                     sendNextPendingRequest(context);
                 }
             }
@@ -683,7 +678,6 @@ class DeviceActorMessageProcessor extends AbstractContextAwareMsgProcessor {
                     toDeviceRpcPendingMap.remove(responseMsg.getRequestId());
                 } else {
                     md.setRetries(md.getRetries() + 1);
-                    md.getProcessedSessions().clear();
                 }
             }
 

@@ -424,7 +424,7 @@ public class DefaultLwM2MOtaUpdateService extends LwM2MExecutorAwareService impl
 
     private void startSoftwareUpdateIfNeeded(LwM2mClient client, LwM2MClientSwOtaInfo swInfo) {
         try {
-            if (!swInfo.isSupported() && swInfo.isAssigned()) {
+            if (!swInfo.isSupported() && swInfo.isAssigned() && !LwM2MSoftwareUpdateStrategy.MANUALY.equals(swInfo.getStrategy())) {
                 log.debug("[{}] Sw update is not supported: {}", client.getEndpoint(), swInfo);
                 sendStateUpdateToTelemetry(client, swInfo, OtaPackageUpdateStatus.FAILED, "Client does not support software update or profile misconfiguration!");
             } else if (swInfo.isUpdateRequired()) {

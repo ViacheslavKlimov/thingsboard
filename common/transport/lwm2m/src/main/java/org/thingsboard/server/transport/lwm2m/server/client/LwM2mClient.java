@@ -136,6 +136,10 @@ public class LwM2mClient implements Serializable {
     @Getter
     private final AtomicInteger retryAttempts;
 
+    @Getter
+    @Setter
+    private UUID lastSentRpcId;
+
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

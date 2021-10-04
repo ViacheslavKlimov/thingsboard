@@ -42,8 +42,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.HasName;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.audit.ActionStatus;
 import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.audit.AuditLog;
@@ -64,7 +66,6 @@ import org.thingsboard.server.dao.device.provision.ProvisionRequest;
 import org.thingsboard.server.dao.entity.EntityService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.service.DataValidator;
-import org.thingsboard.common.util.JacksonUtil;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -127,15 +128,26 @@ public class AuditLogServiceImpl implements AuditLogService {
     }
 
     @Override
-    public <E extends HasName, I extends EntityId> ListenableFuture<List<Void>>
-    logEntityAction(TenantId tenantId, CustomerId customerId, UserId userId, String userName, I entityId, E entity,
-                    ActionType actionType, Exception e, Object... additionalInfo) {
+    public <E extends HasName, I extends EntityId> ListenableFuture<List<Void>> logEntityAction(User user, I entityId, E entity,
+                                                                                                ActionType actionType, Exception e, Object... additionalInfo) {
+        try {
+            return logEntityAction(user.getTenantId(), user.getCustomerId(), user.getId(), user.getName(), entityId, entity, actionType, e, additionalInfo);
+        } catch (Exception exception) {
+            log.error("Failed to log entity action", exception);
+            return null;
+        }
+    }
+
+    @Override
+    public <E extends HasName, I extends EntityId> ListenableFuture<List<Void>> logEntityAction(TenantId tenantId, CustomerId customerId,
+                                                                                                UserId userId, String userName, I entityId, E entity,
+                                                                                                ActionType actionType, Exception e, Object... additionalInfo) {
         if (canLog(entityId.getEntityType(), actionType)) {
             JsonNode actionData = constructActionData(entityId, entity, actionType, additionalInfo);
             ActionStatus actionStatus = ActionStatus.SUCCESS;
             String failureDetails = "";
             String entityName = "";
-            if (entity != null) {
+            if (entity != null && entity.getName() != null) {
                 entityName = entity.getName();
             } else {
                 try {
@@ -176,6 +188,17 @@ public class AuditLogServiceImpl implements AuditLogService {
         switch (actionType) {
             case ADDED:
             case UPDATED:
+                if (entityId.getEntityType() == EntityType.ADMIN_SETTINGS) {
+                    String adminSettingsKey = extractParameter(String.class, additionalInfo);
+                    if (adminSettingsKey != null) {
+                        actionData.put("adminSettingsKey", adminSettingsKey);
+                    }
+                } else if (entityId.getEntityType() == EntityType.TENANT_PROFILE) {
+                    String strEntityId = extractParameter(String.class, additionalInfo);
+                    if (strEntityId != null) {
+                        actionData.put("entityId", strEntityId);
+                    }
+                }
             case ALARM_ACK:
             case ALARM_CLEAR:
             case RELATIONS_DELETED:
@@ -444,4 +467,5 @@ public class AuditLogServiceImpl implements AuditLogService {
                     }
                 }
             };
+
 }

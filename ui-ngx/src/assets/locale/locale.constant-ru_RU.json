@@ -1818,7 +1818,11 @@
         "profile": "Профиль",
         "last-login-time": "Время последнего входа в систему",
         "change-password": "Изменить пароль",
-        "current-password": "Текущий пароль"
+        "current-password": "Текущий пароль",
+        "copy-jwt-token": "Копировать JWT токен",
+        "valid-till": "Действителен до {{expirationData}}",
+        "tokenCopiedMessage": "JWT токен скопирован в буфер обмена",
+        "tokenCopiedWarnMessage": "JWT токен недействителен! Перезагрузите страницу."
     },
     "relation": {
         "relations": "Отношения",
@@ -1847,6 +1851,7 @@
         "any-relation-type": "Любой тип",
         "add": "Добавить отношение",
         "edit": "Редактировать отношение",
+        "view": "Просмотреть отношение",
         "delete-to-relation-title": "Вы точно хотите удалить отношение, идущее к объекту '{{entityName}}'?",
         "delete-to-relation-text": "Внимание, после подтверждения объект '{{entityName}}' будет отвязан от текущего объекта.",
         "delete-to-relations-title": "Вы точно хотите удалить { count, plural, 1 {1 отношение} few {# отношения} other {# отношений} }?",
