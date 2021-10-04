@@ -227,7 +227,9 @@ public class InvoiceGenerationService {
                     .orElse(0.0));
             record.setUnitsAmount(usageDataValue.getUsed().doubleValue());
             record.setTotalPrice(((double) record.getUnitsAmount() / record.getChargedUnit()) * record.getPricePerUnit());
-            invoice.getRecords().add(record);
+            if (record.getTotalPrice() != 0.0) {
+                invoice.getRecords().add(record);
+            }
         }
     }
 
