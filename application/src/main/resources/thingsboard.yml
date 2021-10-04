@@ -812,6 +812,9 @@ transport:
       length_adjustment: "${TCP_HANDLER_CONFIG_LENGTH_ADJUSTMENT:0}"
       length_field_length: "${TCP_HANDLER_CONFIG_LENGTH_FIELD_LENGTH:1}"
       length_field_offset: "${TCP_HANDLER_CONFIG_LENGTH_FIELD_OFFSET:4}"
+  stats:
+    enabled: "${TB_TRANSPORT_STATS_ENABLED:true}"
+    print-interval-ms: "${TB_TRANSPORT_STATS_PRINT_INTERVAL_MS:60000}"
 
 # Edges parameters
 edges:
