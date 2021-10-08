@@ -33,6 +33,7 @@ package org.thingsboard.smppgateway.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,6 +59,16 @@ public class ApiController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
         return ResponseEntity.ok(new SmsSendResponse(messageSegments));
+    }
+
+    @Scheduled(initialDelay = 10 * 1000, fixedDelay = 10 * 1000)
+    public void checkSmppConnection() {
+        try {
+            smppSmsSender.checkSmppSession();
+            log.info("SMPP connection is OK");
+        } catch (Exception e) {
+            log.error("Troubles with SMPP connection", e);
+        }
     }
 
 }

@@ -46,15 +46,16 @@ import org.smpp.pdu.SubmitSM;
 import org.smpp.pdu.SubmitSMResp;
 import org.thingsboard.server.common.data.sms.AbstractSmsSender;
 import org.thingsboard.server.common.data.sms.exception.SmsException;
-import org.thingsboard.server.common.data.sms.exception.SmsSendException;
 import org.thingsboard.smppgateway.config.SmppSenderConfig;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 
 @Slf4j
 public class SmppSmsSender extends AbstractSmsSender {
-    private Session smppSession;
     private final SmppSenderConfig config;
+
+    private Session smppSession;
 
     public SmppSmsSender(SmppSenderConfig config) {
         this.config = config;
@@ -63,14 +64,7 @@ public class SmppSmsSender extends AbstractSmsSender {
     @Override
     public int sendSms(String numberTo, String message) throws SmsException {
         try {
-            if (smppSession == null) {
-                try {
-                    smppSession = initSmppSession();
-                } catch (Exception e) {
-                    throw new SmsSendException("SMPP session cannot be established", e);
-                }
-            }
-            checkConnection();
+            checkSmppSession();
 
             SubmitSM request = new SubmitSM();
             if (StringUtils.isNotEmpty(config.getServiceType())) {
@@ -100,9 +94,9 @@ public class SmppSmsSender extends AbstractSmsSender {
         return countMessageSegments(message);
     }
 
-    private void checkConnection() throws IOException {
-        if (!smppSession.getConnection().isOpened()) {
-            smppSession.getConnection().open();
+    public synchronized void checkSmppSession() {
+        if (smppSession == null || !smppSession.isOpened()) {
+            smppSession = initSmppSession();
         }
     }
 
@@ -142,10 +136,12 @@ public class SmppSmsSender extends AbstractSmsSender {
         return number;
     }
 
+    @PreDestroy
     @Override
     public void destroy() {
         try {
             smppSession.unbind();
+            smppSession.close();
         } catch (TimeoutException | PDUException | IOException | WrongSessionStateException e) {
             throw new RuntimeException(e);
         }

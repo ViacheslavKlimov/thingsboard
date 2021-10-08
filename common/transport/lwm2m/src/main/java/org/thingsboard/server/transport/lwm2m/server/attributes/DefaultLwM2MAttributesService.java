@@ -49,6 +49,7 @@ import org.thingsboard.server.queue.util.TbLwM2mTransportComponent;
 import org.thingsboard.server.transport.lwm2m.config.LwM2MTransportServerConfig;
 import org.thingsboard.server.transport.lwm2m.server.LwM2mTransportServerHelper;
 import org.thingsboard.server.transport.lwm2m.server.LwM2mTransportUtil;
+import org.thingsboard.server.transport.lwm2m.server.LwM2mVersionedModelProvider;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClient;
 import org.thingsboard.server.transport.lwm2m.server.client.LwM2mClientContext;
 import org.thingsboard.server.transport.lwm2m.server.downlink.LwM2mDownlinkMsgHandler;
@@ -93,6 +94,7 @@ public class DefaultLwM2MAttributesService implements LwM2MAttributesService {
     private final LwM2mDownlinkMsgHandler downlinkHandler;
     private final LwM2MTelemetryLogService logService;
     private final LwM2MOtaUpdateService otaUpdateService;
+    private final LwM2mVersionedModelProvider modelProvider;
 
     @Override
     public ListenableFuture<List<TransportProtos.TsKvProto>> getSharedAttributes(LwM2mClient client, Collection<String> keys) {
@@ -223,7 +225,7 @@ public class DefaultLwM2MAttributesService implements LwM2MAttributesService {
         clientContext.update(lwM2MClient);
         // #2.1
         attributesUpdate.forEach((pathIdVer, tsKvProto) -> {
-            ResourceModel resourceModel = lwM2MClient.getResourceModel(pathIdVer, this.config.getModelProvider());
+            ResourceModel resourceModel = lwM2MClient.getResourceModel(pathIdVer, modelProvider);
             Object newValProto = getValueFromKvProto(tsKvProto.getKv());
             Object oldResourceValue = this.getResourceValueFormatKv(lwM2MClient, pathIdVer);
             if (!resourceModel.multiple || !(newValProto instanceof JsonElement)) {

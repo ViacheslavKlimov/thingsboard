@@ -1011,7 +1011,7 @@ public class DefaultTransportService implements TransportService {
                 transportResourceCache.update(tenantId, resourceType, resourceId);
                 sessions.forEach((id, mdRez) -> {
                     log.warn("ResourceUpdate - [{}] [{}]", id, mdRez);
-                    transportCallbackExecutor.submit(() -> mdRez.getListener().onResourceUpdate(Optional.ofNullable(msg)));
+                    transportCallbackExecutor.submit(() -> mdRez.getListener().onResourceUpdate(msg));
                 });
 
             } else if (toSessionMsg.hasResourceDeleteMsg()) {
@@ -1022,7 +1022,7 @@ public class DefaultTransportService implements TransportService {
                 transportResourceCache.evict(tenantId, resourceType, resourceId);
                 sessions.forEach((id, mdRez) -> {
                     log.warn("ResourceDelete - [{}] [{}]", id, mdRez);
-                    transportCallbackExecutor.submit(() -> mdRez.getListener().onResourceDelete(Optional.ofNullable(msg)));
+                    transportCallbackExecutor.submit(() -> mdRez.getListener().onResourceDelete(msg));
                 });
             } else if (toSessionMsg.hasKpiUpdateMsg()) {
                 eventPublisher.publishEvent(toSessionMsg.getKpiUpdateMsg());
