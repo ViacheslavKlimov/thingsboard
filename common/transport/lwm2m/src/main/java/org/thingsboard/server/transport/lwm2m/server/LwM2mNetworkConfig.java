@@ -120,6 +120,8 @@ public class LwM2mNetworkConfig {
 
         coapConfig.setInt(NetworkConfig.Keys.MAX_RETRANSMIT, 10);
 
+        coapConfig.setInt(NetworkConfig.Keys.PROTOCOL_STAGE_THREAD_COUNT, 12);
+
         return coapConfig;
     }
 }
