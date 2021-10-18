@@ -31,10 +31,12 @@
 package org.thingsboard.server.transport.lwm2m.server.downlink;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CountDownLatch;
 
 @RequiredArgsConstructor
+@Slf4j
 public class TbLwM2MLatchCallback<R, T> implements DownlinkRequestCallback<R, T> {
 
     private final CountDownLatch countDownLatch;
@@ -42,19 +44,34 @@ public class TbLwM2MLatchCallback<R, T> implements DownlinkRequestCallback<R, T>
 
     @Override
     public void onSuccess(R request, T response) {
-        callback.onSuccess(request, response);
-        countDownLatch.countDown();
+        try {
+            callback.onSuccess(request, response);
+        } catch (Exception e) {
+            log.error("Failed to call onSuccess! Request: [{}], response: [{}]!", request, response, e);
+        } finally {
+            countDownLatch.countDown();
+        }
     }
 
     @Override
     public void onValidationError(String params, String msg) {
-        callback.onValidationError(params, msg);
-        countDownLatch.countDown();
+        try {
+            callback.onValidationError(params, msg);
+        } catch (Exception e) {
+            log.error("Failed to call onValidationError! Params: [{}], msg: [{}]!", params, msg, e);
+        } finally {
+            countDownLatch.countDown();
+        }
     }
 
     @Override
     public void onError(String params, Exception e) {
-        callback.onError(params, e);
-        countDownLatch.countDown();
+        try {
+            callback.onError(params, e);
+        } catch (Exception exp) {
+            log.error("Failed to call onError! Params: [{}], e: [{}]!", params, e.getMessage(), e);
+        } finally {
+            countDownLatch.countDown();
+        }
     }
 }

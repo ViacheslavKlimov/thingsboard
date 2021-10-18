@@ -466,7 +466,9 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
             CountDownLatch latch = new CountDownLatch(targetIds.size());
             targetIds.forEach(versionedId -> sendReadRequest(lwM2MClient, versionedId,
                     new TbLwM2MLatchCallback<>(latch, new TbLwM2MReadCallback(this, logService, lwM2MClient, versionedId))));
-            latch.await();
+            if (!latch.await(30, TimeUnit.SECONDS)) {
+                log.warn("[{}] Failed to await Read requests [{}]!", lwM2MClient.getEndpoint(), targetIds);
+            }
         } catch (InterruptedException e) {
             log.error("[{}] Failed to await Read requests!", lwM2MClient.getEndpoint());
         } catch (Exception e) {
@@ -483,8 +485,9 @@ public class DefaultLwM2MUplinkMsgHandler extends LwM2MExecutorAwareService impl
             CountDownLatch latch = new CountDownLatch(targetIds.size());
             targetIds.forEach(targetId -> sendObserveRequest(lwM2MClient, targetId,
                     new TbLwM2MLatchCallback<>(latch, new TbLwM2MObserveCallback(this, logService, lwM2MClient, targetId))));
-            latch.await();
-        } catch (InterruptedException e) {
+            if (!latch.await(30, TimeUnit.SECONDS)) {
+                log.warn("[{}] Failed to await Observe requests [{}]!", lwM2MClient.getEndpoint(), targetIds);
+            }        } catch (InterruptedException e) {
             log.error("[{}] Failed to await Observe requests!", lwM2MClient.getEndpoint());
         } catch (Exception e) {
             log.error("[{}] Failed to process observe requests!", lwM2MClient.getEndpoint(), e);
