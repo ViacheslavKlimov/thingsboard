@@ -30,13 +30,16 @@
  */
 package org.thingsboard.server.service.billing;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.util.Pair;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.blob.BlobEntity;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -53,6 +56,7 @@ import javax.annotation.PostConstruct;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -92,9 +96,10 @@ public class InvoiceStorageService {
     private SftpClient sftpClient;
     private final Lock sftpLock = new ReentrantLock();
 
-    private static final String INVOICE_FILENAME_FORMAT = "THB_%s-%s.xml";
-
     private static final LocalTime INVOICE_GENERATION_TIME = LocalTime.of(23, 30, 0);
+
+    private static final String INVOICE_FILENAME_FORMAT = "THB_%s_%s.xml";
+    private static final DateTimeFormatter INVOICE_DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
     @PostConstruct
     private void init() {
@@ -169,6 +174,14 @@ public class InvoiceStorageService {
                     blobEntity.setContentType("pdf");
                     blobEntity.setType("invoice");
 
+                    ObjectNode additionalInfo = JacksonUtil.newObjectNode();
+
+                    Pair<LocalDate, LocalDate> billingPeriod = defineBillingPeriod();
+                    additionalInfo.put("billingPeriod", String.format("%s - %s", billingPeriod.getFirst().format(INVOICE_DATE_FORMAT),
+                            billingPeriod.getSecond().format(INVOICE_DATE_FORMAT)));
+
+                    blobEntity.setAdditionalInfo(additionalInfo);
+
                     String magentaCustomerId = getMagentaCustomerIdFromPdfInvoiceName(invoiceFilename);
                     Tenant tenant = tenantService.findTenantByMagentaCustomerId(magentaCustomerId);
                     if (tenant == null) {
@@ -192,6 +205,22 @@ public class InvoiceStorageService {
             sftpClient.destroyConnection();
             sftpLock.unlock();
         }
+    }
+
+    private Pair<LocalDate, LocalDate> defineBillingPeriod() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime month;
+
+        if (now.isBefore(LocalDateTime.of(now.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate(), INVOICE_GENERATION_TIME))) {
+            month = now.minusMonths(1);
+        } else {
+            month = now;
+        }
+
+        LocalDate billingPeriodStart = month.with(TemporalAdjusters.firstDayOfMonth()).toLocalDate();
+        LocalDate billingPeriodEnd = month.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate();
+
+        return Pair.of(billingPeriodStart, billingPeriodEnd);
     }
 
     private String getMagentaCustomerIdFromPdfInvoiceName(String invoiceFilename) {
