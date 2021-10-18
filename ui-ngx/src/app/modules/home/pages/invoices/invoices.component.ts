@@ -29,16 +29,28 @@
 /// OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 ///
 
+import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { AppState } from '@core/core.state';
+import { PageComponent } from '@shared/components/page.component';
+import invoicesDashboardJson from '!raw-loader!./invoices_json.raw';
+import { Dashboard } from '@shared/models/dashboard.models';
 
-export interface BlobEntitiesWidgetSettings {
-  title: string;
-  displayCreatedTime: boolean;
-  displayType: boolean;
-  displayCustomer: boolean;
-  displayPagination: boolean;
-  displayBillingPeriod?: boolean;
-  defaultTimewindowDays?: number;
-  defaultPageSize: number;
-  defaultSortOrder: string;
-  forceDefaultType: string;
+@Component({
+  selector: 'tb-invoices',
+  templateUrl: './invoices.component.html',
+  styleUrls: ['./invoices.component.scss']
+})
+export class InvoicesComponent extends PageComponent implements OnInit {
+
+  invoicesDashboard: Dashboard;
+
+  constructor(protected store: Store<AppState>) {
+    super(store);
+  }
+
+  ngOnInit() {
+    this.invoicesDashboard = JSON.parse(invoicesDashboardJson);
+  }
+
 }

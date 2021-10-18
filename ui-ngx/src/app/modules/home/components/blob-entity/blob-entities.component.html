@@ -137,6 +137,12 @@
               {{ blobEntity.customerTitle }}
             </mat-cell>
           </ng-container>
+          <ng-container matColumnDef="additionalInfo.billingPeriod">
+            <mat-header-cell *matHeaderCellDef mat-sort-header style="width: 25%"> {{ 'magenta.invoice.billing-period' | translate }} </mat-header-cell>
+            <mat-cell *matCellDef="let blobEntity">
+              {{ blobEntity.additionalInfo?.billingPeriod }}
+            </mat-cell>
+          </ng-container>
           <ng-container matColumnDef="actions" stickyEnd>
             <mat-header-cell *matHeaderCellDef style="min-width: 100px; max-width: 100px; width: 100px">
             </mat-header-cell>

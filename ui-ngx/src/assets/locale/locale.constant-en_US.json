@@ -4411,6 +4411,10 @@
       "min-price": "minimum price 0",
       "material-number": "Material number",
       "white-labeling-price": "White Labeling price"
+    },
+    "invoice": {
+      "billing-period": "Billing period",
+      "invoices": "Invoices"
     }
   },
   "language": {

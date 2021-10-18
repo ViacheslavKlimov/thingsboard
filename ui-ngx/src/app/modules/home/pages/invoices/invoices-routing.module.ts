@@ -29,16 +29,28 @@
 /// OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 ///
 
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { Authority } from '@shared/models/authority.enum';
+import { InvoicesComponent } from '@home/pages/invoices/invoices.component';
 
-export interface BlobEntitiesWidgetSettings {
-  title: string;
-  displayCreatedTime: boolean;
-  displayType: boolean;
-  displayCustomer: boolean;
-  displayPagination: boolean;
-  displayBillingPeriod?: boolean;
-  defaultTimewindowDays?: number;
-  defaultPageSize: number;
-  defaultSortOrder: string;
-  forceDefaultType: string;
-}
+const routes: Routes = [
+  {
+    path: 'invoices',
+    component: InvoicesComponent,
+    data: {
+      auth: [Authority.TENANT_ADMIN],
+      title: 'magenta.invoice.invoices',
+      breadcrumb: {
+        label: 'magenta.invoice.invoices',
+        icon: 'credit_card'
+      }
+    }
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class InvoicesRoutingModule { }

@@ -138,6 +138,7 @@ export class BlobEntitiesComponent extends PageComponent implements OnInit, Afte
     const displayCreatedTime = isDefined(this.settings.displayCreatedTime) ? this.settings.displayCreatedTime : true;
     const displayType = isDefined(this.settings.displayType) ? this.settings.displayType : true;
     const displayCustomer = isDefined(this.settings.displayCustomer) ? this.settings.displayCustomer : true;
+    const displayBillingPeriod = isDefined(this.settings.displayBillingPeriod) ? this.settings.displayBillingPeriod : false;
 
     this.displayedColumns = [];
     if (this.deleteEnabled) {
@@ -153,6 +154,9 @@ export class BlobEntitiesComponent extends PageComponent implements OnInit, Afte
     if (displayCustomer) {
       this.displayedColumns.push('customerTitle');
     }
+    if (displayBillingPeriod) {
+      this.displayedColumns.push('additionalInfo.billingPeriod');
+    }
     this.displayedColumns.push('actions');
     this.displayPagination = isDefined(this.settings.displayPagination) ? this.settings.displayPagination : true;
     const pageSize = this.settings.defaultPageSize;
@@ -167,7 +171,8 @@ export class BlobEntitiesComponent extends PageComponent implements OnInit, Afte
     if (sortOrder.property === 'customer') {
       sortOrder.property = 'customerTitle';
     }
-    this.timewindow = historyInterval(DAY);
+    const timewindowDays = isDefined(this.settings.defaultTimewindowDays) ? this.settings.defaultTimewindowDays : 1;
+    this.timewindow = historyInterval(timewindowDays * DAY);
     const currentTime = Date.now();
     this.pageLink = new TimePageLink(this.defaultPageSize, 0, null, sortOrder,
       currentTime - this.timewindow.history.timewindowMs, currentTime);

@@ -672,6 +672,15 @@ export class MenuService {
         }
       );
     }
+    sections.push({
+      id: guid(),
+      name: 'magenta.invoice.invoices',
+      type: 'link',
+      path: '/invoices',
+      icon: 'credit_card',
+      notExact: true,
+      disabled: disabledItems.indexOf('invoices') > -1
+    });
     if (authState.whiteLabelingAllowed && this.userPermissionsService.hasReadGenericPermission(Resource.WHITE_LABELING) ||
       this.userPermissionsService.hasReadGenericPermission(Resource.TB_RESOURCE)) {
       const pages: Array<MenuSection> = [];

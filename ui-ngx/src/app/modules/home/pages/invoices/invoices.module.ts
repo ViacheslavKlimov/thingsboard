@@ -29,16 +29,23 @@
 /// OR TO MANUFACTURE, USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
 ///
 
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { SharedModule } from '@app/shared/shared.module';
+import { HomeComponentsModule } from '@modules/home/components/home-components.module';
+import { InvoicesComponent } from '@home/pages/invoices/invoices.component';
+import { InvoicesRoutingModule } from '@home/pages/invoices/invoices-routing.module';
 
-export interface BlobEntitiesWidgetSettings {
-  title: string;
-  displayCreatedTime: boolean;
-  displayType: boolean;
-  displayCustomer: boolean;
-  displayPagination: boolean;
-  displayBillingPeriod?: boolean;
-  defaultTimewindowDays?: number;
-  defaultPageSize: number;
-  defaultSortOrder: string;
-  forceDefaultType: string;
-}
+@NgModule({
+  declarations:
+    [
+      InvoicesComponent
+    ],
+  imports: [
+    CommonModule,
+    SharedModule,
+    HomeComponentsModule,
+    InvoicesRoutingModule
+  ]
+})
+export class InvoicesModule { }

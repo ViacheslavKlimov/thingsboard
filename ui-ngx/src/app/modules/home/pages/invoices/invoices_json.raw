@@ -1,0 +1,128 @@
+{
+  "title": "Invoices",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "",
+    "widgets": {
+      "fd6351f6-62f6-a6d1-2246-00982ce78e09": {
+        "isSystemType": false,
+        "bundleAlias": "billing",
+        "typeAlias": "invoices",
+        "type": "static",
+        "title": "New widget",
+        "image": null,
+        "description": null,
+        "sizeX": 7.5,
+        "sizeY": 4.5,
+        "config": {
+          "timewindow": {
+            "realtime": {
+              "interval": 1000,
+              "timewindowMs": 86400000
+            },
+            "aggregation": {
+              "type": "NONE",
+              "limit": 200
+            }
+          },
+          "showTitle": false,
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgba(0, 0, 0, 0.87)",
+          "padding": "4px",
+          "settings": {
+            "displayCreatedTime": true,
+            "displayCustomer": false,
+            "title": "Invoices",
+            "displayType": false,
+            "displayPagination": true,
+            "defaultPageSize": 10,
+            "defaultSortOrder": "createdTime",
+            "displayBillingPeriod": true,
+            "forceDefaultType": "invoice",
+            "defaultTimewindowDays": 90
+          },
+          "title": "Invoices",
+          "dropShadow": true,
+          "enableFullscreen": false,
+          "titleStyle": {
+            "fontSize": "16px",
+            "fontWeight": 400,
+            "padding": "5px 10px 5px 10px"
+          },
+          "useDashboardTimewindow": false,
+          "showLegend": false,
+          "datasources": [],
+          "enableDataExport": true,
+          "widgetStyle": {},
+          "actions": {},
+          "showTitleIcon": false,
+          "iconColor": "rgba(0, 0, 0, 0.87)",
+          "iconSize": "24px",
+          "titleTooltip": ""
+        },
+        "row": 0,
+        "col": 0,
+        "id": "fd6351f6-62f6-a6d1-2246-00982ce78e09"
+      }
+    },
+    "states": {
+      "default": {
+        "name": "Invoices",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "fd6351f6-62f6-a6d1-2246-00982ce78e09": {
+                "sizeX": 24,
+                "sizeY": 11,
+                "row": 0,
+                "col": 0
+              }
+            },
+            "gridSettings": {
+              "backgroundColor": "#eeeeee",
+              "columns": 24,
+              "margin": 10,
+              "backgroundSizeMode": "100%",
+              "autoFillHeight": true,
+              "backgroundImageUrl": null,
+              "mobileAutoFillHeight": true,
+              "mobileRowHeight": 70
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {},
+    "filters": {},
+    "timewindow": {
+      "hideInterval": false,
+      "hideAggregation": false,
+      "hideAggInterval": false,
+      "hideTimezone": false,
+      "selectedTab": 0,
+      "realtime": {
+        "realtimeType": 0,
+        "timewindowMs": 2592000000,
+        "quickInterval": "CURRENT_DAY",
+        "interval": 7200000
+      },
+      "aggregation": {
+        "type": "AVG",
+        "limit": 25000
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": false,
+      "showDashboardsSelect": true,
+      "showEntitiesSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true,
+      "toolbarAlwaysOpen": true
+    }
+  },
+  "name": "Invoices"
+}
