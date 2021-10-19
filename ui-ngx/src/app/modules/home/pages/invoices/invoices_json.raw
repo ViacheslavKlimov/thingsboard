@@ -7,7 +7,7 @@
     "description": "",
     "widgets": {
       "fd6351f6-62f6-a6d1-2246-00982ce78e09": {
-        "isSystemType": false,
+        "isSystemType": true,
         "bundleAlias": "billing",
         "typeAlias": "invoices",
         "type": "static",
