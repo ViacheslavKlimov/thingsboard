@@ -202,23 +202,16 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static org.thingsboard.server.controller.ControllerConstants.DEFAULT_PAGE_SIZE;
+import static org.thingsboard.server.controller.ControllerConstants.INCORRECT_TENANT_ID;
+import static org.thingsboard.server.controller.UserController.YOU_DON_T_HAVE_PERMISSION_TO_PERFORM_THIS_OPERATION;
 import static org.thingsboard.server.dao.service.Validator.validateId;
 
 @Slf4j
 @TbCoreComponent
 public abstract class BaseController {
 
-    public static final String INCORRECT_TENANT_ID = "Incorrect tenantId ";
-
-    private static final String YOU_DON_T_HAVE_PERMISSION_TO_PERFORM_THIS_OPERATION = "You don't have permission to perform this operation!";
-
-    protected static final String HOME_DASHBOARD_ID = "homeDashboardId";
-    protected static final String HOME_DASHBOARD_HIDE_TOOLBAR = "homeDashboardHideToolbar";
-
-    protected static final String DEFAULT_DASHBOARD = "defaultDashboardId";
-    protected static final String HOME_DASHBOARD = "homeDashboardId";
-
-    private static final int DEFAULT_PAGE_SIZE = 1000;
+    /*Swagger UI description*/
 
     private static final ObjectMapper json = new ObjectMapper();
 
@@ -1294,7 +1287,7 @@ public abstract class BaseController {
         PageDataIterableByTenantIdEntityId<EdgeId> relatedEdgeIdsIterator =
                 new PageDataIterableByTenantIdEntityId<>(edgeService::findRelatedEdgeIdsByEntityId, tenantId, entityId, DEFAULT_PAGE_SIZE);
         List<EdgeId> result = new ArrayList<>();
-        for(EdgeId edgeId : relatedEdgeIdsIterator) {
+        for (EdgeId edgeId : relatedEdgeIdsIterator) {
             result.add(edgeId);
         }
         return result;

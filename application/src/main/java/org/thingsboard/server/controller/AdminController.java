@@ -34,6 +34,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,6 +74,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.thingsboard.server.controller.ControllerConstants.SYSTEM_AUTHORITY_PARAGRAPH;
+import static org.thingsboard.server.controller.ControllerConstants.SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH;
+
 @RestController
 @TbCoreComponent
 @RequestMapping("/api/admin")
@@ -97,10 +102,14 @@ public class AdminController extends BaseController {
     @Autowired
     private UpdateService updateService;
 
+    @ApiOperation(value = "Get the Administration Settings object using key (getAdminSettings)",
+            notes = "Get the Administration Settings object using specified string key. Referencing non-existing key will cause an error." + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN')")
     @RequestMapping(value = "/settings/{key}", method = RequestMethod.GET)
     @ResponseBody
-    public AdminSettings getAdminSettings(@PathVariable("key") String key,
+    public AdminSettings getAdminSettings(
+            @ApiParam(value = "A string value of the key (e.g. 'general' or 'mail').")
+            @PathVariable("key") String key,
                                           @RequestParam(required = false,
                                                   defaultValue = "false") boolean systemByDefault) throws ThingsboardException {
         try {
@@ -126,10 +135,16 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Get the Administration Settings object using key (getAdminSettings)",
+            notes = "Creates or Updates the Administration Settings. Platform generates random Administration Settings Id during settings creation. " +
+                    "The Administration Settings Id will be present in the response. Specify the Administration Settings Id when you would like to update the Administration Settings. " +
+                    "Referencing non-existing Administration Settings Id will cause an error." + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN')")
     @RequestMapping(value = "/settings", method = RequestMethod.POST)
     @ResponseBody
-    public AdminSettings saveAdminSettings(@RequestBody AdminSettings adminSettings) throws ThingsboardException {
+    public AdminSettings saveAdminSettings(
+            @ApiParam(value = "A JSON value representing the Administration Settings.")
+            @RequestBody AdminSettings adminSettings) throws ThingsboardException {
         try {
             Authority authority = getCurrentUser().getAuthority();
             if (Authority.SYS_ADMIN.equals(authority)) {
@@ -149,6 +164,8 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Get the Security Settings object",
+            notes = "Get the Security Settings object that contains password policy, etc." + SYSTEM_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAuthority('SYS_ADMIN')")
     @RequestMapping(value = "/securitySettings", method = RequestMethod.GET)
     @ResponseBody
@@ -161,10 +178,14 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Update Security Settings (saveSecuritySettings)",
+            notes = "Updates the Security Settings object that contains password policy, etc." + SYSTEM_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAuthority('SYS_ADMIN')")
     @RequestMapping(value = "/securitySettings", method = RequestMethod.POST)
     @ResponseBody
-    public SecuritySettings saveSecuritySettings(@RequestBody SecuritySettings securitySettings) throws ThingsboardException {
+    public SecuritySettings saveSecuritySettings(
+            @ApiParam(value = "A JSON value representing the Security Settings.")
+            @RequestBody SecuritySettings securitySettings) throws ThingsboardException {
         try {
             accessControlService.checkPermission(getCurrentUser(), Resource.ADMIN_SETTINGS, Operation.WRITE);
             securitySettings = checkNotNull(systemSecurityService.saveSecuritySettings(TenantId.SYS_TENANT_ID, securitySettings));
@@ -176,9 +197,14 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Send test email (sendTestMail)",
+            notes = "Attempts to send test email to the System Administrator User using Mail Settings provided as a parameter. " +
+                    "You may change the 'To' email in the user profile of the System Administrator. " + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN')")
     @RequestMapping(value = "/settings/testMail", method = RequestMethod.POST)
-    public void sendTestMail(@RequestBody AdminSettings adminSettings) throws ThingsboardException {
+    public void sendTestMail(
+            @ApiParam(value = "A JSON value representing the Mail Settings.")
+            @RequestBody AdminSettings adminSettings) throws ThingsboardException {
         try {
             Authority authority = getCurrentUser().getAuthority();
             if (Authority.SYS_ADMIN.equals(authority)) {
@@ -205,9 +231,14 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Send test sms (sendTestMail)",
+            notes = "Attempts to send test sms to the System Administrator User using SMS Settings and phone number provided as a parameters of the request. "
+                    + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN')")
     @RequestMapping(value = "/settings/testSms", method = RequestMethod.POST)
-    public void sendTestSms(@RequestBody TestSmsRequest testSmsRequest) throws ThingsboardException {
+    public void sendTestSms(
+            @ApiParam(value = "A JSON value representing the Test SMS request.")
+            @RequestBody TestSmsRequest testSmsRequest) throws ThingsboardException {
         try {
             Authority authority = getCurrentUser().getAuthority();
             if (Authority.SYS_ADMIN.equals(authority)) {
@@ -221,6 +252,9 @@ public class AdminController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Check for new Platform Releases (checkUpdates)",
+            notes = "Check notifications about new platform releases. "
+                    + SYSTEM_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAuthority('SYS_ADMIN')")
     @RequestMapping(value = "/updates", method = RequestMethod.GET)
     @ResponseBody

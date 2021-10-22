@@ -37,6 +37,14 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.thingsboard.common.util.DonAsynchron;
+import org.thingsboard.common.util.ThingsBoardThreadFactory;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.thingsboard.common.util.DonAsynchron;
+import org.thingsboard.common.util.ThingsBoardThreadFactory;
 import org.thingsboard.server.cluster.TbClusterService;
 import org.thingsboard.server.common.adaptor.JsonConverter;
 import org.thingsboard.server.common.data.BaseData;
@@ -62,11 +70,16 @@ import org.thingsboard.server.utils.CsvUtils;
 import org.thingsboard.server.utils.TypeCastUtil;
 
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -84,53 +97,67 @@ public abstract class AbstractBulkImportService<E extends BaseData<? extends Ent
     protected final EntityActionService entityActionService;
     protected final TbClusterService clusterService;
 
-    public final BulkImportResult<E> processBulkImport(BulkImportRequest request, SecurityUser user, Consumer<ImportedEntityInfo<E>> onEntityImported, BiConsumer<E, UnaryOperator<E>> entityGroupAssigner) throws Exception {
-        BulkImportResult<E> result = new BulkImportResult<>();
+    private static ThreadPoolExecutor executor;
 
-        AtomicInteger i = new AtomicInteger(0);
-        if (request.getMapping().getHeader()) {
-            i.incrementAndGet();
+    @PostConstruct
+    private void initExecutor() {
+        if (executor == null) {
+            executor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(),
+                    60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(150_000),
+                    ThingsBoardThreadFactory.forName("bulk-import"), new ThreadPoolExecutor.CallerRunsPolicy());
+            executor.allowCoreThreadTimeOut(true);
         }
+    }
 
-        parseData(request).forEach(entityData -> {
-            i.incrementAndGet();
-            try {
-                ImportedEntityInfo<E> importedEntityInfo = new ImportedEntityInfo<>();
-                E entity = findOrCreateAndSetFields(request, entityData.getFields(), importedEntityInfo, user);
+    public final BulkImportResult<E> processBulkImport(BulkImportRequest request, SecurityUser user, Consumer<ImportedEntityInfo<E>> onEntityImported, BiConsumer<E, UnaryOperator<E>> entityGroupAssigner) throws Exception {
+        List<EntityData> entitiesData = parseData(request);
 
-                UnaryOperator<E> savingFunction = e -> {
-                    E savedEntity = saveEntity(request, entityData.getFields(), e, user);
-                    importedEntityInfo.setEntity(savedEntity);
-                    return savedEntity;
-                };
+        BulkImportResult<E> result = new BulkImportResult<>();
+        CountDownLatch completionLatch = new CountDownLatch(entitiesData.size());
 
-                if (entityGroupAssigner != null) {
-                    entityGroupAssigner.accept(entity, savingFunction);
-                } else {
-                    savingFunction.apply(entity);
-                }
+        SecurityContext securityContext = SecurityContextHolder.getContext();
 
-                onEntityImported.accept(importedEntityInfo);
+        entitiesData.forEach(entityData -> DonAsynchron.submit(() -> {
+                    SecurityContextHolder.setContext(securityContext);
 
-                E savedEntity = importedEntityInfo.getEntity();
+                    ImportedEntityInfo<E> importedEntityInfo = new ImportedEntityInfo<>();
+                    E entity = findOrCreateAndSetFields(request, entityData.getFields(), importedEntityInfo, user);
 
-                saveKvs(user, savedEntity, entityData.getKvs());
+                    UnaryOperator<E> savingFunction = e -> {
+                        E savedEntity = saveEntity(request, entityData.getFields(), e, user);
+                        importedEntityInfo.setEntity(savedEntity);
+                        return savedEntity;
+                    };
 
-                if (importedEntityInfo.getRelatedError() != null) {
-                    throw new RuntimeException(importedEntityInfo.getRelatedError());
-                }
+                    if (entityGroupAssigner != null) {
+                        entityGroupAssigner.accept(entity, savingFunction);
+                    } else {
+                        savingFunction.apply(entity);
+                    }
 
-                if (importedEntityInfo.isUpdated()) {
-                    result.setUpdated(result.getUpdated() + 1);
-                } else {
-                    result.setCreated(result.getCreated() + 1);
-                }
-            } catch (Exception e) {
-                result.setErrors(result.getErrors() + 1);
-                result.getErrorsList().add(String.format("Line %d: %s", i.get(), e.getMessage()));
-            }
-        });
+                    onEntityImported.accept(importedEntityInfo);
 
+                    E savedEntity = importedEntityInfo.getEntity();
+                    saveKvs(user, savedEntity, entityData.getKvs());
+
+                    return importedEntityInfo;
+                },
+                importedEntityInfo -> {
+                    if (importedEntityInfo.isUpdated()) {
+                        result.getUpdated().incrementAndGet();
+                    } else {
+                        result.getCreated().incrementAndGet();
+                    }
+                    completionLatch.countDown();
+                },
+                throwable -> {
+                    result.getErrors().incrementAndGet();
+                    result.getErrorsList().add(String.format("Line %d: %s", entityData.getLineNumber(), ExceptionUtils.getRootCauseMessage(throwable)));
+                    completionLatch.countDown();
+                },
+                executor));
+
+        completionLatch.await();
         return result;
     }
 
@@ -219,8 +246,11 @@ public abstract class AbstractBulkImportService<E extends BaseData<? extends Ent
 
     private List<EntityData> parseData(BulkImportRequest request) throws Exception {
         List<List<String>> records = CsvUtils.parseCsv(request.getFile(), request.getMapping().getDelimiter());
+        AtomicInteger linesCounter = new AtomicInteger(0);
+
         if (request.getMapping().getHeader()) {
             records.remove(0);
+            linesCounter.incrementAndGet();
         }
 
         List<ColumnMapping> columnsMappings = request.getMapping().getColumns();
@@ -238,15 +268,24 @@ public abstract class AbstractBulkImportService<E extends BaseData<? extends Ent
                                     entityData.getKvs().put(entry.getKey(), new ParsedValue(castResult.getValue(), castResult.getKey()));
                                 }
                             });
+                    entityData.setLineNumber(linesCounter.incrementAndGet());
                     return entityData;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @PreDestroy
+    private void shutdownExecutor() {
+        if (!executor.isTerminating()) {
+            executor.shutdown();
+        }
     }
 
     @Data
     protected static class EntityData {
         private final Map<BulkImportColumnType, String> fields = new LinkedHashMap<>();
         private final Map<ColumnMapping, ParsedValue> kvs = new LinkedHashMap<>();
+        private int lineNumber;
     }
 
     @Data

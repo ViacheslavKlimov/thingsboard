@@ -39,6 +39,7 @@ import { DataKeyType } from './telemetry/telemetry.models';
 import { EntityId } from '@shared/models/id/entity-id';
 import * as moment_ from 'moment';
 import { EntityDataPageLink, EntityFilter, KeyFilter } from '@shared/models/query/query.models';
+import { PopoverPlacement } from '@shared/components/popover.models';
 
 export enum widgetType {
   timeseries = 'timeseries',
@@ -166,6 +167,7 @@ export interface WidgetTypeParameters {
   useCustomDatasources?: boolean;
   maxDatasources?: number;
   maxDataKeys?: number;
+  datasourcesOptional?: boolean;
   dataKeysOptional?: boolean;
   stateData?: boolean;
   hasDataPageLink?: boolean;
@@ -495,6 +497,13 @@ export interface WidgetActionDescriptor extends CustomActionDescriptor {
   targetDashboardStateId?: string;
   openRightLayout?: boolean;
   openNewBrowserTab?: boolean;
+  openInPopover?: boolean;
+  popoverHideDashboardToolbar?: boolean;
+  popoverPreferredPlacement?: PopoverPlacement;
+  popoverHideOnClickOutside?: boolean;
+  popoverWidth?: string;
+  popoverHeight?: string;
+  popoverStyle?: { [klass: string]: any };
   openInSeparateDialog?: boolean;
   dialogTitle?: string;
   dialogHideDashboardToolbar?: boolean;
