@@ -60,6 +60,7 @@ public class LwM2mServerListener {
         @Override
         public void registered(Registration registration, Registration previousReg,
                                Collection<Observation> previousObservations) {
+            log.info("[{}] Registered!", registration.getEndpoint());
             service.onRegistered(registration, previousObservations);
         }
 
@@ -69,6 +70,7 @@ public class LwM2mServerListener {
         @Override
         public void updated(RegistrationUpdate update, Registration updatedRegistration,
                             Registration previousRegistration) {
+            log.trace("[{}] Updated!", updatedRegistration.getEndpoint());
             service.updatedReg(updatedRegistration);
         }
 
@@ -78,6 +80,7 @@ public class LwM2mServerListener {
         @Override
         public void unregistered(Registration registration, Collection<Observation> observations, boolean expired,
                                  Registration newReg) {
+            log.info("[{}] Unregistered!", registration.getEndpoint());
             service.unReg(registration, observations);
         }
 
@@ -101,7 +104,7 @@ public class LwM2mServerListener {
 
         @Override
         public void cancelled(Observation observation) {
-            log.trace("Canceled Observation {}.", observation.getPath());
+            log.info("Canceled Observation {}.", observation.getPath());
         }
 
         @Override
