@@ -69,6 +69,7 @@ import org.thingsboard.server.common.data.query.EntityFilterType;
 import org.thingsboard.server.common.data.query.EntityGroupFilter;
 import org.thingsboard.server.common.data.query.EntityGroupListFilter;
 import org.thingsboard.server.common.data.query.EntityGroupNameFilter;
+import org.thingsboard.server.common.data.query.EntityIdOrSearchTextFilter;
 import org.thingsboard.server.common.data.query.EntityKeyType;
 import org.thingsboard.server.common.data.query.EntityListFilter;
 import org.thingsboard.server.common.data.query.EntityNameFilter;
@@ -111,6 +112,7 @@ import org.thingsboard.server.dao.sql.user.UserRepository;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -334,6 +336,8 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
             "coalesce((select title from tenant where id = aus.entity_id), (select title from customer where id = aus.entity_id)) as name " +
             "from api_usage_state as aus)";
 
+    private static final Map<EntityType, String> searchTextFields = new EnumMap<>(EntityType.class);
+
     static {
         entityTableMap.put(EntityType.ENTITY_GROUP, "entity_group");
         entityTableMap.put(EntityType.ASSET, "asset");
@@ -350,6 +354,17 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
         entityTableMap.put(EntityType.ROLE, "role");
         entityTableMap.put(EntityType.API_USAGE_STATE, SELECT_API_USAGE_STATE);
         entityTableMap.put(EntityType.EDGE, "edge");
+        entityTableMap.put(EntityType.RULE_CHAIN, "rule_chain");
+        entityTableMap.put(EntityType.WIDGETS_BUNDLE, "widgets_bundle");
+        entityTableMap.put(EntityType.TENANT_PROFILE, "tenant_profile");
+        entityTableMap.put(EntityType.DEVICE_PROFILE, "device_profile");
+        entityTableMap.put(EntityType.TB_RESOURCE, "resource");
+        entityTableMap.put(EntityType.OTA_PACKAGE, "ota_package");
+
+        entityTableMap.keySet().forEach(entityType -> {
+            searchTextFields.put(entityType, ModelConstants.SEARCH_TEXT_PROPERTY);
+        });
+        searchTextFields.put(EntityType.ENTITY_GROUP, "name");
     }
 
     public static EntityType[] RELATION_QUERY_ENTITY_TYPES = new EntityType[]{
@@ -1449,6 +1464,9 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
     }
 
     private String buildPermissionQuery(QueryContext ctx, EntityFilter entityFilter) {
+        if (ctx.getTenantId().equals(TenantId.SYS_TENANT_ID)) {
+            return "";
+        }
         switch (entityFilter.getType()) {
             case RELATIONS_QUERY:
                 return "";
@@ -1527,6 +1545,8 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
             case API_USAGE_STATE:
             case ENTITY_TYPE:
                 return "";
+            case ENTITY_ID_OR_SEARCH_TEXT:
+                return entityIdOrSearchTextQuery(ctx, (EntityIdOrSearchTextFilter) entityFilter);
             default:
                 throw new RuntimeException("Not implemented!");
         }
@@ -1596,7 +1616,7 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
                 " FROM entity_group WHERE type = :entity_group_type";
         ctx.addStringParameter("entity_group_type", entityType.name());
         if (StringUtils.isEmpty(entityFilter.getEntityGroupNameFilter())) {
-            select = select + " and LOWER(name) LIKE concat(:entity_group_name_prefix, '%%')";
+            select = select + " and LOWER(name) LIKE concat('%', :entity_group_name_prefix, '%')";
             ctx.addStringParameter("entity_group_name_prefix", entityFilter.getEntityGroupNameFilter());
         }
         return "(" + select + ")";
@@ -1863,15 +1883,39 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
     private String entityNameQuery(QueryContext ctx, EntityNameFilter filter) {
         if (!StringUtils.isEmpty(filter.getEntityNameFilter())) {
             ctx.addStringParameter("entity_filter_name_filter", filter.getEntityNameFilter());
-            return "lower(e.search_text) like lower(concat(:entity_filter_name_filter, '%%'))";
+            String searchTextField = searchTextFields.get(filter.getEntityType());
+            if (searchTextField == null) {
+                return "";
+            }
+            return "lower(e." + searchTextField + ") like lower(concat('%', :entity_filter_name_filter, '%'))";
         } else {
             return "";
         }
     }
 
+    private String entityIdOrSearchTextQuery(QueryContext ctx, EntityIdOrSearchTextFilter filter) {
+        String searchQuery = filter.getIdOrSearchText();
+        if (StringUtils.isNotEmpty(searchQuery)) {
+            searchQuery = searchQuery.replaceAll("%", "\\\\%").replaceAll("_", "\\\\_");
+            ctx.addStringParameter("entity_id_or_search_text_filter", searchQuery);
+            String query = "";
+
+            String searchTextField = searchTextFields.get(filter.getEntityType());
+            query += "lower(e." + searchTextField + ") like lower(concat('%', :entity_id_or_search_text_filter, '%'))";
+
+            try {
+                UUID.fromString(searchQuery);
+                query += " or e.id = :entity_id_or_search_text_filter::uuid";
+            } catch (Exception ignored) {}
+
+            return query;
+        }
+        return "true";
+    }
+
     private String entityGroupNameQuery(QueryContext ctx, EntityGroupNameFilter filter) {
         ctx.addStringParameter("entity_filter_group_name_filter", filter.getEntityGroupNameFilter());
-        return "lower(e.name) like lower(concat(:entity_filter_group_name_filter, '%%'))";
+        return "lower(e.name) like lower(concat('%', :entity_filter_group_name_filter, '%'))";
     }
 
     private String typeQuery(QueryContext ctx, EntityFilter filter) {
@@ -1901,7 +1945,7 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
         ctx.addStringParameter("entity_filter_type_query_type", type);
         if (!StringUtils.isEmpty(name)) {
             ctx.addStringParameter("entity_filter_type_query_name", name);
-            return typeFilter + " and lower(e.search_text) like lower(concat(:entity_filter_type_query_name, '%%'))";
+            return typeFilter + " and lower(e.search_text) like lower(concat('%', :entity_filter_type_query_name, '%'))";
         } else {
             return typeFilter;
         }
@@ -1942,6 +1986,8 @@ public class DefaultEntityQueryRepository implements EntityQueryRepository {
                 return ((RelationsQueryFilter) entityFilter).getRootEntity().getEntityType();
             case API_USAGE_STATE:
                 return EntityType.API_USAGE_STATE;
+            case ENTITY_ID_OR_SEARCH_TEXT:
+                return ((EntityIdOrSearchTextFilter) entityFilter).getEntityType();
             default:
                 throw new RuntimeException("Not implemented!");
         }

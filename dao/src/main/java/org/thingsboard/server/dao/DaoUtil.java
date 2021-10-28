@@ -30,13 +30,13 @@
  */
 package org.thingsboard.server.dao;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.springframework.util.CollectionUtils;
 import org.thingsboard.server.common.data.id.UUIDBased;
 import org.thingsboard.server.common.data.page.PageData;
@@ -70,11 +70,27 @@ public abstract class DaoUtil {
         return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
+    public static <T> PageData<T> cropDataToPage(List<T> data, PageLink pageLink) {
+        int startIndexInclusive = pageLink.getPage() * pageLink.getPageSize(); // 1
+        int endIndexExclusive = Math.min(startIndexInclusive + pageLink.getPageSize(), data.size());
+
+        if (startIndexInclusive > data.size() - 1) {
+            return new PageData<>();
+        }
+
+        List<T> page = data.subList(startIndexInclusive, endIndexExclusive);
+        int totalElements = data.size();
+        int totalPages = totalElements / pageLink.getPageSize() + (totalElements % pageLink.getPageSize() == 0 ? 0 : 1);
+        boolean hasNext = endIndexExclusive < data.size();
+
+        return new PageData<>(page, totalPages, totalElements, hasNext);
+    }
+
     public static Pageable toPageable(PageLink pageLink) {
         return toPageable(pageLink, Collections.emptyMap());
     }
 
-    public static Pageable toPageable(PageLink pageLink, Map<String,String> columnMap) {
+    public static Pageable toPageable(PageLink pageLink, Map<String, String> columnMap) {
         return PageRequest.of(pageLink.getPage(), pageLink.getPageSize(), toSort(pageLink.getSortOrder(), columnMap));
     }
 
@@ -82,7 +98,7 @@ public abstract class DaoUtil {
         return toPageable(pageLink, Collections.emptyMap(), sortOrders);
     }
 
-    public static Pageable toPageable(PageLink pageLink, Map<String,String> columnMap, List<SortOrder> sortOrders) {
+    public static Pageable toPageable(PageLink pageLink, Map<String, String> columnMap, List<SortOrder> sortOrders) {
         return PageRequest.of(pageLink.getPage(), pageLink.getPageSize(), toSort(sortOrders, columnMap));
     }
 
@@ -90,7 +106,7 @@ public abstract class DaoUtil {
         return toSort(sortOrder, Collections.emptyMap());
     }
 
-    public static Sort toSort(SortOrder sortOrder, Map<String,String> columnMap) {
+    public static Sort toSort(SortOrder sortOrder, Map<String, String> columnMap) {
         if (sortOrder == null) {
             return Sort.unsorted();
         } else {
@@ -106,15 +122,15 @@ public abstract class DaoUtil {
         return toSort(sortOrders, Collections.emptyMap());
     }
 
-    public static Sort toSort(List<SortOrder> sortOrders, Map<String,String> columnMap) {
+    public static Sort toSort(List<SortOrder> sortOrders, Map<String, String> columnMap) {
         return toSort(sortOrders, columnMap, Sort.NullHandling.NULLS_LAST);
     }
 
-    public static Sort toSort(List<SortOrder> sortOrders, Map<String,String> columnMap, Sort.NullHandling nullHandlingHint) {
+    public static Sort toSort(List<SortOrder> sortOrders, Map<String, String> columnMap, Sort.NullHandling nullHandlingHint) {
         return Sort.by(sortOrders.stream().map(s -> toSortOrder(s, columnMap, nullHandlingHint)).collect(Collectors.toList()));
     }
 
-    public static Sort.Order toSortOrder(SortOrder sortOrder, Map<String,String> columnMap, Sort.NullHandling nullHandlingHint) {
+    public static Sort.Order toSortOrder(SortOrder sortOrder, Map<String, String> columnMap, Sort.NullHandling nullHandlingHint) {
         String property = sortOrder.getProperty();
         if (columnMap.containsKey(property)) {
             property = columnMap.get(property);

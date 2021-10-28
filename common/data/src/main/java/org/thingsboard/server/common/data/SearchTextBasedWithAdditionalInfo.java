@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.id.UUIDBased;
 
@@ -41,6 +42,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -75,6 +77,13 @@ public abstract class SearchTextBasedWithAdditionalInfo<I extends UUIDBased> ext
 
     public void setAdditionalInfo(JsonNode addInfo) {
         setJson(addInfo, json -> this.additionalInfo = json, bytes -> this.additionalInfoBytes = bytes);
+    }
+
+    public Optional<String> getAdditionalInfoField(String fieldName) {
+        return Optional.ofNullable(getAdditionalInfo())
+                .flatMap(info -> Optional.ofNullable(info.get(fieldName)))
+                .filter(jsonNode -> !(jsonNode instanceof NullNode))
+                .map(JsonNode::asText);
     }
 
     @Override
