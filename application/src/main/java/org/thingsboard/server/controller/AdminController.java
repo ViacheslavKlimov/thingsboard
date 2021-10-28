@@ -33,9 +33,9 @@ package org.thingsboard.server.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.commons.lang3.StringUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -110,8 +110,8 @@ public class AdminController extends BaseController {
     public AdminSettings getAdminSettings(
             @ApiParam(value = "A string value of the key (e.g. 'general' or 'mail').")
             @PathVariable("key") String key,
-                                          @RequestParam(required = false,
-                                                  defaultValue = "false") boolean systemByDefault) throws ThingsboardException {
+            @ApiParam(value = "Use system settings if settings are not defined on tenant level.")
+            @RequestParam(required = false, defaultValue = "false") boolean systemByDefault) throws ThingsboardException {
         try {
             Authority authority = getCurrentUser().getAuthority();
             AdminSettings adminSettings;
@@ -198,8 +198,9 @@ public class AdminController extends BaseController {
     }
 
     @ApiOperation(value = "Send test email (sendTestMail)",
-            notes = "Attempts to send test email to the System Administrator User using Mail Settings provided as a parameter. " +
-                    "You may change the 'To' email in the user profile of the System Administrator. " + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
+            notes = "Attempts to send test email using Mail Settings provided as a parameter. " +
+                    "Email is sent to the address specified in the profile of user who is performing the request" +
+                    "You may change the 'To' email in the user profile of the System/Tenant Administrator. " + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAnyAuthority('SYS_ADMIN', 'TENANT_ADMIN')")
     @RequestMapping(value = "/settings/testMail", method = RequestMethod.POST)
     public void sendTestMail(

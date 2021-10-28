@@ -264,6 +264,9 @@ export class BlobEntitiesComponent extends PageComponent implements OnInit, Afte
   }
 
   onTimewindowChange() {
+    if (this.displayPagination) {
+      this.paginator.pageIndex = 0;
+    }
     this.updateData();
   }
 

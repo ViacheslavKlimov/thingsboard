@@ -3107,7 +3107,8 @@
     "accept-privacy-policy": "Accept Privacy Policy",
     "accept": "Accept",
     "privacy-policy": "Privacy Policy",
-    "recaptcha-title": "reCAPTCHA"
+    "recaptcha-title": "reCAPTCHA",
+    "terms-of-use": "Terms of Use"
   },
   "ota-update": {
     "add": "Add package",
@@ -4188,7 +4189,7 @@
     "action-name-not-unique": "Another action with the same name already exists.<br/>Action name should be unique within the same action source.",
     "action-icon": "Icon",
     "show-hide-action-using-function": "Show/hide action using function",
-        "action-type": "Type",
+    "action-type": "Type",
     "action-type-required": "Action type is required.",
     "edit-action": "Edit action",
     "delete-action": "Delete action",
@@ -4213,6 +4214,7 @@
     "captcha-secret-key": "reCAPTCHA secret key",
     "notification-email": "Notification email",
     "privacy-policy-text": "Privacy policy text",
+    "terms-of-use-text": "Terms of Use text",
     "text-message-page": "Text Message for signup page",
     "enable-mobile-self-registration": "Enable self registration from mobile application",
     "mobile-self-registration-title": "Mobile application self registration settings",
@@ -4228,7 +4230,11 @@
     "mobile-app-scheme-required": "Application URL scheme is required",
     "mobile-app-host": "Application URL hostname",
     "mobile-app-host-placeholder": "Ex.: my.app.host",
-    "mobile-app-host-required": "Application URL hostname is required"
+    "mobile-app-host-required": "Application URL hostname is required",
+    "show-privacy-policy": "Show Privacy Policy",
+    "show-terms-of-use": "Show Terms of Use",
+    "domain-settings": "Domain settings",
+    "general-settings": "General settings"
   },
   "solution-template": {
     "solution-template": "Solution template",
@@ -4249,8 +4255,9 @@
   "markdown": {
     "edit": "Edit",
     "preview": "Preview",
-  "copy-code": "Click to copy",
-      "copied": "Copied!"},
+    "copy-code": "Click to copy",
+    "copied": "Copied!"
+  },
   "white-labeling": {
     "white-labeling": "White Labeling",
     "login-white-labeling": "Login White Labeling",
@@ -4288,13 +4295,14 @@
     "prohibit-different-url": "Prohibit to use hostname from the client request headers",
     "prohibit-different-url-hint": "This setting should be enabled for production environments. May cause security issues when disabled",
     "help-link-base-url": "Help links base url",
+    "ui-help-base-url": "UI help base url",
     "enable-help-links": "Enable help links",
     "error-verification-url": "A domain name shouldn't contain symbols '/' and ':'. Example: thingsboard.io",
     "show-platform-name-version": "Show platform name and version",
     "platform-name": "Platform Name",
     "platform-version": "Platform version",
     "version-mask": "{{name}} v.{{version}}",
-    "position": {
+    "position":{
       "label": "Platform name and version position",
       "under-logo": "Under the logo",
       "bottom": "Bottom of the login form"

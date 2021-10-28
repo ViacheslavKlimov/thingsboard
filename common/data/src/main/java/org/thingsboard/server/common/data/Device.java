@@ -108,10 +108,10 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
         return this;
     }
 
-    @ApiModelProperty(position = 1, value = "JSON object with the device Id. " +
-            "Specify this field to update the device. " +
-            "Referencing non-existing device Id will cause error. " +
-            "Omit this field to create new device." )
+    @ApiModelProperty(position = 1, value = "JSON object with the Device Id. " +
+            "Specify this field to update the Device. " +
+            "Referencing non-existing Device Id will cause error. " +
+            "Omit this field to create new Device." )
     @Override
     public DeviceId getId() {
         return super.getId();
@@ -141,7 +141,7 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
         this.customerId = customerId;
     }
 
-    @ApiModelProperty(position = 5, required = true, value = "Customer or Tenant Id")
+    @ApiModelProperty(position = 5, value = "JSON object with Customer or Tenant Id", readOnly = true)
     @Override
     public EntityId getOwnerId() {
         return customerId != null && !customerId.isNullUid() ? customerId : tenantId;
