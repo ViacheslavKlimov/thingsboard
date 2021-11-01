@@ -68,6 +68,7 @@ public class EntityKeyMapping {
     private static final Map<EntityType, Set<String>> allowedEntityFieldMap = new HashMap<>();
     private static final Map<String, String> entityFieldColumnMap = new HashMap<>();
     private static final Map<EntityType, Map<String, String>> aliases = new HashMap<>();
+    private static final Map<EntityType, Map<String, String>> propertiesFunctions = new HashMap<>();
 
     public static final String CREATED_TIME = "createdTime";
     public static final String ENTITY_TYPE = "entityType";
@@ -87,18 +88,25 @@ public class EntityKeyMapping {
     public static final String ZIP = "zip";
     public static final String PHONE = "phone";
     public static final String ADDITIONAL_INFO = "additionalInfo";
+    public static final String TENANT_ID = "tenantId";
+    public static final String CUSTOMER_ID = "customerId";
+    public static final String OWNER_ID = "ownerId";
+    public static final String PARENT_CUSTOMER_ID = "parentCustomerId";
+    public static final String AUTHORITY = "authority";
+    public static final String RESOURCE_TYPE = "resourceType";
+    public static final String LAST_ACTIVITY_TIME = "lastActivityTime";
 
 
-    public static final List<String> typedEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, ADDITIONAL_INFO);
-    public static final List<String> widgetEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME);
+    public static final List<String> typedEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, ADDITIONAL_INFO, TENANT_ID);
+    public static final List<String> widgetEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TENANT_ID);
     public static final List<String> commonEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, ADDITIONAL_INFO);
-    public static final List<String> entityGroupFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, ADDITIONAL_INFO);
+    public static final List<String> entityGroupFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, ADDITIONAL_INFO, OWNER_ID);
 
-    public static final List<String> dashboardEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, TITLE);
-    public static final List<String> labeledEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, LABEL, ADDITIONAL_INFO);
+    public static final List<String> dashboardEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, TITLE, TENANT_ID, CUSTOMER_ID);
+    public static final List<String> labeledEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, LABEL, ADDITIONAL_INFO, TENANT_ID, CUSTOMER_ID);
     public static final List<String> contactBasedEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, EMAIL, TITLE, COUNTRY, STATE, CITY, ADDRESS, ADDRESS_2, ZIP, PHONE, ADDITIONAL_INFO);
 
-    public static final Set<String> apiUsageStateEntityFields =  new HashSet<>(Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME));
+    public static final Set<String> apiUsageStateEntityFields = new HashSet<>(Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME));
     public static final Set<String> commonEntityFieldsSet = new HashSet<>(commonEntityFields);
     public static final Set<String> relationQueryEntityFieldsSet = new HashSet<>(Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, LABEL, FIRST_NAME, LAST_NAME, EMAIL, REGION, TITLE, COUNTRY, STATE, CITY, ADDRESS, ADDRESS_2, ZIP, PHONE, ADDITIONAL_INFO));
 
@@ -107,26 +115,40 @@ public class EntityKeyMapping {
         allowedEntityFieldMap.put(EntityType.ASSET, new HashSet<>(labeledEntityFields));
         allowedEntityFieldMap.put(EntityType.EDGE, new HashSet<>(labeledEntityFields));
         allowedEntityFieldMap.put(EntityType.ENTITY_VIEW, new HashSet<>(typedEntityFields));
+        allowedEntityFieldMap.get(EntityType.ENTITY_VIEW).add(CUSTOMER_ID);
 
         allowedEntityFieldMap.put(EntityType.TENANT, new HashSet<>(contactBasedEntityFields));
         allowedEntityFieldMap.get(EntityType.TENANT).add(REGION);
         allowedEntityFieldMap.put(EntityType.CUSTOMER, new HashSet<>(contactBasedEntityFields));
+        allowedEntityFieldMap.get(EntityType.CUSTOMER).add(TENANT_ID);
+        allowedEntityFieldMap.get(EntityType.CUSTOMER).add(PARENT_CUSTOMER_ID);
 
-        allowedEntityFieldMap.put(EntityType.USER, new HashSet<>(Arrays.asList(CREATED_TIME, FIRST_NAME, LAST_NAME, EMAIL, ADDITIONAL_INFO)));
+        allowedEntityFieldMap.put(EntityType.USER, new HashSet<>(Arrays.asList(CREATED_TIME, FIRST_NAME, LAST_NAME, EMAIL,
+                ADDITIONAL_INFO, AUTHORITY, TENANT_ID, CUSTOMER_ID)));
+
+        allowedEntityFieldMap.put(EntityType.DEVICE_PROFILE, new HashSet<>(commonEntityFields));
+        allowedEntityFieldMap.get(EntityType.DEVICE_PROFILE).add(TENANT_ID);
 
         allowedEntityFieldMap.put(EntityType.DASHBOARD, new HashSet<>(dashboardEntityFields));
         allowedEntityFieldMap.put(EntityType.RULE_CHAIN, new HashSet<>(commonEntityFields));
+        allowedEntityFieldMap.get(EntityType.RULE_CHAIN).add(TENANT_ID);
+        allowedEntityFieldMap.get(EntityType.RULE_CHAIN).add(TYPE);
         allowedEntityFieldMap.put(EntityType.RULE_NODE, new HashSet<>(commonEntityFields));
 
         allowedEntityFieldMap.put(EntityType.WIDGET_TYPE, new HashSet<>(widgetEntityFields));
         allowedEntityFieldMap.put(EntityType.WIDGETS_BUNDLE, new HashSet<>(widgetEntityFields));
+        allowedEntityFieldMap.get(EntityType.WIDGETS_BUNDLE).remove(NAME);
+        allowedEntityFieldMap.get(EntityType.WIDGETS_BUNDLE).add(TITLE);
         allowedEntityFieldMap.put(EntityType.CONVERTER, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.INTEGRATION, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.SCHEDULER_EVENT, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.BLOB_ENTITY, new HashSet<>(typedEntityFields));
+        allowedEntityFieldMap.get(EntityType.BLOB_ENTITY).add(CUSTOMER_ID);
         allowedEntityFieldMap.put(EntityType.ROLE, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.ENTITY_GROUP, new HashSet<>(entityGroupFields));
         allowedEntityFieldMap.put(EntityType.API_USAGE_STATE, apiUsageStateEntityFields);
+        allowedEntityFieldMap.put(EntityType.TB_RESOURCE, Set.of(CREATED_TIME, ENTITY_TYPE, RESOURCE_TYPE, TITLE, TENANT_ID));
+        allowedEntityFieldMap.put(EntityType.OTA_PACKAGE, Set.of(CREATED_TIME, ENTITY_TYPE, TYPE, TITLE, TENANT_ID));
 
         entityFieldColumnMap.put(CREATED_TIME, ModelConstants.CREATED_TIME_PROPERTY);
         entityFieldColumnMap.put(ENTITY_TYPE, ModelConstants.ENTITY_TYPE_PROPERTY);
@@ -146,12 +168,19 @@ public class EntityKeyMapping {
         entityFieldColumnMap.put(ZIP, ModelConstants.ZIP_PROPERTY);
         entityFieldColumnMap.put(PHONE, ModelConstants.PHONE_PROPERTY);
         entityFieldColumnMap.put(ADDITIONAL_INFO, ModelConstants.ADDITIONAL_INFO_PROPERTY);
+        entityFieldColumnMap.put(TENANT_ID, ModelConstants.TENANT_ID_PROPERTY);
+        entityFieldColumnMap.put(CUSTOMER_ID, ModelConstants.CUSTOMER_ID_PROPERTY);
+        entityFieldColumnMap.put(OWNER_ID, ModelConstants.ENTITY_GROUP_OWNER_ID_PROPERTY);
+        entityFieldColumnMap.put(PARENT_CUSTOMER_ID, ModelConstants.CUSTOMER_PARENT_CUSTOMER_ID_PROPERTY);
+        entityFieldColumnMap.put(AUTHORITY, ModelConstants.USER_AUTHORITY_PROPERTY);
+        entityFieldColumnMap.put(RESOURCE_TYPE, ModelConstants.RESOURCE_TYPE_COLUMN);
 
         Map<String, String> contactBasedAliases = new HashMap<>();
         contactBasedAliases.put(NAME, TITLE);
         contactBasedAliases.put(LABEL, TITLE);
         aliases.put(EntityType.TENANT, contactBasedAliases);
-        aliases.put(EntityType.CUSTOMER, contactBasedAliases);
+        aliases.put(EntityType.CUSTOMER, new HashMap<>(contactBasedAliases));
+        aliases.get(EntityType.CUSTOMER).put(OWNER_ID, PARENT_CUSTOMER_ID);
         aliases.put(EntityType.DASHBOARD, contactBasedAliases);
         Map<String, String> commonEntityAliases = new HashMap<>();
         commonEntityAliases.put(TITLE, NAME);
@@ -159,14 +188,20 @@ public class EntityKeyMapping {
         aliases.put(EntityType.ASSET, commonEntityAliases);
         aliases.put(EntityType.ENTITY_VIEW, commonEntityAliases);
         aliases.put(EntityType.EDGE, commonEntityAliases);
-        aliases.put(EntityType.WIDGETS_BUNDLE, commonEntityAliases);
+        aliases.put(EntityType.WIDGETS_BUNDLE, new HashMap<>(commonEntityAliases));
+        aliases.get(EntityType.WIDGETS_BUNDLE).put(NAME, TITLE);
         aliases.put(EntityType.ENTITY_GROUP, commonEntityAliases);
 
         Map<String, String> userEntityAliases = new HashMap<>();
         userEntityAliases.put(TITLE, EMAIL);
         userEntityAliases.put(LABEL, EMAIL);
         userEntityAliases.put(NAME, EMAIL);
+        userEntityAliases.put(TYPE, AUTHORITY);
         aliases.put(EntityType.USER, userEntityAliases);
+        aliases.put(EntityType.TB_RESOURCE, Map.of(NAME, TITLE, TYPE, RESOURCE_TYPE));
+        aliases.put(EntityType.OTA_PACKAGE, Map.of(NAME, TITLE));
+
+        propertiesFunctions.put(EntityType.USER, Map.of(LAST_ACTIVITY_TIME, "cast(e.additional_info::json ->> 'lastLoginTs' as varchar)"));
     }
 
     private int index;
@@ -207,6 +242,10 @@ public class EntityKeyMapping {
                     String column = entityFieldColumnMap.get(alias);
                     return String.format("cast(e.%s as varchar) as %s", column, getValueAlias());
                 } else {
+                    Map<String, String> entityPropertiesFunctions = propertiesFunctions.get(entityType);
+                    if (entityPropertiesFunctions != null && entityPropertiesFunctions.containsKey(alias)) {
+                        return String.format("%s as %s", entityPropertiesFunctions.get(alias), getValueAlias());
+                    }
                     return String.format("'' as %s", getValueAlias());
                 }
             }
@@ -235,7 +274,7 @@ public class EntityKeyMapping {
 
     private Set<String> getExistingEntityFields(EntityFilterType filterType, EntityType entityType) {
         Set<String> existingEntityFields;
-        switch (filterType){
+        switch (filterType) {
             case RELATIONS_QUERY:
                 existingEntityFields = relationQueryEntityFieldsSet;
                 break;

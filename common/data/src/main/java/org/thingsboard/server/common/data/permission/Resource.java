@@ -77,7 +77,8 @@ public enum Resource {
     AUDIT_LOG(),
     API_USAGE_STATE(EntityType.API_USAGE_STATE),
     TB_RESOURCE(EntityType.TB_RESOURCE),
-    OTA_PACKAGE(EntityType.OTA_PACKAGE);
+    OTA_PACKAGE(EntityType.OTA_PACKAGE),
+    ENTITY_GROUP(EntityType.ENTITY_GROUP); // to search entity groups of all types
 
     private static final Map<EntityType, Resource> groupResourceByGroupType = new HashMap<>();
     private static final Map<EntityType, Resource> resourceByEntityType = new HashMap<>();
@@ -94,11 +95,11 @@ public enum Resource {
         groupResourceByGroupType.put(EntityType.DASHBOARD, DASHBOARD_GROUP);
 
         for (EntityType entityType : EntityType.values()) {
-            if (entityType.equals(EntityType.ENTITY_GROUP)) {
-                continue;
-            }
             for (Resource resource : Resource.values()) {
                 if (resource.getEntityType().isPresent() && resource.getEntityType().get().equals(entityType)) {
+                    if (entityType.equals(EntityType.ENTITY_GROUP) && resource != ENTITY_GROUP) {
+                        continue;
+                    }
                     resourceByEntityType.put(entityType, resource);
                 }
             }

@@ -52,7 +52,6 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
-import org.thingsboard.server.common.data.page.TimePageLink;
 import org.thingsboard.server.common.data.permission.GroupPermission;
 import org.thingsboard.server.common.data.permission.MergedGroupPermissionInfo;
 import org.thingsboard.server.common.data.permission.MergedUserPermissions;
@@ -67,6 +66,7 @@ import org.thingsboard.server.dao.grouppermission.GroupPermissionService;
 import org.thingsboard.server.dao.role.RoleService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.service.executors.DbCallbackExecutorService;
+import org.thingsboard.server.service.query.GlobalEntitySearchServiceImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,14 +90,12 @@ public class DefaultUserPermissionsService implements UserPermissionsService {
     @Autowired
     private CacheManager cacheManager;
 
-    private static MergedUserPermissions sysAdminPermissions;
+    private static final MergedUserPermissions sysAdminPermissions;
 
     static {
         Map<Resource, Set<Operation>> sysAdminGenericPermissions = new HashMap<>();
         sysAdminGenericPermissions.put(Resource.PROFILE, new HashSet<>(Arrays.asList(Operation.ALL)));
         sysAdminGenericPermissions.put(Resource.ADMIN_SETTINGS, new HashSet<>(Arrays.asList(Operation.ALL)));
-        sysAdminGenericPermissions.put(Resource.DASHBOARD, new HashSet<>(Arrays.asList(Operation.READ)));
-        sysAdminGenericPermissions.put(Resource.ALARM, new HashSet<>(Arrays.asList(Operation.READ)));
         sysAdminGenericPermissions.put(Resource.TENANT, new HashSet<>(Arrays.asList(Operation.ALL)));
         sysAdminGenericPermissions.put(Resource.TENANT_PROFILE, new HashSet<>(Arrays.asList(Operation.ALL)));
         sysAdminGenericPermissions.put(Resource.RULE_CHAIN, new HashSet<>(Arrays.asList(Operation.ALL)));
@@ -106,6 +104,15 @@ public class DefaultUserPermissionsService implements UserPermissionsService {
         sysAdminGenericPermissions.put(Resource.WIDGET_TYPE, new HashSet<>(Arrays.asList(Operation.ALL)));
         sysAdminGenericPermissions.put(Resource.WHITE_LABELING, new HashSet<>(Arrays.asList(Operation.ALL)));
         sysAdminGenericPermissions.put(Resource.TB_RESOURCE, new HashSet<>(Arrays.asList(Operation.ALL)));
+        GlobalEntitySearchServiceImpl.searchableEntityTypes.forEach(entityType -> {
+            Resource resource = Resource.resourceFromEntityType(entityType);
+            if (resource != null) {
+                sysAdminGenericPermissions.putIfAbsent(resource, Set.of(Operation.READ, Operation.READ_TELEMETRY, Operation.READ_ATTRIBUTES));
+            }
+        });
+        Arrays.stream(EntityGroup.groupTypes).forEach(entityGroupType -> {
+            sysAdminGenericPermissions.put(Resource.groupResourceFromGroupType(entityGroupType), Set.of(Operation.READ));
+        });
         sysAdminPermissions = new MergedUserPermissions(sysAdminGenericPermissions, new HashMap<>());
     }
 
@@ -199,7 +206,7 @@ public class DefaultUserPermissionsService implements UserPermissionsService {
         }
         usersByOwnerMap.forEach((ownerId, userIds) ->
                 userIds.forEach(userId -> evictMergedPermissionsToCache(tenantId,
-                                EntityType.CUSTOMER.equals(ownerId.getEntityType()) ? ownerId : new CustomerId(CustomerId.NULL_UUID), userId)));
+                        EntityType.CUSTOMER.equals(ownerId.getEntityType()) ? ownerId : new CustomerId(CustomerId.NULL_UUID), userId)));
     }
 
     private MergedUserPermissions getMergedPermissionsFromCache(TenantId tenantId, CustomerId customerId, UserId userId) {
