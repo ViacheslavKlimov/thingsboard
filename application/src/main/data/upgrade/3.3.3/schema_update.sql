@@ -1,0 +1,2 @@
+ALTER TABLE device
+ADD COLUMN IF NOT EXISTS external_id UUID NULL;

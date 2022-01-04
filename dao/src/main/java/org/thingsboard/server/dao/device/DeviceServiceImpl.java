@@ -55,6 +55,8 @@ import org.thingsboard.server.common.data.device.data.Lwm2mDeviceTransportConfig
 import org.thingsboard.server.common.data.device.data.MqttDeviceTransportConfiguration;
 import org.thingsboard.server.common.data.device.data.SnmpDeviceTransportConfiguration;
 import org.thingsboard.server.common.data.edge.Edge;
+import org.thingsboard.server.common.data.export.DeviceExportData;
+import org.thingsboard.server.common.data.export.ExportEntityType;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
@@ -75,6 +77,7 @@ import org.thingsboard.server.dao.device.provision.ProvisionFailedException;
 import org.thingsboard.server.dao.device.provision.ProvisionRequest;
 import org.thingsboard.server.dao.device.provision.ProvisionResponseStatus;
 import org.thingsboard.server.dao.entity.AbstractEntityService;
+import org.thingsboard.server.dao.entity.EntityExportImportService;
 import org.thingsboard.server.dao.event.EventService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.ota.OtaPackageService;
@@ -104,7 +107,7 @@ import static org.thingsboard.server.dao.service.Validator.validateString;
 
 @Service
 @Slf4j
-public class DeviceServiceImpl extends AbstractEntityService implements DeviceService {
+public class DeviceServiceImpl extends AbstractEntityService implements DeviceService, EntityExportImportService<DeviceId, Device, DeviceExportData> {
 
     public static final String INCORRECT_TENANT_ID = "Incorrect tenantId ";
     public static final String INCORRECT_DEVICE_PROFILE_ID = "Incorrect deviceProfileId ";
@@ -708,6 +711,48 @@ public class DeviceServiceImpl extends AbstractEntityService implements DeviceSe
     @Override
     public long countByTenantId(TenantId tenantId) {
         return deviceDao.countByTenantId(tenantId);
+    }
+
+    @Override
+    public Device findById(TenantId tenantId, DeviceId id) {
+        return findDeviceById(tenantId, id);
+    }
+
+    @Override
+    public Device findByExternalId(TenantId tenantId, DeviceId externalId) {
+        return deviceDao.findByExternalId(tenantId.getId(), externalId.getId());
+    }
+
+    @Override
+    public PageData<Device> findByTenantId(TenantId tenantId, PageLink pageLink) {
+        return findDevicesByTenantId(tenantId, pageLink);
+    }
+
+    @Override
+    public DeviceExportData toExportData(Device entity) {
+        DeviceExportData exportData = new DeviceExportData();
+        exportData.setDevice(entity);
+        exportData.setCredentials(deviceCredentialsService.findDeviceCredentialsByDeviceId(entity.getTenantId(), entity.getId()));
+        return exportData;
+    }
+
+    @Override
+    public void saveEntityWithLinkedEntities(TenantId tenantId, Device device, DeviceExportData exportData) {
+        if (device.getId() == null) {
+            device.setCustomerId(getInternalId(tenantId, device.getCustomerId()));
+            device.setDeviceProfileId(getInternalId(tenantId, device.getDeviceProfileId()));
+            device.setFirmwareId(getInternalId(tenantId, device.getFirmwareId()));
+            device.setSoftwareId(getInternalId(tenantId, device.getSoftwareId()));
+        }
+
+        DeviceCredentials credentials = exportData.getCredentials();
+
+        saveDeviceWithCredentials(device, credentials);
+    }
+
+    @Override
+    public ExportEntityType getExportEntityType() {
+        return ExportEntityType.DEVICE;
     }
 
     private DataValidator<Device> deviceValidator =

@@ -43,4 +43,7 @@ public interface DeviceProfileDao extends Dao<DeviceProfile> {
     DeviceProfile findByProvisionDeviceKey(String provisionDeviceKey);
 
     DeviceProfile findByName(TenantId tenantId, String profileName);
+
+    DeviceProfile findByExternalId(UUID tenantId, UUID externalId);
+
 }

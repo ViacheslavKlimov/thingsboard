@@ -37,6 +37,7 @@ public class ModelConstants {
      * Generic constants.
      */
     public static final String ID_PROPERTY = "id";
+    public static final String EXTERNAL_ID_PROPERTY = "external_id";
     public static final String CREATED_TIME_PROPERTY = "created_time";
     public static final String USER_ID_PROPERTY = "user_id";
     public static final String TENANT_ID_PROPERTY = "tenant_id";

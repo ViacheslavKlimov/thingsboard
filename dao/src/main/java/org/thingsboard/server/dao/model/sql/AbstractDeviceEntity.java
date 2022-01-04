@@ -49,6 +49,9 @@ import java.util.UUID;
 @MappedSuperclass
 public abstract class AbstractDeviceEntity<T extends Device> extends BaseSqlEntity<T> implements SearchTextEntity<T> {
 
+    @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY, columnDefinition = "uuid")
+    private UUID externalId;
+
     @Column(name = ModelConstants.DEVICE_TENANT_ID_PROPERTY, columnDefinition = "uuid")
     private UUID tenantId;
 
@@ -92,6 +95,7 @@ public abstract class AbstractDeviceEntity<T extends Device> extends BaseSqlEnti
         if (device.getId() != null) {
             this.setUuid(device.getUuidId());
         }
+        this.setExternalId(device.getExternalId().getId());
         this.setCreatedTime(device.getCreatedTime());
         if (device.getTenantId() != null) {
             this.tenantId = device.getTenantId().getId();
@@ -143,6 +147,9 @@ public abstract class AbstractDeviceEntity<T extends Device> extends BaseSqlEnti
 
     protected Device toDevice() {
         Device device = new Device(new DeviceId(getUuid()));
+        if (externalId != null) {
+            device.setExternalId(new DeviceId(externalId));
+        }
         device.setCreatedTime(createdTime);
         if (tenantId != null) {
             device.setTenantId(new TenantId(tenantId));

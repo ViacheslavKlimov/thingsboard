@@ -23,6 +23,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.device.data.DeviceData;
+import org.thingsboard.server.common.data.export.ExportableEntity;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
@@ -38,7 +39,7 @@ import java.util.Optional;
 @ApiModel
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implements HasName, HasTenantId, HasCustomerId, HasOtaPackage {
+public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implements HasName, HasTenantId, HasCustomerId, HasOtaPackage, ExportableEntity<DeviceId, Device> {
 
     private static final long serialVersionUID = 2807343040519543363L;
 
@@ -60,6 +61,8 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
 
     private OtaPackageId firmwareId;
     private OtaPackageId softwareId;
+
+    private DeviceId externalId;
 
     public Device() {
         super();
@@ -85,13 +88,18 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
     public Device updateDevice(Device device) {
         this.tenantId = device.getTenantId();
         this.customerId = device.getCustomerId();
+        this.deviceProfileId = device.getDeviceProfileId();
+        this.setFirmwareId(device.getFirmwareId());
+        this.setSoftwareId(device.getSoftwareId());
+        updateDeviceData(device);
+        return this;
+    }
+
+    public Device updateDeviceData(Device device) {
         this.name = device.getName();
         this.type = device.getType();
         this.label = device.getLabel();
-        this.deviceProfileId = device.getDeviceProfileId();
         this.setDeviceData(device.getDeviceData());
-        this.setFirmwareId(device.getFirmwareId());
-        this.setSoftwareId(device.getSoftwareId());
         Optional.ofNullable(device.getAdditionalInfo()).ifPresent(this::setAdditionalInfo);
         return this;
     }
@@ -99,7 +107,7 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
     @ApiModelProperty(position = 1, value = "JSON object with the Device Id. " +
             "Specify this field to update the Device. " +
             "Referencing non-existing Device Id will cause error. " +
-            "Omit this field to create new Device." )
+            "Omit this field to create new Device.")
     @Override
     public DeviceId getId() {
         return super.getId();
@@ -118,6 +126,11 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
 
     public void setTenantId(TenantId tenantId) {
         this.tenantId = tenantId;
+    }
+
+    @Override
+    public Device updateEntityData(Device entity) {
+        return updateDeviceData(entity);
     }
 
     @ApiModelProperty(position = 4, value = "JSON object with Customer Id. Use 'assignDeviceToCustomer' to change the Customer Id.", readOnly = true)
@@ -221,6 +234,16 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
     @Override
     public JsonNode getAdditionalInfo() {
         return super.getAdditionalInfo();
+    }
+
+    @Override
+    public DeviceId getExternalId() {
+        return externalId;
+    }
+
+    @Override
+    public void setExternalId(DeviceId externalId) {
+        this.externalId = externalId;
     }
 
     @Override

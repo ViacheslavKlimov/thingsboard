@@ -255,4 +255,7 @@ public interface DeviceDao extends Dao<Device>, TenantEntityDao {
      * @return the list of device objects
      */
     PageData<Device> findDevicesByTenantIdAndEdgeIdAndType(UUID tenantId, UUID edgeId, String type, PageLink pageLink);
+
+    Device findByExternalId(UUID tenantId, UUID externalId);
+
 }

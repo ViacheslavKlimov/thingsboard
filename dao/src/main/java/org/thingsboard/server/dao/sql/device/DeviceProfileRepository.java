@@ -67,4 +67,7 @@ public interface DeviceProfileRepository extends JpaRepository<DeviceProfileEnti
     DeviceProfileEntity findByTenantIdAndName(UUID id, String profileName);
 
     DeviceProfileEntity findByProvisionDeviceKey(@Param("provisionDeviceKey") String provisionDeviceKey);
+
+    DeviceProfileEntity findByTenantIdAndExternalId(UUID tenantId, UUID externalId);
+
 }

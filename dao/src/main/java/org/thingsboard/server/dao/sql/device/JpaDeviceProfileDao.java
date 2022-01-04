@@ -109,4 +109,10 @@ public class JpaDeviceProfileDao extends JpaAbstractSearchTextDao<DeviceProfileE
     public DeviceProfile findByName(TenantId tenantId, String profileName) {
         return DaoUtil.getData(deviceProfileRepository.findByTenantIdAndName(tenantId.getId(), profileName));
     }
+
+    @Override
+    public DeviceProfile findByExternalId(UUID tenantId, UUID externalId) {
+        return DaoUtil.getData(deviceProfileRepository.findByTenantIdAndExternalId(tenantId, externalId));
+    }
+
 }

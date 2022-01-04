@@ -24,6 +24,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.device.profile.DeviceProfileData;
+import org.thingsboard.server.common.data.export.ExportableEntity;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.OtaPackageId;
@@ -43,7 +44,7 @@ import static org.thingsboard.server.common.data.SearchTextBasedWithAdditionalIn
 @ToString(exclude = {"image", "profileDataBytes"})
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class DeviceProfile extends SearchTextBased<DeviceProfileId> implements HasName, HasTenantId, HasOtaPackage {
+public class DeviceProfile extends SearchTextBased<DeviceProfileId> implements HasName, HasTenantId, HasOtaPackage, ExportableEntity<DeviceProfileId, DeviceProfile> {
 
     private static final long serialVersionUID = 6998485460273302018L;
 
@@ -90,6 +91,8 @@ public class DeviceProfile extends SearchTextBased<DeviceProfileId> implements H
     @ApiModelProperty(position = 10, value = "Reference to the software OTA package. If present, the specified package will be used as default device software. ")
     private OtaPackageId softwareId;
 
+    private DeviceProfileId externalId;
+
     public DeviceProfile() {
         super();
     }
@@ -101,17 +104,11 @@ public class DeviceProfile extends SearchTextBased<DeviceProfileId> implements H
     public DeviceProfile(DeviceProfile deviceProfile) {
         super(deviceProfile);
         this.tenantId = deviceProfile.getTenantId();
-        this.name = deviceProfile.getName();
-        this.description = deviceProfile.getDescription();
-        this.image = deviceProfile.getImage();
-        this.isDefault = deviceProfile.isDefault();
         this.defaultRuleChainId = deviceProfile.getDefaultRuleChainId();
         this.defaultDashboardId = deviceProfile.getDefaultDashboardId();
-        this.defaultQueueName = deviceProfile.getDefaultQueueName();
-        this.setProfileData(deviceProfile.getProfileData());
-        this.provisionDeviceKey = deviceProfile.getProvisionDeviceKey();
         this.firmwareId = deviceProfile.getFirmwareId();
         this.softwareId = deviceProfile.getSoftwareId();
+        updateEntityData(deviceProfile);
     }
 
     @ApiModelProperty(position = 1, value = "JSON object with the device profile Id. " +
@@ -165,6 +162,18 @@ public class DeviceProfile extends SearchTextBased<DeviceProfileId> implements H
         } catch (JsonProcessingException e) {
             log.warn("Can't serialize device profile data: ", e);
         }
+    }
+
+    @Override
+    public DeviceProfile updateEntityData(DeviceProfile entity) {
+        this.name = entity.getName();
+        this.description = entity.getDescription();
+        this.image = entity.getImage();
+        this.isDefault = entity.isDefault();
+        this.defaultQueueName = entity.getDefaultQueueName();
+        this.setProfileData(entity.getProfileData());
+        this.provisionDeviceKey = entity.getProvisionDeviceKey();
+        return this;
     }
 
 }
