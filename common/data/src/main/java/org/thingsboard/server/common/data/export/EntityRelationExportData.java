@@ -16,20 +16,20 @@
 package org.thingsboard.server.common.data.export;
 
 import lombok.Data;
-import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.relation.EntityRelation;
 
 @Data
-public class DeviceProfileExportData implements EntityExportData<DeviceProfile> {
-    private DeviceProfile deviceProfile;
+public class EntityRelationExportData implements EntityExportData<EntityRelation> {
+    private EntityRelation entityRelation;
 
     @Override
-    public DeviceProfile getMainEntity() {
-        return deviceProfile;
+    public EntityRelation getMainEntity() {
+        return entityRelation;
     }
 
     @Override
     public ExportEntityType getType() {
-        return ExportEntityType.DEVICE_PROFILE;
+        return ExportEntityType.RELATION;
     }
 
 }

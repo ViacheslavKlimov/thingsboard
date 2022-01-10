@@ -46,6 +46,9 @@ import static org.thingsboard.server.dao.model.ModelConstants.SEARCH_TEXT_PROPER
 @MappedSuperclass
 public abstract class AbstractAssetEntity<T extends Asset> extends BaseSqlEntity<T> implements SearchTextEntity<T> {
 
+    @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY)
+    private UUID externalId;
+
     @Column(name = ASSET_TENANT_ID_PROPERTY)
     private UUID tenantId;
 
@@ -76,6 +79,9 @@ public abstract class AbstractAssetEntity<T extends Asset> extends BaseSqlEntity
         if (asset.getId() != null) {
             this.setUuid(asset.getId().getId());
         }
+        if (asset.getExternalId() != null) {
+            this.setExternalId(asset.getExternalId().getId());
+        }
         this.setCreatedTime(asset.getCreatedTime());
         if (asset.getTenantId() != null) {
             this.tenantId = asset.getTenantId().getId();
@@ -91,6 +97,7 @@ public abstract class AbstractAssetEntity<T extends Asset> extends BaseSqlEntity
 
     public AbstractAssetEntity(AssetEntity assetEntity) {
         this.setId(assetEntity.getId());
+        this.setExternalId(assetEntity.getExternalId());
         this.setCreatedTime(assetEntity.getCreatedTime());
         this.tenantId = assetEntity.getTenantId();
         this.customerId = assetEntity.getCustomerId();
@@ -117,6 +124,9 @@ public abstract class AbstractAssetEntity<T extends Asset> extends BaseSqlEntity
 
     protected Asset toAsset() {
         Asset asset = new Asset(new AssetId(id));
+        if (externalId != null) {
+            asset.setExternalId(new AssetId(externalId));
+        }
         asset.setCreatedTime(createdTime);
         if (tenantId != null) {
             asset.setTenantId(new TenantId(tenantId));

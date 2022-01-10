@@ -15,9 +15,19 @@
  */
 package org.thingsboard.server.dao;
 
+import org.thingsboard.server.common.data.HasTenantId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 
-public interface TenantEntityDao {
+import java.util.UUID;
+
+public interface TenantEntityDao<E extends HasTenantId> {
+
+    E findById(TenantId tenantId, UUID id);
 
     Long countByTenantId(TenantId tenantId);
+
+    PageData<E> findByTenantId(TenantId tenantId, PageLink pageLink);
+
 }

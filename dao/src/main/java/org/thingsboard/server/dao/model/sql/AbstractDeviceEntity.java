@@ -95,7 +95,9 @@ public abstract class AbstractDeviceEntity<T extends Device> extends BaseSqlEnti
         if (device.getId() != null) {
             this.setUuid(device.getUuidId());
         }
-        this.setExternalId(device.getExternalId().getId());
+        if (device.getExternalId() != null) {
+            this.setExternalId(device.getExternalId().getId());
+        }
         this.setCreatedTime(device.getCreatedTime());
         if (device.getTenantId() != null) {
             this.tenantId = device.getTenantId().getId();
@@ -121,6 +123,7 @@ public abstract class AbstractDeviceEntity<T extends Device> extends BaseSqlEnti
 
     public AbstractDeviceEntity(DeviceEntity deviceEntity) {
         this.setId(deviceEntity.getId());
+        this.setExternalId(deviceEntity.getExternalId());
         this.setCreatedTime(deviceEntity.getCreatedTime());
         this.tenantId = deviceEntity.getTenantId();
         this.customerId = deviceEntity.getCustomerId();

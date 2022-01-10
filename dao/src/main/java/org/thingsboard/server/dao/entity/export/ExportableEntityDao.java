@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.server.common.data.export;
+package org.thingsboard.server.dao.entity.export;
 
+import org.thingsboard.server.common.data.export.ExportableEntity;
 import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.id.UUIDBased;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 
-public interface ExportableEntity<I extends UUIDBased, E> {
+import java.util.UUID;
 
-    default I getExternalId() { return null; }
+public interface ExportableEntityDao<E extends ExportableEntity<?, E>> { // fixme: '?'
 
-    default void setExternalId(I externalId) {}
+    // fixme: maybe move to TenantEntityDao ?
 
-    I getId();
+    E findById(TenantId tenantId, UUID id);
 
-    void setId(I id);
+    default E findByExternalId(TenantId tenantId, UUID externalId) { return null; }
 
-    default void setTenantId(TenantId tenantId) {}
-
-    default E updateEntityData(E entity) { return entity; }
+    PageData<E> findByTenantId(TenantId tenantId, PageLink pageLink);
 
 }

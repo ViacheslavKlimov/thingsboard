@@ -16,20 +16,22 @@
 package org.thingsboard.server.common.data.export;
 
 import lombok.Data;
-import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.rule.RuleChain;
+import org.thingsboard.server.common.data.rule.RuleChainMetaData;
 
 @Data
-public class DeviceProfileExportData implements EntityExportData<DeviceProfile> {
-    private DeviceProfile deviceProfile;
+public class RuleChainExportData implements EntityExportData<RuleChain> {
+    private RuleChain ruleChain;
+    private RuleChainMetaData metaData;
 
     @Override
-    public DeviceProfile getMainEntity() {
-        return deviceProfile;
+    public RuleChain getMainEntity() {
+        return ruleChain;
     }
 
     @Override
     public ExportEntityType getType() {
-        return ExportEntityType.DEVICE_PROFILE;
+        return ExportEntityType.RULE_CHAIN;
     }
 
 }

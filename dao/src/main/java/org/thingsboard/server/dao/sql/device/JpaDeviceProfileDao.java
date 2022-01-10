@@ -111,8 +111,18 @@ public class JpaDeviceProfileDao extends JpaAbstractSearchTextDao<DeviceProfileE
     }
 
     @Override
-    public DeviceProfile findByExternalId(UUID tenantId, UUID externalId) {
-        return DaoUtil.getData(deviceProfileRepository.findByTenantIdAndExternalId(tenantId, externalId));
+    public DeviceProfile findByExternalId(TenantId tenantId, UUID externalId) {
+        return DaoUtil.getData(deviceProfileRepository.findByTenantIdAndExternalId(tenantId.getId(), externalId));
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return deviceProfileRepository.countByTenantId(tenantId.getId());
+    }
+
+    @Override
+    public PageData<DeviceProfile> findByTenantId(TenantId tenantId, PageLink pageLink) {
+        return findDeviceProfiles(tenantId, pageLink);
     }
 
 }

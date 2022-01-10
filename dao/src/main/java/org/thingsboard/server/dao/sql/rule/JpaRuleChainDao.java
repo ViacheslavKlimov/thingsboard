@@ -110,4 +110,9 @@ public class JpaRuleChainDao extends JpaAbstractSearchTextDao<RuleChainEntity, R
         return ruleChainRepository.countByTenantId(tenantId.getId());
     }
 
+    @Override
+    public PageData<RuleChain> findByTenantId(TenantId tenantId, PageLink pageLink) {
+        return findRuleChainsByTenantId(tenantId.getId(), pageLink);
+    }
+
 }

@@ -15,6 +15,8 @@
  */
 package org.thingsboard.server.dao.sql.dashboard;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.thingsboard.server.dao.model.sql.DashboardEntity;
 
@@ -26,4 +28,7 @@ import java.util.UUID;
 public interface DashboardRepository extends CrudRepository<DashboardEntity, UUID> {
 
     Long countByTenantId(UUID tenantId);
+
+    Page<DashboardEntity> findByTenantId(UUID tenantId, Pageable pageable);
+
 }

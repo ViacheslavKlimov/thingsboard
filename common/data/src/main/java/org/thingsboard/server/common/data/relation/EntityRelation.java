@@ -21,14 +21,16 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.SearchTextBasedWithAdditionalInfo;
+import org.thingsboard.server.common.data.export.ExportableEntity;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.UUIDBased;
 import org.thingsboard.server.common.data.validation.Length;
 
 import java.io.Serializable;
 
 @Slf4j
 @ApiModel
-public class EntityRelation implements Serializable {
+public class EntityRelation implements Serializable, ExportableEntity<UUIDBased, EntityRelation> {
 
     private static final long serialVersionUID = 2807343040519543363L;
 
@@ -138,5 +140,14 @@ public class EntityRelation implements Serializable {
         result = 31 * result + (type != null ? type.hashCode() : 0);
         result = 31 * result + (typeGroup != null ? typeGroup.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public void setId(UUIDBased id) { // fixme
+    }
+
+    @Override
+    public UUIDBased getId() {
+        return null;
     }
 }

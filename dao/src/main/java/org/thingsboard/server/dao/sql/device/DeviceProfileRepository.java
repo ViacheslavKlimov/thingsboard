@@ -70,4 +70,6 @@ public interface DeviceProfileRepository extends JpaRepository<DeviceProfileEnti
 
     DeviceProfileEntity findByTenantIdAndExternalId(UUID tenantId, UUID externalId);
 
+    long countByTenantId(UUID tenantId);
+
 }

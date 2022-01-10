@@ -21,10 +21,12 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
+import org.thingsboard.server.dao.entity.export.ExportableEntityDao;
 
 import java.util.UUID;
 
-public interface DeviceProfileDao extends Dao<DeviceProfile> {
+public interface DeviceProfileDao extends Dao<DeviceProfile>, TenantEntityDao<DeviceProfile>, ExportableEntityDao<DeviceProfile> {
 
     DeviceProfileInfo findDeviceProfileInfoById(TenantId tenantId, UUID deviceProfileId);
 
@@ -44,6 +46,6 @@ public interface DeviceProfileDao extends Dao<DeviceProfile> {
 
     DeviceProfile findByName(TenantId tenantId, String profileName);
 
-    DeviceProfile findByExternalId(UUID tenantId, UUID externalId);
+    DeviceProfile findByExternalId(TenantId tenantId, UUID externalId);
 
 }

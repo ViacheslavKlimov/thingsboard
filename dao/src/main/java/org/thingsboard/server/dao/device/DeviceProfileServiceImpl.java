@@ -28,7 +28,6 @@ import com.squareup.wire.schema.internal.parser.ProtoFileElement;
 import com.squareup.wire.schema.internal.parser.ProtoParser;
 import com.squareup.wire.schema.internal.parser.TypeElement;
 import lombok.extern.slf4j.Slf4j;
-import org.thingsboard.server.common.data.StringUtils;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -44,6 +43,7 @@ import org.thingsboard.server.common.data.DeviceProfileProvisionType;
 import org.thingsboard.server.common.data.DeviceProfileType;
 import org.thingsboard.server.common.data.DeviceTransportType;
 import org.thingsboard.server.common.data.OtaPackage;
+import org.thingsboard.server.common.data.StringUtils;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.device.profile.CoapDeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.device.profile.CoapDeviceTypeConfiguration;
@@ -57,18 +57,15 @@ import org.thingsboard.server.common.data.device.profile.DisabledDeviceProfilePr
 import org.thingsboard.server.common.data.device.profile.MqttDeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.device.profile.ProtoTransportPayloadConfiguration;
 import org.thingsboard.server.common.data.device.profile.TransportPayloadTypeConfiguration;
-import org.thingsboard.server.common.data.export.DeviceProfileExportData;
-import org.thingsboard.server.common.data.export.ExportEntityType;
-import org.thingsboard.server.common.data.ota.OtaPackageType;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.ota.OtaPackageType;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.entity.AbstractEntityService;
-import org.thingsboard.server.dao.entity.EntityExportImportService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.ota.OtaPackageService;
 import org.thingsboard.server.dao.rule.RuleChainService;
@@ -92,7 +89,7 @@ import static org.thingsboard.server.dao.service.Validator.validateId;
 
 @Service
 @Slf4j
-public class DeviceProfileServiceImpl extends AbstractEntityService implements DeviceProfileService, EntityExportImportService<DeviceProfileId, DeviceProfile, DeviceProfileExportData> {
+public class DeviceProfileServiceImpl extends AbstractEntityService implements DeviceProfileService {
 
     private static final String INCORRECT_TENANT_ID = "Incorrect tenantId ";
     private static final String INCORRECT_DEVICE_PROFILE_ID = "Incorrect deviceProfileId ";
@@ -351,47 +348,6 @@ public class DeviceProfileServiceImpl extends AbstractEntityService implements D
         log.trace("Executing deleteDeviceProfilesByTenantId, tenantId [{}]", tenantId);
         validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
         tenantDeviceProfilesRemover.removeEntities(tenantId, tenantId);
-    }
-
-    @Override
-    public DeviceProfile findById(TenantId tenantId, DeviceProfileId id) {
-        return findDeviceProfileById(tenantId, id);
-    }
-
-    @Override
-    public DeviceProfile findByExternalId(TenantId tenantId, DeviceProfileId externalId) {
-        return deviceProfileDao.findByExternalId(tenantId.getId(), externalId.getId());
-    }
-
-    @Override
-    public PageData<DeviceProfile> findByTenantId(TenantId tenantId, PageLink pageLink) {
-        return findDeviceProfiles(tenantId, pageLink);
-    }
-
-    @Override
-    public DeviceProfileExportData toExportData(DeviceProfile entity) {
-        DeviceProfileExportData exportData = new DeviceProfileExportData();
-        exportData.setEntity(entity);
-        return exportData;
-    }
-
-    @Override
-    public void saveEntityWithLinkedEntities(TenantId tenantId, DeviceProfile entity, DeviceProfileExportData exportData) {
-        DeviceProfile deviceProfile = exportData.getDeviceProfile();
-        DeviceProfile existingDeviceProfile = findByExternalId(tenantId, deviceProfile.getId());
-
-        if (existingDeviceProfile == null) {
-            deviceProfile.setTenantId(tenantId);
-            deviceProfile.setExternalId(deviceProfile.getId());
-            deviceProfile.setId(null);
-
-            deviceProfile.set
-        }
-    }
-
-    @Override
-    public ExportEntityType getExportEntityType() {
-        return null;
     }
 
     private DataValidator<DeviceProfile> deviceProfileValidator =

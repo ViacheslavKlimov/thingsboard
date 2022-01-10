@@ -269,6 +269,11 @@ public class JpaDeviceDao extends JpaAbstractSearchTextDao<DeviceEntity, Device>
         return deviceRepository.countByTenantId(tenantId.getId());
     }
 
+    @Override
+    public PageData<Device> findByTenantId(TenantId tenantId, PageLink pageLink) {
+        return findDevicesByTenantId(tenantId.getId(), pageLink);
+    }
+
     private List<EntitySubtype> convertTenantDeviceTypesToDto(UUID tenantId, List<String> types) {
         List<EntitySubtype> list = Collections.emptyList();
         if (types != null && !types.isEmpty()) {
@@ -304,8 +309,8 @@ public class JpaDeviceDao extends JpaAbstractSearchTextDao<DeviceEntity, Device>
     }
 
     @Override
-    public Device findByExternalId(UUID tenantId, UUID externalId) {
-        return DaoUtil.getData(deviceRepository.findByTenantIdAndExternalId(tenantId, externalId));
+    public Device findByExternalId(TenantId tenantId, UUID externalId) {
+        return DaoUtil.getData(deviceRepository.findByTenantIdAndExternalId(tenantId.getId(), externalId));
     }
 
 }

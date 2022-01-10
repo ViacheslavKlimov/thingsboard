@@ -16,20 +16,20 @@
 package org.thingsboard.server.common.data.export;
 
 import lombok.Data;
-import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.asset.Asset;
 
 @Data
-public class DeviceProfileExportData implements EntityExportData<DeviceProfile> {
-    private DeviceProfile deviceProfile;
+public class AssetExportData implements EntityExportData<Asset> {
+    private Asset asset;
 
     @Override
-    public DeviceProfile getMainEntity() {
-        return deviceProfile;
+    public Asset getMainEntity() {
+        return asset;
     }
 
     @Override
     public ExportEntityType getType() {
-        return ExportEntityType.DEVICE_PROFILE;
+        return ExportEntityType.ASSET;
     }
 
 }

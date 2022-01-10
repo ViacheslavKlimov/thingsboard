@@ -26,6 +26,7 @@ import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.Dao;
 import org.thingsboard.server.dao.TenantEntityDao;
+import org.thingsboard.server.dao.entity.export.ExportableEntityDao;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +36,7 @@ import java.util.UUID;
  * The Interface DeviceDao.
  *
  */
-public interface DeviceDao extends Dao<Device>, TenantEntityDao {
+public interface DeviceDao extends Dao<Device>, TenantEntityDao<Device>, ExportableEntityDao<Device> {
 
     /**
      * Find device info by id.
@@ -256,6 +257,6 @@ public interface DeviceDao extends Dao<Device>, TenantEntityDao {
      */
     PageData<Device> findDevicesByTenantIdAndEdgeIdAndType(UUID tenantId, UUID edgeId, String type, PageLink pageLink);
 
-    Device findByExternalId(UUID tenantId, UUID externalId);
+    Device findByExternalId(TenantId tenantId, UUID externalId);
 
 }

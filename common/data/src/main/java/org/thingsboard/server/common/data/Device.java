@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.device.data.DeviceData;
 import org.thingsboard.server.common.data.export.ExportableEntity;
@@ -62,6 +64,7 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
     private OtaPackageId firmwareId;
     private OtaPackageId softwareId;
 
+    @Getter @Setter
     private DeviceId externalId;
 
     public Device() {
@@ -91,11 +94,12 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
         this.deviceProfileId = device.getDeviceProfileId();
         this.setFirmwareId(device.getFirmwareId());
         this.setSoftwareId(device.getSoftwareId());
-        updateDeviceData(device);
+        updateDeviceData(device); // fixme: additional info and search text. use separate method, fix updateDeviceData
         return this;
     }
 
     public Device updateDeviceData(Device device) {
+
         this.name = device.getName();
         this.type = device.getType();
         this.label = device.getLabel();
@@ -234,16 +238,6 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
     @Override
     public JsonNode getAdditionalInfo() {
         return super.getAdditionalInfo();
-    }
-
-    @Override
-    public DeviceId getExternalId() {
-        return externalId;
-    }
-
-    @Override
-    public void setExternalId(DeviceId externalId) {
-        this.externalId = externalId;
     }
 
     @Override

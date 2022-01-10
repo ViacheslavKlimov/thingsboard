@@ -51,6 +51,9 @@ import java.util.UUID;
 @Table(name = ModelConstants.DEVICE_PROFILE_COLUMN_FAMILY_NAME)
 public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> implements SearchTextEntity<DeviceProfile> {
 
+    @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY)
+    private UUID externalId;
+
     @Column(name = ModelConstants.DEVICE_PROFILE_TENANT_ID_PROPERTY)
     private UUID tenantId;
 
@@ -111,6 +114,9 @@ public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> impl
         if (deviceProfile.getId() != null) {
             this.setUuid(deviceProfile.getId().getId());
         }
+        if (deviceProfile.getExternalId() != null) {
+            this.setExternalId(deviceProfile.getExternalId().getId());
+        }
         if (deviceProfile.getTenantId() != null) {
             this.tenantId = deviceProfile.getTenantId().getId();
         }
@@ -156,6 +162,9 @@ public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> impl
     @Override
     public DeviceProfile toData() {
         DeviceProfile deviceProfile = new DeviceProfile(new DeviceProfileId(this.getUuid()));
+        if (externalId != null) {
+            deviceProfile.setExternalId(new DeviceProfileId(externalId));
+        }
         deviceProfile.setCreatedTime(createdTime);
         if (tenantId != null) {
             deviceProfile.setTenantId(new TenantId(tenantId));

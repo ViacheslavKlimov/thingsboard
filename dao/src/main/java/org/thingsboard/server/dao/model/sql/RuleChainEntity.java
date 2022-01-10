@@ -45,6 +45,9 @@ import java.util.UUID;
 @Table(name = ModelConstants.RULE_CHAIN_COLUMN_FAMILY_NAME)
 public class RuleChainEntity extends BaseSqlEntity<RuleChain> implements SearchTextEntity<RuleChain> {
 
+    @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY)
+    private UUID externalId;
+
     @Column(name = ModelConstants.RULE_CHAIN_TENANT_ID_PROPERTY)
     private UUID tenantId;
 
@@ -82,6 +85,9 @@ public class RuleChainEntity extends BaseSqlEntity<RuleChain> implements SearchT
         if (ruleChain.getId() != null) {
             this.setUuid(ruleChain.getUuidId());
         }
+        if (ruleChain.getExternalId() != null) {
+            this.setExternalId(ruleChain.getExternalId().getId());
+        }
         this.setCreatedTime(ruleChain.getCreatedTime());
         this.tenantId = DaoUtil.getId(ruleChain.getTenantId());
         this.name = ruleChain.getName();
@@ -109,6 +115,9 @@ public class RuleChainEntity extends BaseSqlEntity<RuleChain> implements SearchT
     @Override
     public RuleChain toData() {
         RuleChain ruleChain = new RuleChain(new RuleChainId(this.getUuid()));
+        if (externalId != null) {
+            ruleChain.setExternalId(new RuleChainId(externalId));
+        }
         ruleChain.setCreatedTime(createdTime);
         ruleChain.setTenantId(new TenantId(tenantId));
         ruleChain.setName(name);

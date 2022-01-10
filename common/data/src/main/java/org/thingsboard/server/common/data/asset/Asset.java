@@ -19,10 +19,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.thingsboard.server.common.data.HasCustomerId;
 import org.thingsboard.server.common.data.HasName;
 import org.thingsboard.server.common.data.HasTenantId;
 import org.thingsboard.server.common.data.SearchTextBasedWithAdditionalInfo;
+import org.thingsboard.server.common.data.export.ExportableEntity;
 import org.thingsboard.server.common.data.id.AssetId;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -33,7 +36,7 @@ import java.util.Optional;
 
 @ApiModel
 @EqualsAndHashCode(callSuper = true)
-public class Asset extends SearchTextBasedWithAdditionalInfo<AssetId> implements HasName, HasTenantId, HasCustomerId {
+public class Asset extends SearchTextBasedWithAdditionalInfo<AssetId> implements HasName, HasTenantId, HasCustomerId, ExportableEntity<AssetId, Asset> {
 
     private static final long serialVersionUID = 2807343040519543363L;
 
@@ -48,6 +51,9 @@ public class Asset extends SearchTextBasedWithAdditionalInfo<AssetId> implements
     @NoXss
     @Length(fieldName = "label")
     private String label;
+
+    @Getter @Setter
+    private AssetId externalId; // fixme: fix conversion of Asset to AssetEntity (the same for other entities)
 
     public Asset() {
         super();
