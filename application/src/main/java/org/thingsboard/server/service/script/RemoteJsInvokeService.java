@@ -130,8 +130,9 @@ public class RemoteJsInvokeService extends AbstractJsInvokeService {
         if (maxEvalRequestsTimeout > 0) {
             future = Futures.withTimeout(future, maxEvalRequestsTimeout, TimeUnit.MILLISECONDS, timeoutExecutorService);
         }
+
         queuePushedMsgs.incrementAndGet();
-        Futures.addCallback(future, new FutureCallback<TbProtoQueueMsg<JsInvokeProtos.RemoteJsResponse>>() {
+        Futures.addCallback(future, new FutureCallback<>() {
             @Override
             public void onSuccess(@Nullable TbProtoQueueMsg<JsInvokeProtos.RemoteJsResponse> result) {
                 queueEvalMsgs.incrementAndGet();
@@ -145,6 +146,7 @@ public class RemoteJsInvokeService extends AbstractJsInvokeService {
                 queueFailedMsgs.incrementAndGet();
             }
         }, callbackExecutor);
+
         return Futures.transform(future, response -> {
             JsInvokeProtos.JsCompileResponse compilationResult = response.getValue().getCompileResponse();
             UUID compiledScriptId = new UUID(compilationResult.getScriptIdMSB(), compilationResult.getScriptIdLSB());

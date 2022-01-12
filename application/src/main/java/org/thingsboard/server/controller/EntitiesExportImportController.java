@@ -26,6 +26,7 @@ import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.export.EntityExportData;
 import org.thingsboard.server.common.data.export.ExportEntityType;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.EntityIdFactory;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UUIDBased;
 import org.thingsboard.server.common.data.page.PageLink;
@@ -62,7 +63,7 @@ public class EntitiesExportImportController extends BaseController {
 
             if (CollectionUtils.isNotEmpty(entitiesIds)) {
                 entitiesIds.forEach(entityId -> {
-                    exportDataList.add(entityExportImportService.exportEntity(tenantId, (UUIDBased) entityId));
+                    exportDataList.add(entityExportImportService.exportEntity(tenantId, (UUIDBased) EntityIdFactory.getByTypeAndId(entityType.getEntityType().name(), entityId)));
                 });
             } else {
                 exportDataList.addAll(entityExportImportService.exportEntities(tenantId, new PageLink(Integer.MAX_VALUE)));
@@ -92,7 +93,7 @@ public class EntitiesExportImportController extends BaseController {
 
     @Data
     public static class ExportRequest {
-        private Map<ExportEntityType, List<EntityId>> entities;
+        private Map<ExportEntityType, List<String>> entities;
     }
 
     @Data
