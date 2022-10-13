@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.CacheConstants;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -72,6 +73,10 @@ public class DefaultCacheCleanupService implements CacheCleanupService {
             case "3.3.4":
                 log.info("Clear cache to upgrade from version 3.3.4 to 3.4.0 ...");
                 clearAll();
+                break;
+            case "3.4.1":
+                log.info("Clearing cache to upgrade from version 3.4.1 to 3.4.2 ...");
+                clearCacheByName(CacheConstants.REPOSITORY_SETTINGS_CACHE);
                 break;
             default:
                 //Do nothing, since cache cleanup is optional.
